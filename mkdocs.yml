@@ -1,0 +1,40 @@
+site_name: TitanSkies Pipeline
+site_description: NASA TEMPO NO2 regional warehouse for Canada, the United States, and Mexico.
+repo_url: https://github.com/hypertrial/titanskies-pipeline
+repo_name: hypertrial/titanskies-pipeline
+docs_dir: docs
+strict: true
+theme:
+  name: material
+  custom_dir: overrides
+  font: false
+nav:
+  - Home: index.md
+  - Get started:
+      - Quickstart: getting-started/index.md
+      - Build geography artifacts: getting-started/build-geography-artifacts.md
+      - Upgrade to v0.2: getting-started/upgrade-v02.md
+      - Upgrade to v0.3: getting-started/upgrade-v03.md
+  - Guides:
+      - Run the pipeline: guides/run-the-pipeline.md
+      - Backfill 30 days: guides/backfill-30-days.md
+      - Query the warehouse: guides/query-the-warehouse.md
+      - Enable the schedule: guides/enable-schedule.md
+      - Live readiness: guides/live-readiness.md
+      - Troubleshooting: guides/troubleshooting.md
+  - Reference:
+      - Configuration: reference/configuration.md
+      - Orchestration: reference/orchestration.md
+      - Warehouse: reference/warehouse.md
+      - Data contracts: reference/data-contracts.md
+      - Data dictionary: reference/data-dictionary.md
+      - Scripts: reference/scripts.md
+      - Naming: reference/naming.md
+      - Legal and privacy: reference/legal.md
+  - Concepts:
+      - System overview: concepts/system-overview.md
+      - Architecture: concepts/architecture.md
+      - TEMPO product notes: concepts/tempo-product-notes.md
+  - Development:
+      - Development guide: development/index.md
+      - Changelog: development/changelog.md

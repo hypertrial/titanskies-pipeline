@@ -1,0 +1,121 @@
+version: 2
+
+models:
+  - name: int_tempo_no2_region_hourly
+    description: Area-weighted region-hour NO2 rollups with contract readiness.
+    columns:
+      - name: canonical_region_id
+        tests: [not_null]
+      - name: observation_hour
+        tests: [not_null]
+      - name: valid_area_km2
+        tests: [not_null]
+      - name: total_area_km2
+        tests: [not_null]
+      - name: is_analysis_ready
+        tests: [not_null]
+
+  - name: int_tempo_no2_region_anomalies
+    description: Median/MAD anomaly metrics against prior observations at the same IANA local hour.
+    columns:
+      - name: canonical_region_id
+        tests: [not_null]
+      - name: observation_hour
+        tests: [not_null]
+      - name: timezone
+        tests: [not_null]
+      - name: baseline_sample_count
+        tests: [not_null]
+
+unit_tests:
+  - name: test_area_weighted_hourly_contract
+    model: int_tempo_no2_region_hourly
+    overrides:
+      macros:
+        is_incremental: false
+    given:
+      - input: ref('tempo_no2_contract')
+        rows:
+          - {contract_key: default, contract_version: 0.3.0, min_region_coverage: 0.25, stale_hours_warn: 6, stale_hours_error: 12, anomaly_baseline_days: 28, anomaly_min_baseline_samples: 7, accepted_quality_flags: "0|1"}
+      - input: ref('stg_tempo_no2_region_registry')
+        rows:
+          - {canonical_region_id: US-CA-037, timezone: America/Los_Angeles}
+      - input: ref('stg_tempo_no2_region_hour_aggregates')
+        rows:
+          - {canonical_region_id: US-CA-037, country_code: US, region_type: county, observation_hour: "2026-07-12 20:00:00", no2_mean: 17.5, no2_median: 20.0, no2_p90: 20.0, valid_pixel_count: 2, total_pixel_count: 4, valid_area_km2: 4.0, total_area_km2: 10.0, coverage_fraction: 0.4, quality_flag_accepted: true, source_granule_count: 2, all_granules_validated: true, revision: 1, geometry_version: test-v1, ingested_at: "2026-07-12 20:06:00"}
+    expect:
+      rows:
+        - {canonical_region_id: US-CA-037, no2_mean: 17.5, valid_area_km2: 4.0, total_area_km2: 10.0, coverage_fraction: 0.4, is_analysis_ready: true}
+
+  - name: test_robust_z_requires_seven_prior_samples
+    model: int_tempo_no2_region_anomalies
+    overrides:
+      macros:
+        is_incremental: false
+    given:
+      - input: ref('tempo_no2_contract')
+        rows:
+          - {contract_key: default, contract_version: 0.3.0, anomaly_baseline_days: 28, anomaly_min_baseline_samples: 7}
+      - input: ref('int_tempo_no2_region_hourly')
+        rows:
+          - {canonical_region_id: US-CA-037, observation_hour: "2026-07-05 20:00:00", timezone: America/Los_Angeles, local_observation_hour: "2026-07-05 13:00:00", no2_mean: 1.0, is_analysis_ready: true}
+          - {canonical_region_id: US-CA-037, observation_hour: "2026-07-06 20:00:00", timezone: America/Los_Angeles, local_observation_hour: "2026-07-06 13:00:00", no2_mean: 2.0, is_analysis_ready: true}
+          - {canonical_region_id: US-CA-037, observation_hour: "2026-07-07 20:00:00", timezone: America/Los_Angeles, local_observation_hour: "2026-07-07 13:00:00", no2_mean: 3.0, is_analysis_ready: true}
+          - {canonical_region_id: US-CA-037, observation_hour: "2026-07-08 20:00:00", timezone: America/Los_Angeles, local_observation_hour: "2026-07-08 13:00:00", no2_mean: 4.0, is_analysis_ready: true}
+          - {canonical_region_id: US-CA-037, observation_hour: "2026-07-09 20:00:00", timezone: America/Los_Angeles, local_observation_hour: "2026-07-09 13:00:00", no2_mean: 5.0, is_analysis_ready: true}
+          - {canonical_region_id: US-CA-037, observation_hour: "2026-07-10 20:00:00", timezone: America/Los_Angeles, local_observation_hour: "2026-07-10 13:00:00", no2_mean: 6.0, is_analysis_ready: true}
+          - {canonical_region_id: US-CA-037, observation_hour: "2026-07-11 20:00:00", timezone: America/Los_Angeles, local_observation_hour: "2026-07-11 13:00:00", no2_mean: 7.0, is_analysis_ready: true}
+          - {canonical_region_id: US-CA-037, observation_hour: "2026-07-12 20:00:00", timezone: America/Los_Angeles, local_observation_hour: "2026-07-12 13:00:00", no2_mean: 8.0, is_analysis_ready: true}
+    expect:
+      rows:
+        - {observation_hour: "2026-07-05 20:00:00", baseline_sample_count: 0, baseline_median: null, baseline_mad: null, robust_z_score: null}
+        - {observation_hour: "2026-07-06 20:00:00", baseline_sample_count: 1, baseline_median: 1.0, baseline_mad: 0.0, robust_z_score: null}
+        - {observation_hour: "2026-07-07 20:00:00", baseline_sample_count: 2, baseline_median: 1.5, baseline_mad: 0.5, robust_z_score: null}
+        - {observation_hour: "2026-07-08 20:00:00", baseline_sample_count: 3, baseline_median: 2.0, baseline_mad: 1.0, robust_z_score: null}
+        - {observation_hour: "2026-07-09 20:00:00", baseline_sample_count: 4, baseline_median: 2.5, baseline_mad: 1.0, robust_z_score: null}
+        - {observation_hour: "2026-07-10 20:00:00", baseline_sample_count: 5, baseline_median: 3.0, baseline_mad: 1.0, robust_z_score: null}
+        - {observation_hour: "2026-07-11 20:00:00", baseline_sample_count: 6, baseline_median: 3.5, baseline_mad: 1.5, robust_z_score: null}
+        - {observation_hour: "2026-07-12 20:00:00", baseline_sample_count: 7, baseline_median: 4.0, baseline_mad: 2.0, robust_z_score: 1.3489815189531904}
+
+  - name: test_local_hour_conversion_across_dst
+    model: int_tempo_no2_region_hourly
+    overrides:
+      macros:
+        is_incremental: false
+    given:
+      - input: ref('tempo_no2_contract')
+        rows:
+          - {contract_key: default, contract_version: 0.3.0, min_region_coverage: 0.25, stale_hours_warn: 6, stale_hours_error: 12, anomaly_baseline_days: 28, anomaly_min_baseline_samples: 7, accepted_quality_flags: "0|1"}
+      - input: ref('stg_tempo_no2_region_registry')
+        rows:
+          - {canonical_region_id: US-CA-037, timezone: America/Los_Angeles}
+      - input: ref('stg_tempo_no2_region_hour_aggregates')
+        rows:
+          - {canonical_region_id: US-CA-037, country_code: US, region_type: county, observation_hour: "2026-03-01 21:00:00", no2_mean: 1.0, no2_median: 1.0, no2_p90: 1.0, valid_pixel_count: 1, total_pixel_count: 1, valid_area_km2: 1.0, total_area_km2: 1.0, coverage_fraction: 1.0, quality_flag_accepted: true, source_granule_count: 1, all_granules_validated: true, revision: 1, geometry_version: test-v1, ingested_at: "2026-03-01 21:05:00"}
+          - {canonical_region_id: US-CA-037, country_code: US, region_type: county, observation_hour: "2026-03-15 20:00:00", no2_mean: 2.0, no2_median: 2.0, no2_p90: 2.0, valid_pixel_count: 1, total_pixel_count: 1, valid_area_km2: 1.0, total_area_km2: 1.0, coverage_fraction: 1.0, quality_flag_accepted: true, source_granule_count: 1, all_granules_validated: true, revision: 2, geometry_version: test-v1, ingested_at: "2026-03-15 20:05:00"}
+    expect:
+      rows:
+        - {observation_hour: "2026-03-01 21:00:00", timezone: America/Los_Angeles, local_observation_hour: "2026-03-01 13:00:00"}
+        - {observation_hour: "2026-03-15 20:00:00", timezone: America/Los_Angeles, local_observation_hour: "2026-03-15 13:00:00"}
+
+  - name: test_anomaly_matches_local_hour_not_utc_or_other_region
+    model: int_tempo_no2_region_anomalies
+    overrides:
+      macros:
+        is_incremental: false
+    given:
+      - input: ref('tempo_no2_contract')
+        rows:
+          - {contract_key: default, contract_version: 0.3.0, anomaly_baseline_days: 28, anomaly_min_baseline_samples: 7}
+      - input: ref('int_tempo_no2_region_hourly')
+        rows:
+          - {canonical_region_id: US-CA-037, observation_hour: "2026-03-01 21:00:00", timezone: America/Los_Angeles, local_observation_hour: "2026-03-01 13:00:00", no2_mean: 1.0, is_analysis_ready: true}
+          - {canonical_region_id: US-CA-037, observation_hour: "2026-03-02 20:00:00", timezone: America/Los_Angeles, local_observation_hour: "2026-03-02 12:00:00", no2_mean: 99.0, is_analysis_ready: true}
+          - {canonical_region_id: CA-ON-3520005, observation_hour: "2026-03-05 18:00:00", timezone: America/Toronto, local_observation_hour: "2026-03-05 13:00:00", no2_mean: 50.0, is_analysis_ready: true}
+          - {canonical_region_id: US-CA-037, observation_hour: "2026-03-15 20:00:00", timezone: America/Los_Angeles, local_observation_hour: "2026-03-15 13:00:00", no2_mean: 2.0, is_analysis_ready: true}
+    expect:
+      rows:
+        - {canonical_region_id: US-CA-037, observation_hour: "2026-03-01 21:00:00", baseline_sample_count: 0, baseline_median: null, baseline_mad: null, robust_z_score: null}
+        - {canonical_region_id: US-CA-037, observation_hour: "2026-03-02 20:00:00", baseline_sample_count: 0, baseline_median: null, baseline_mad: null, robust_z_score: null}
+        - {canonical_region_id: CA-ON-3520005, observation_hour: "2026-03-05 18:00:00", baseline_sample_count: 0, baseline_median: null, baseline_mad: null, robust_z_score: null}
+        - {canonical_region_id: US-CA-037, observation_hour: "2026-03-15 20:00:00", baseline_sample_count: 1, baseline_median: 1.0, baseline_mad: 0.0, robust_z_score: null}

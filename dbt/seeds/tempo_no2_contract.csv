@@ -1,0 +1,2 @@
+contract_key,contract_version,min_region_coverage,stale_hours_warn,stale_hours_error,anomaly_baseline_days,anomaly_min_baseline_samples,accepted_quality_flags
+default,0.3.0,0.25,6,12,28,7,0|1

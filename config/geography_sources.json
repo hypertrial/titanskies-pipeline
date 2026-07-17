@@ -1,0 +1,51 @@
+{
+  "manifest_version": "1",
+  "geometry_version": "v0.3-geo-2025-tz-2026b",
+  "sources": [
+    {
+      "id": "us_states_2025",
+      "version": "TIGER/Line 2025",
+      "url": "https://www2.census.gov/geo/tiger/TIGER2025/STATE/tl_2025_us_state.zip",
+      "filename": "tl_2025_us_state.zip",
+      "sha256": "59a220888a8d9be8117c4fcd38f542bd02d81abf0d198c78113595ad540dd957",
+      "attribution": "U.S. Census Bureau, 2025 TIGER/Line Shapefiles",
+      "license": "United States government work; see Census Bureau data-use terms"
+    },
+    {
+      "id": "us_counties_2025",
+      "version": "TIGER/Line 2025",
+      "url": "https://www2.census.gov/geo/tiger/TIGER2025/COUNTY/tl_2025_us_county.zip",
+      "filename": "tl_2025_us_county.zip",
+      "sha256": "9c6e9d9076abce2670d1de255de3710c35ecca00a7005d88e012dec52d95f763",
+      "attribution": "U.S. Census Bureau, 2025 TIGER/Line Shapefiles",
+      "license": "United States government work; see Census Bureau data-use terms"
+    },
+    {
+      "id": "canada_csd_2025",
+      "version": "Census Subdivision Boundary File 2025",
+      "url": "https://www12.statcan.gc.ca/census-recensement/2011/geo/bound-limit/files-fichiers/lcsd000a25a_e.zip",
+      "filename": "lcsd000a25a_e.zip",
+      "sha256": "80157c64de60d6a52b4239e132243bb22d6d48bd78a7f88e9710c632f940ce7f",
+      "attribution": "Statistics Canada, Census Subdivision Boundary File, 2025",
+      "license": "Statistics Canada Open Licence"
+    },
+    {
+      "id": "mexico_geostatistical_2025",
+      "version": "Marco Geoestadistico Integrado 2025",
+      "url": "https://www.inegi.org.mx/contenidos/productos/prod_serv/contenidos/espanol/bvinegi/productos/geografia/marcogeo/794551163061/mg_2025_integrado.zip",
+      "filename": "mg_2025_integrado.zip",
+      "sha256": "f1335bab72d5582adab06e9e3b5d49b7c42da8f8d82e588f484ad6a7c7871d1b",
+      "attribution": "INEGI, Marco Geoestadistico, 2025",
+      "license": "INEGI terms of free use"
+    },
+    {
+      "id": "land_timezones_2026b",
+      "version": "timezone-boundary-builder 2026b comprehensive land timezones",
+      "url": "https://github.com/evansiroky/timezone-boundary-builder/releases/download/2026b/timezones.geojson.zip",
+      "filename": "timezones-2026b.geojson.zip",
+      "sha256": "f892b57ce8c7d9633a03ce9e6775d54544c05d9b8d62029bc6543091cac213c4",
+      "attribution": "timezone-boundary-builder contributors and OpenStreetMap contributors",
+      "license": "Open Data Commons Open Database License (ODbL) 1.0"
+    }
+  ]
+}

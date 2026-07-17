@@ -1,0 +1,31 @@
+version: 2
+
+updates:
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      compatible-updates:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      - dependency-name: dbt-core
+        versions:
+          - ">=1.12"
+      - dependency-name: netcdf4
+        versions:
+          - "1.7.4"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      compatible-updates:
+        update-types:
+          - minor
+          - patch

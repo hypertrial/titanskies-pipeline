@@ -1,0 +1,56 @@
+name: titanskies
+version: 0.3.1
+config-version: 2
+profile: titanskies
+flags:
+  indirect_selection: buildable
+  send_anonymous_usage_stats: false
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+target-path: target
+clean-targets: ["target", "dbt_packages"]
+models:
+  titanskies:
+    +materialized: view
+    +persist_docs:
+      relation: true
+      columns: true
+    tempo_no2:
+      +tags: ["tempo", "no2"]
+      staging:
+        +schema: tempo_no2_staging
+        +tags: ["staging", "tempo", "no2"]
+      intermediate:
+        +schema: tempo_no2_intermediate
+        +tags: ["intermediate", "tempo", "no2"]
+        int_tempo_no2_region_hourly:
+          +materialized: table
+        int_tempo_no2_region_anomalies:
+          +materialized: table
+      marts:
+        +schema: tempo_no2_marts
+        +materialized: table
+        +tags: ["mart", "core", "tempo", "no2"]
+        tempo_no2_region_hourly:
+          +materialized: view
+        tempo_no2_region_latest:
+          +materialized: view
+        tempo_no2_region_anomalies:
+          +materialized: view
+        tempo_no2_country_hourly:
+          +materialized: view
+        tempo_region_registry:
+          +materialized: view
+        tempo_no2_grid_latest:
+          +materialized: view
+      observability:
+        +schema: tempo_no2_observability
+        +materialized: table
+        +tags: ["mart", "observability", "tempo", "no2"]
+seeds:
+  titanskies:
+    tempo_no2_contract:
+      +schema: tempo_no2_staging
+      +tags: ["staging", "tempo", "no2"]
+      +quote_columns: false

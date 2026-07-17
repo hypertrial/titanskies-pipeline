@@ -1,0 +1,12 @@
+{
+  "concept_id": "C3685668637-LARC_CLOUD",
+  "lookback_hours": 4,
+  "now": "2026-07-12T18:00:00",
+  "granules": [
+    {
+      "granule_ur": "TEMPO_NO2_G1",
+      "data_links": ["https://example.test/tempo.nc"],
+      "time_start": "2026-07-12T17:00:00Z"
+    }
+  ]
+}

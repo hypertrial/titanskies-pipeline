@@ -1,0 +1,8 @@
+titanskies:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('DUCKDB_PATH', 'titanskies.duckdb') }}"
+      schema: dbt
+      threads: 4

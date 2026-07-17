@@ -1,0 +1,57 @@
+name: Bug report
+description: Report a reproducible TitanSkies problem.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include Earthdata credentials, `.env` values, live NetCDF files, downloaded boundaries, or local DuckDB databases.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What went wrong?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction
+      description: Include the smallest commands and synthetic inputs that reproduce the problem.
+      placeholder: |
+        1. uv sync --locked --extra dev
+        2. uv run make ...
+        3. See error ...
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - CMR discovery / Earthdata
+        - NetCDF processing
+        - Geography / overlap weights
+        - Dagster orchestration
+        - dbt / DuckDB
+        - Documentation / CI
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Sanitized diagnostics
+      description: Paste relevant output with credentials and live/raw data removed.
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: v0.3.0 or commit SHA

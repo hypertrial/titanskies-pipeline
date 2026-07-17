@@ -1,0 +1,115 @@
+[build-system]
+requires = ["setuptools>=77.0.3", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "titanskies-pipeline"
+version = "0.3.1"
+description = "Local NASA TEMPO NO2 warehouse with administrative and native-grid marts."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = [
+  "dagster>=1.13.14",
+  "dagster-webserver>=1.8.0",
+  "dagster-dbt>=0.24.0",
+  "dbt-core>=1.8.0,<1.12",
+  "dbt-duckdb>=1.8.0",
+  "duckdb>=1.5.2",
+  "earthaccess>=0.12.0",
+  "xarray>=2024.1.0",
+  "netcdf4>=1.6.0",
+  "numpy>=1.26.0",
+  "pyarrow>=14.0.0",
+  "python-dotenv>=1.0.0",
+  "requests>=2.28.0",
+]
+
+[project.optional-dependencies]
+geo = [
+  "geopandas>=1.0.0",
+  "shapely>=2.0.0",
+  "pyproj>=3.6.0",
+]
+dev = [
+  "dagster-dg-cli>=1.13.0",
+  "great_expectations>=1.19.0",
+  "mkdocs>=1.6.0",
+  "mkdocs-material>=9.5.0",
+  "playwright>=1.55.0,<2",
+  "PyYAML>=6.0",
+  "pytest>=8.0.0",
+  "pytest-cov>=5.0.0",
+  "pytest-xdist>=3.5.0",
+  "ruff>=0.15.22",
+  "sqlfluff>=3.0.0",
+  "sqlfluff-templater-dbt>=3.0.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["titanskies_pipeline*"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+filterwarnings = [
+  "ignore:.*AssetExecutionContext\\.op is deprecated.*:DeprecationWarning:dagster_dbt.asset_utils",
+]
+markers = [
+  "contract: replay-only external API contract tests excluded from default gates",
+  "integration: hits external tools or shared resources",
+  "performance: long-running benchmarks",
+  "slow: expensive checks excluded from normal unit runs",
+  "orchestration: Dagster materialize or dbt asset tests",
+  "repo_check: repository policy checks run via make lint only",
+  "tempo: TEMPO ingest and sync tests",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src/titanskies_pipeline"]
+omit = ["src/titanskies_pipeline/storage/duckdb/profile/*"]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_empty = true
+exclude_lines = [
+  "pragma: no cover",
+  "if TYPE_CHECKING:",
+]
+
+[tool.ruff]
+target-version = "py310"
+src = ["src"]
+line-length = 88
+extend-exclude = [
+  "dbt/target",
+  "dbt/dbt_packages",
+  ".venv",
+  ".dagster_home",
+]
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/titanskies_pipeline/config/__init__.py" = ["F403"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.sqlfluff.core]
+dialect = "duckdb"
+templater = "dbt"
+max_line_length = 130
+
+[tool.sqlfluff.templater.dbt]
+project_dir = "dbt"
+profiles_dir = "dbt/profiles"
+profile = "titanskies"
+target = "dev"

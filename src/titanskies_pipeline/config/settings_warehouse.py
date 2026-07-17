@@ -1,0 +1,68 @@
+"""Warehouse paths, dotenv bootstrap, DuckDB/dbt dirs."""
+
+from __future__ import annotations
+
+import os
+import shutil
+import sys
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+PACKAGE_DIR = Path(__file__).resolve().parent.parent
+SRC_DIR = PACKAGE_DIR.parent
+BASE_DIR = SRC_DIR.parent
+
+env_path = BASE_DIR / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
+
+for _lower, _upper in (
+    ("earthdata_username", "EARTHDATA_USERNAME"),
+    ("earthdata_password", "EARTHDATA_PASSWORD"),
+):
+    if not os.getenv(_upper) and os.getenv(_lower):
+        os.environ[_upper] = os.getenv(_lower, "")
+
+DUCKDB_NAME = os.getenv("DUCKDB_NAME", "titanskies.duckdb")
+_DUCKDB_PATH_ENV = os.getenv("DUCKDB_PATH")
+DUCKDB_PATH = (
+    Path(_DUCKDB_PATH_ENV).expanduser().resolve()
+    if _DUCKDB_PATH_ENV is not None
+    else (BASE_DIR / DUCKDB_NAME).resolve()
+)
+
+DBT_PROJECT_DIR = BASE_DIR / "dbt"
+_DEFAULT_DBT_PROFILES_DIR = BASE_DIR / "dbt" / "profiles"
+_ENV_DBT_PROFILES_DIR = os.getenv("DBT_PROFILES_DIR")
+DBT_PROFILES_DIR = (
+    Path(_ENV_DBT_PROFILES_DIR) if _ENV_DBT_PROFILES_DIR else _DEFAULT_DBT_PROFILES_DIR
+)
+_profiles_yml = DBT_PROFILES_DIR / "profiles.yml"
+if not _profiles_yml.exists() or "titanskies:" not in _profiles_yml.read_text():
+    DBT_PROFILES_DIR = _DEFAULT_DBT_PROFILES_DIR
+os.environ["DBT_PROFILES_DIR"] = str(DBT_PROFILES_DIR)
+
+
+def dbt_cli_argv(*args: str) -> list[str]:
+    return [sys.executable, "-m", "dbt.cli.main", *args]
+
+
+def resolve_dbt_executable() -> str:
+    venv_dbt = Path(sys.executable).with_name("dbt")
+    if venv_dbt.is_file():
+        return str(venv_dbt)
+    return shutil.which("dbt") or "dbt"
+
+
+__all__ = [
+    "BASE_DIR",
+    "DBT_PROFILES_DIR",
+    "DBT_PROJECT_DIR",
+    "DUCKDB_NAME",
+    "DUCKDB_PATH",
+    "PACKAGE_DIR",
+    "SRC_DIR",
+    "dbt_cli_argv",
+    "resolve_dbt_executable",
+]

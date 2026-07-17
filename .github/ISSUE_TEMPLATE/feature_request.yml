@@ -1,0 +1,46 @@
+name: Feature request
+description: Propose a focused TitanSkies enhancement.
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the contract, not live data. Do not attach credentials, NetCDF downloads, generated geography, or local DuckDB files.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What analyst, operator, or contributor problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should TitanSkies do differently?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - TEMPO source ingestion
+        - Geography coverage
+        - Dagster orchestration
+        - dbt / warehouse
+        - Operator tooling
+        - Documentation / CI
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Is an existing mart, job, or query sufficient?
+  - type: textarea
+    id: contracts
+    attributes:
+      label: Contract impact
+      description: Note any effect on public marts, schedules, geography, retention, or local workflows.
