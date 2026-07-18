@@ -1409,8 +1409,8 @@ Tests must not depend on a developer's <code>.env</code>, default warehouse, Ear
 credentials, network access, or previously generated geography.</p>
 <h2 id="complete-quality-gate">Complete quality gate</h2>
 <p>See <a href="releasing/">Releasing</a> for the full local release gate, tagging,
-GitHub Release publication, and docs deployment checklist. While iterating,
-run:</p>
+GitHub Release publication, and docs deployment checklist. Before opening a
+pull request or cutting a release, run:</p>
 <pre><code class="language-bash">uv run make lint
 uv run make test-cov
 uv run make dagster-jobs-smoke-cov

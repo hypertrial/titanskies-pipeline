@@ -1368,8 +1368,10 @@
 Actions only runs the five-minute offline fast gate; the full release gate
 must pass on a maintainer machine before tagging.</p>
 <h2 id="local-release-gate">Local release gate</h2>
-<p>From a clean checkout on <code>main</code>, sync dependencies and run the gate in order:</p>
+<p>From a clean checkout on <code>main</code>, sync dependencies, install the Chromium
+browser used by the local docs render checks, and run the gate in order:</p>
 <pre><code class="language-bash">uv sync --locked --extra dev --extra geo
+uv run playwright install chromium
 uv run make lint
 uv run make test-cov
 uv run make dagster-jobs-smoke-cov
@@ -1417,7 +1419,9 @@ pinned <code>2.5.0</code> release; install it with:</p>
    runner.</p>
 <h2 id="post-release-checks">Post-release checks</h2>
 <ul>
-<li>Confirm CI is green on <code>main</code> and on the release tag.</li>
+<li>Confirm the GitHub Actions fast gate is green for the release commit on
+  <code>main</code>. CI does not run on tags; only <code>main</code> pushes, pull requests, and
+  manual <code>workflow_dispatch</code> trigger it.</li>
 <li>Confirm <code>https://hypertrial.github.io/titanskies-pipeline/</code> returns HTTP
   200 and renders the homepage.</li>
 <li>Review open Dependabot pull requests and merge compatible updates before
