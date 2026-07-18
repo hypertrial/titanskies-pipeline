@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/hypertrial/titanskies-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/hypertrial/titanskies-pipeline/actions/workflows/ci.yml)
 [![Coverage: 100%](https://img.shields.io/badge/coverage-100%25-brightgreen)](AGENTS.md#quality-gate)
-[![Docs: MkDocs](https://img.shields.io/badge/docs-MkDocs-blue)](docs/index.md)
+[![Docs: MkDocs](https://img.shields.io/badge/docs-MkDocs-blue)](https://hypertrial.github.io/titanskies-pipeline/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 TitanSkies Pipeline is an open-source, local-first NASA TEMPO NO₂ warehouse.
@@ -49,7 +49,9 @@ Serve the complete documentation locally with:
 uv run make docs-serve
 ```
 
-Open `http://127.0.0.1:8000` while that process is running.
+Open `http://127.0.0.1:8000` while that process is running. Published docs are
+also available at
+[hypertrial.github.io/titanskies-pipeline](https://hypertrial.github.io/titanskies-pipeline/).
 
 For development:
 

@@ -37,4 +37,5 @@ nav:
       - TEMPO product notes: concepts/tempo-product-notes.md
   - Development:
       - Development guide: development/index.md
+      - Releasing: development/releasing.md
       - Changelog: development/changelog.md
