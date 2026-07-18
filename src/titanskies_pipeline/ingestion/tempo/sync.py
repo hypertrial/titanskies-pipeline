@@ -22,7 +22,7 @@ from titanskies_pipeline.ingestion.tempo.aggregate import (
 )
 from titanskies_pipeline.ingestion.tempo.cmr import discover_granules
 from titanskies_pipeline.ingestion.tempo.netcdf import NetcdfGrid, extract_grid
-from titanskies_pipeline.naming import SCOPE_NO2
+from titanskies_pipeline.naming import SCOPE_NO2, SOURCE_TEMPO, schema_name
 from titanskies_pipeline.storage.duckdb.connection import _use_conn, get_connection
 from titanskies_pipeline.storage.duckdb.granules import (
     DiscoveryMetrics,
@@ -101,7 +101,7 @@ def require_registered_geography(
     if not row:
         raise RuntimeError(
             "Production geography is not registered. Materialize "
-            "tempo/no2/ops/region_registry before running the pipeline."
+            f"tempo/{scope}/ops/region_registry before running the pipeline."
         )
     if str(row[0]) != "production" and not allow_synthetic:
         raise RuntimeError("Production pipeline rejects synthetic geography artifacts")
@@ -345,7 +345,8 @@ def process_pending_granules(
         ).fetchone()
         if not manifest:
             raise RuntimeError(
-                "Region registry is empty. Run tempo/no2/ops/region_registry first."
+                "Region registry is empty. "
+                f"Run tempo/{scope}/ops/region_registry first."
             )
         version, weights_path_value, expected_checksum, mode = map(str, manifest)
         if mode != "production" and not allow_synthetic:
@@ -412,7 +413,8 @@ def process_pending_granules(
         suffix = f" (+{remainder} more)" if remainder > 0 else ""
         raise RuntimeError(
             f"{len(failures)} TEMPO granule(s) failed: {shown}{suffix}; "
-            "see tempo_no2_ops.granule_inventory for details"
+            f"see {schema_name(SOURCE_TEMPO, scope, 'ops')}.granule_inventory "
+            "for details"
         )
     return SyncMetrics(
         downloaded=downloaded,

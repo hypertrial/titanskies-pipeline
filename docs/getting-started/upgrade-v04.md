@@ -9,11 +9,11 @@ migrate a populated v0.3 (or earlier) DuckDB file in place.
 2. Back up the old DuckDB file.
 3. Upgrade the checkout and dependencies (`uv sync --locked --extra dev --extra geo`).
 4. Point `DUCKDB_PATH` at a new file and run `init_duck_db()` (or any pipeline
-   entry point that calls it). This bootstraps schemas, tables, and sequences
-   for **both** scopes: `tempo_no2_raw`/`tempo_no2_ops` and
-   `tempo_no2_std_raw`/`tempo_no2_std_ops`, plus their dbt-modeled schemas.
-   Attempting to reuse a populated pre-0.4 warehouse raises an error telling
-   you a schema 0.4 rebuild is required.
+   entry point that calls it). This bootstraps raw/ops schemas, tables, and
+   sequences for **both** scopes: `tempo_no2_raw`/`tempo_no2_ops` and
+   `tempo_no2_std_raw`/`tempo_no2_std_ops`. dbt mart and observability schemas
+   appear later when you run dbt. Attempting to reuse a populated pre-0.4
+   warehouse raises an error telling you a schema 0.4 rebuild is required.
 5. Materialize `tempo/no2/ops/region_registry` (and, if you plan to run the
    standard scope, `tempo/no2_std/ops/region_registry`) against pinned
    production geography.
@@ -35,9 +35,9 @@ migrate a populated v0.3 (or earlier) DuckDB file in place.
 
 ## What did not change
 
-- `make demo` remains NRT-only. It seeds and builds only the `tempo:no2`
-  scope; the standard scope's schemas and marts are created empty by
-  `bootstrap_all_tempo_tables` but are not seeded by the demo.
+- `make demo` remains NRT-only. It seeds both contract CSVs but runs dbt with
+  `--select tag:tempo,tag:no2`, so only the NRT marts are built. Standard-scope
+  raw/ops schemas are bootstrapped empty and are not seeded by the demo.
 - NRT collection, concept ID, DOI, and NetCDF layout are unchanged.
 - The v0.3 TEMPO grid contract (native coordinates, overlap weights) is
   assumed identical for the standard V04 product; see

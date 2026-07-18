@@ -58,8 +58,7 @@ def _prepare_v04_boundary(conn: duckdb.DuckDBPyConnection) -> None:
     if populated:
         raise RuntimeError(
             "TitanSkies warehouse schema 0.4 requires a rebuild; this database "
-            "contains pre-0.4 TEMPO rows without the tempo_no2_std scope. "
-            "Back it up and create a new warehouse."
+            "contains pre-0.4 TEMPO rows. Back it up and create a new warehouse."
         )
     for schema, table in old_present:
         conn.execute(f'DROP TABLE "{schema}"."{table}"')

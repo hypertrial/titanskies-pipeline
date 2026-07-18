@@ -43,9 +43,9 @@ def test_region_registry_config_accepts_manifest():
     assert cfg.allow_synthetic is True
 
 
-def test_granule_discovery_config_requires_positive_lookback():
+def test_granule_discovery_config_defaults_lookback_to_scope_runtime():
     cfg = GranuleDiscoveryConfig()
-    assert cfg.lookback_hours == 8
+    assert cfg.lookback_hours is None
     with pytest.raises(Exception):
         GranuleDiscoveryConfig(lookback_hours=0)
 
@@ -56,6 +56,14 @@ def test_granule_discovery_config_accepts_explicit_window():
         window_end_utc="2026-07-02T00:00:00",
     )
     assert cfg.window_start_utc == "2026-07-01T00:00:00"
+
+
+def test_granule_discovery_config_rejects_inverted_window():
+    with pytest.raises(Exception, match="strictly before"):
+        GranuleDiscoveryConfig(
+            window_start_utc="2026-07-02T00:00:00",
+            window_end_utc="2026-07-01T00:00:00",
+        )
 
 
 def test_granule_discovery_config_rejects_partial_window():

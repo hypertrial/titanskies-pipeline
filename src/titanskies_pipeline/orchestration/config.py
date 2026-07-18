@@ -68,7 +68,8 @@ class RegionRegistryConfig(Config):
 
 
 class GranuleDiscoveryConfig(Config):
-    lookback_hours: int = Field(default=TEMPO_NO2_DISCOVERY_LOOKBACK_HOURS, ge=1)
+    # None means "use the scope's configured discovery lookback" at runtime.
+    lookback_hours: int | None = Field(default=None, ge=1)
     allow_synthetic: bool = False
     window_start_utc: str | None = None
     window_end_utc: str | None = None
@@ -81,6 +82,12 @@ class GranuleDiscoveryConfig(Config):
             raise ValueError(
                 "window_start_utc and window_end_utc must both be set together"
             )
+        if has_start and has_end:
+            # Lexicographic compare is safe for zero-padded ISO-8601 timestamps.
+            if (self.window_start_utc or "") >= (self.window_end_utc or ""):
+                raise ValueError(
+                    "window_start_utc must be strictly before window_end_utc"
+                )
         return self
 
 
@@ -121,7 +128,10 @@ def tempo_no2_region_registry_run_config() -> dict:
 
 
 def tempo_no2_granule_discovery_run_config() -> dict:
-    return _op_config(TEMPO_NO2_RAW_GRANULE_INVENTORY, GranuleDiscoveryConfig())
+    return _op_config(
+        TEMPO_NO2_RAW_GRANULE_INVENTORY,
+        GranuleDiscoveryConfig(lookback_hours=TEMPO_NO2_DISCOVERY_LOOKBACK_HOURS),
+    )
 
 
 def tempo_no2_hourly_ingest_run_config() -> dict:

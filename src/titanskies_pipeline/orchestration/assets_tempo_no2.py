@@ -116,9 +116,15 @@ def _build_region_hour_aggregates_asset(*, scope: str, key: AssetKey, deps: list
 
 
 def _parse_iso_utc(value: str):
-    from datetime import datetime
+    from datetime import datetime, timezone
 
-    return datetime.fromisoformat(value)
+    text = value.strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    parsed = datetime.fromisoformat(text)
+    if parsed.tzinfo is not None:
+        return parsed.astimezone(timezone.utc).replace(tzinfo=None)
+    return parsed
 
 
 tempo_no2_ops_region_registry = _build_region_registry_asset(

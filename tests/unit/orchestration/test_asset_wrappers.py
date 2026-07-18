@@ -13,6 +13,7 @@ from titanskies_pipeline.orchestration.assets_tempo_no2 import (
     tempo_no2_ops_region_registry,
     tempo_no2_raw_granule_inventory,
     tempo_no2_raw_region_hour_aggregates,
+    tempo_no2_std_raw_granule_inventory,
     titanskies_dbt,
 )
 
@@ -74,6 +75,49 @@ def test_granule_inventory_asset_uses_explicit_window(monkeypatch):
 
     assert captured["window_start"] == datetime(2026, 7, 1, 0, 0, 0)
     assert captured["window_end"] == datetime(2026, 7, 2, 0, 0, 0)
+    assert captured["lookback_hours"] is None
+
+
+def test_granule_inventory_asset_parses_zulu_window(monkeypatch):
+    monkeypatch.setattr(
+        assets_mod.ops, "require_registered_geography", lambda **_kwargs: None
+    )
+    captured = {}
+    monkeypatch.setattr(
+        assets_mod.ops,
+        "sync_granule_discovery",
+        lambda **kwargs: captured.update(kwargs) or DiscoveryMetrics(1, 1, 0),
+    )
+    ctx = MagicMock()
+    tempo_no2_raw_granule_inventory.op.compute_fn.decorated_fn(
+        ctx,
+        orch_config.GranuleDiscoveryConfig(
+            window_start_utc="2026-07-01T00:00:00Z",
+            window_end_utc="2026-07-02T00:00:00Z",
+            allow_synthetic=True,
+        ),
+    )
+    from datetime import datetime
+
+    assert captured["window_start"] == datetime(2026, 7, 1, 0, 0, 0)
+    assert captured["window_end"] == datetime(2026, 7, 2, 0, 0, 0)
+
+
+def test_std_granule_inventory_asset_defers_lookback_to_scope(monkeypatch):
+    monkeypatch.setattr(
+        assets_mod.ops, "require_registered_geography", lambda **_kwargs: None
+    )
+    captured = {}
+    monkeypatch.setattr(
+        assets_mod.ops,
+        "sync_granule_discovery",
+        lambda **kwargs: captured.update(kwargs) or DiscoveryMetrics(0, 0, 0),
+    )
+    ctx = MagicMock()
+    tempo_no2_std_raw_granule_inventory.op.compute_fn.decorated_fn(
+        ctx, orch_config.GranuleDiscoveryConfig(allow_synthetic=True)
+    )
+    assert captured["scope"] == "no2_std"
     assert captured["lookback_hours"] is None
 
 

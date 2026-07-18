@@ -40,7 +40,17 @@ def main() -> None:
         [sys.executable, "-m", "dbt.cli.main", "seed", *common], check=True, env=env
     )
     subprocess.run(
-        [sys.executable, "-m", "dbt.cli.main", "run", *common], check=True, env=env
+        [
+            sys.executable,
+            "-m",
+            "dbt.cli.main",
+            "run",
+            "--select",
+            "tag:tempo,tag:no2",
+            *common,
+        ],
+        check=True,
+        env=env,
     )
 
     conn = duckdb.connect(str(DEMO_PATH), read_only=True)

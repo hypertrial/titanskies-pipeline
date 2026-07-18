@@ -32,11 +32,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - `tempo_ops_tbl`/`tempo_raw_tbl` and the DuckDB-backed sync/registry/granule
   helpers are now scope-aware (`scope: str = "no2"` by default), so existing
   NRT callers are unaffected.
-- `make demo` remains NRT-only; the standard scope's schemas and marts are
-  bootstrapped empty by the demo but are not seeded or built by it.
+- `make demo` remains NRT-only: it seeds contract CSVs but runs dbt with
+  `--select tag:tempo,tag:no2`, so only NRT marts are built.
 
 ### Fixed
 
+- Granule-discovery config now defaults `lookback_hours` to unset so ad-hoc
+  standard-scope materialization uses the 24-hour standard lookback instead of
+  the NRT eight-hour default.
+- Discovery window parsing accepts trailing `Z` under Python 3.10 and rejects
+  inverted `window_start_utc`/`window_end_utc` pairs.
+- Scope-aware ingestion errors now name the active scope's region-registry
+  asset and granule inventory schema.
 - Documented the Chromium prerequisite for local docs render checks and
   corrected the releasing checklist so post-release CI verification targets
   the `main` commit rather than a tag push.
