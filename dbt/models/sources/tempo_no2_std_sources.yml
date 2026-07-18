@@ -1,0 +1,61 @@
+version: 2
+
+sources:
+  - name: tempo_no2_std_raw
+    schema: tempo_no2_std_raw
+    tables:
+      - name: region_hour_aggregates
+        meta:
+          dagster:
+            asset_key: [tempo, no2_std, raw, region_hour_aggregates]
+        loaded_at_field: ingested_at
+        freshness:
+          warn_after: {count: 30, period: hour}
+          error_after: {count: 60, period: hour}
+        columns:
+          - name: canonical_region_id
+            tests: [not_null]
+          - name: observation_hour
+            tests: [not_null]
+        tests:
+          - no_duplicate_grain:
+              arguments:
+                grain_columns: [observation_hour, canonical_region_id]
+      - name: grid_latest
+        meta:
+          dagster:
+            asset_key: [tempo, no2_std, raw, region_hour_aggregates]
+        columns:
+          - name: grid_row
+            tests: [not_null]
+          - name: grid_col
+            tests: [not_null]
+        tests:
+          - no_duplicate_grain:
+              arguments:
+                grain_columns: [grid_row, grid_col]
+
+  - name: tempo_no2_std_ops
+    schema: tempo_no2_std_ops
+    tables:
+      - name: region_registry
+        meta:
+          dagster:
+            asset_key: [tempo, no2_std, ops, region_registry]
+        columns:
+          - name: canonical_region_id
+            tests: [not_null, unique]
+      - name: granule_inventory
+        meta:
+          dagster:
+            asset_key: [tempo, no2_std, raw, granule_inventory]
+        columns:
+          - name: granule_id
+            tests: [not_null, unique]
+      - name: pipeline_run_events
+        meta:
+          dagster:
+            asset_key: [tempo, no2_std, raw, region_hour_aggregates]
+        columns:
+          - name: run_id
+            tests: [not_null]

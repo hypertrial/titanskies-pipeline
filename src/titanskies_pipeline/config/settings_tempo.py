@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+from dataclasses import dataclass
 from pathlib import Path
 
 from titanskies_pipeline.config._env import (
@@ -11,8 +12,11 @@ from titanskies_pipeline.config._env import (
     _optional_env_str,
 )
 from titanskies_pipeline.config.settings_warehouse import BASE_DIR
+from titanskies_pipeline.naming import SCOPE_NO2, SCOPE_NO2_STD
+from titanskies_pipeline.storage.duckdb.schemas.constants import hour_revision_sequence
 
 TEMPO_NO2_CONTRACT_PATH = BASE_DIR / "dbt" / "seeds" / "tempo_no2_contract.csv"
+TEMPO_NO2_STD_CONTRACT_PATH = BASE_DIR / "dbt" / "seeds" / "tempo_no2_std_contract.csv"
 
 
 def load_tempo_no2_contract(path: Path = TEMPO_NO2_CONTRACT_PATH) -> dict[str, object]:
@@ -88,6 +92,60 @@ TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED = _env_bool(
 )
 TEMPO_NO2_CONTRACT = load_tempo_no2_contract()
 
+# TEMPO NO2 L3 V04 standard (validated, slower-arriving) collection.
+TEMPO_NO2_STD_CMR_CONCEPT_ID = _optional_env_str("TEMPO_NO2_STD_CMR_CONCEPT_ID") or (
+    "C3685896708-LARC_CLOUD"
+)
+TEMPO_NO2_STD_DISCOVERY_LOOKBACK_HOURS = _env_int(
+    "TEMPO_NO2_STD_DISCOVERY_LOOKBACK_HOURS", 24
+)
+TEMPO_NO2_STD_RAW_DATA_DIR = (
+    BASE_DIR
+    / (_optional_env_str("TEMPO_NO2_STD_RAW_DATA_DIR") or "data/raw/tempo_no2_std")
+).resolve()
+TEMPO_NO2_STD_RAW_RETENTION_DAYS = _env_int("TEMPO_NO2_STD_RAW_RETENTION_DAYS", 30)
+TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED = _env_bool(
+    "TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED", False
+)
+TEMPO_NO2_STD_CONTRACT = load_tempo_no2_contract(TEMPO_NO2_STD_CONTRACT_PATH)
+
+
+@dataclass(frozen=True)
+class TempoScopeSettings:
+    cmr_concept_id: str
+    discovery_lookback_hours: int
+    raw_data_dir: Path
+    raw_retention_days: int
+    schedule_enabled: bool
+    contract: dict[str, object]
+    hour_revision_sequence: str
+
+
+def get_tempo_scope_settings(scope: str) -> TempoScopeSettings:
+    if scope == SCOPE_NO2:
+        return TempoScopeSettings(
+            cmr_concept_id=TEMPO_NO2_CMR_CONCEPT_ID,
+            discovery_lookback_hours=TEMPO_NO2_DISCOVERY_LOOKBACK_HOURS,
+            raw_data_dir=TEMPO_NO2_RAW_DATA_DIR,
+            raw_retention_days=TEMPO_NO2_RAW_RETENTION_DAYS,
+            schedule_enabled=TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED,
+            contract=TEMPO_NO2_CONTRACT,
+            hour_revision_sequence=hour_revision_sequence(scope=SCOPE_NO2),
+        )
+    if scope == SCOPE_NO2_STD:
+        return TempoScopeSettings(
+            cmr_concept_id=TEMPO_NO2_STD_CMR_CONCEPT_ID,
+            discovery_lookback_hours=TEMPO_NO2_STD_DISCOVERY_LOOKBACK_HOURS,
+            raw_data_dir=TEMPO_NO2_STD_RAW_DATA_DIR,
+            raw_retention_days=TEMPO_NO2_STD_RAW_RETENTION_DAYS,
+            schedule_enabled=TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED,
+            contract=TEMPO_NO2_STD_CONTRACT,
+            hour_revision_sequence=hour_revision_sequence(scope=SCOPE_NO2_STD),
+        )
+    raise ValueError(
+        f"Unknown TEMPO scope {scope!r}; expected {SCOPE_NO2!r} or {SCOPE_NO2_STD!r}"
+    )
+
 
 def resolve_geo_artifact_path(path: Path) -> Path:
     return path.expanduser().resolve()
@@ -102,6 +160,15 @@ __all__ = [
     "TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED",
     "TEMPO_NO2_RAW_DATA_DIR",
     "TEMPO_NO2_RAW_RETENTION_DAYS",
+    "TEMPO_NO2_STD_CMR_CONCEPT_ID",
+    "TEMPO_NO2_STD_CONTRACT",
+    "TEMPO_NO2_STD_CONTRACT_PATH",
+    "TEMPO_NO2_STD_DISCOVERY_LOOKBACK_HOURS",
+    "TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED",
+    "TEMPO_NO2_STD_RAW_DATA_DIR",
+    "TEMPO_NO2_STD_RAW_RETENTION_DAYS",
+    "TempoScopeSettings",
+    "get_tempo_scope_settings",
     "load_tempo_no2_contract",
     "resolve_geo_artifact_path",
 ]

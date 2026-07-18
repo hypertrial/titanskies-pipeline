@@ -12,11 +12,10 @@ from titanskies_pipeline.config import settings as _settings
 from titanskies_pipeline.storage.duckdb.schemas.constants import (
     TEMPO_NO2_OPS_SCHEMA,
     TEMPO_NO2_RAW_SCHEMA,
+    TEMPO_NO2_STD_OPS_SCHEMA,
+    TEMPO_NO2_STD_RAW_SCHEMA,
 )
-from titanskies_pipeline.storage.duckdb.schemas.tempo import (
-    bootstrap_all_tempo_tables,
-    ensure_tempo_indexes,
-)
+from titanskies_pipeline.storage.duckdb.schemas.tempo import bootstrap_all_tempo_tables
 
 logger = logging.getLogger(__name__)
 
@@ -131,16 +130,15 @@ def init_duck_db() -> None:
     conn = open_writable_duckdb_connection(path)
     if not _SCHEMA_LOGGED:
         logger.info(
-            "Ensuring DuckDB schemas (%s, %s)",
+            "Ensuring DuckDB schemas (%s, %s, %s, %s)",
             TEMPO_NO2_RAW_SCHEMA,
             TEMPO_NO2_OPS_SCHEMA,
+            TEMPO_NO2_STD_RAW_SCHEMA,
+            TEMPO_NO2_STD_OPS_SCHEMA,
         )
         _SCHEMA_LOGGED = True
     try:
-        conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{TEMPO_NO2_RAW_SCHEMA}"')
-        conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{TEMPO_NO2_OPS_SCHEMA}"')
         bootstrap_all_tempo_tables(conn)
-        ensure_tempo_indexes(conn)
         _SCHEMA_INITIALIZED = True
     finally:
         conn.close()
@@ -180,6 +178,8 @@ def _use_conn(conn=None):
 __all__ = [
     "TEMPO_NO2_OPS_SCHEMA",
     "TEMPO_NO2_RAW_SCHEMA",
+    "TEMPO_NO2_STD_OPS_SCHEMA",
+    "TEMPO_NO2_STD_RAW_SCHEMA",
     "_use_conn",
     "active_duckdb_path",
     "ensure_duck_db",

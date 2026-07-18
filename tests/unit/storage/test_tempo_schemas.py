@@ -36,14 +36,14 @@ def test_demo_seed_includes_mixed_coverage_and_zero_valid_rows(duck):
     assert rows[1][0:2] == ("CA-ON-3520005", 0.1)
 
 
-def test_populated_pre_v03_warehouse_requires_rebuild(tmp_path):
+def test_populated_pre_v04_warehouse_requires_rebuild(tmp_path):
     conn = duckdb.connect(str(tmp_path / "v01.duckdb"))
     conn.execute("create schema tempo_no2_raw")
     conn.execute(
         "create table tempo_no2_raw.region_granule_aggregates (granule_id varchar)"
     )
     conn.execute("insert into tempo_no2_raw.region_granule_aggregates values ('old')")
-    with pytest.raises(RuntimeError, match="schema 0.3 requires a rebuild"):
+    with pytest.raises(RuntimeError, match="schema 0.4 requires a rebuild"):
         bootstrap_all_tempo_tables(conn)
     conn.close()
 
@@ -75,7 +75,7 @@ def test_v01_ops_data_also_marks_warehouse_as_populated(tmp_path):
     )
     conn.execute("create table tempo_no2_ops.region_registry (id varchar)")
     conn.execute("insert into tempo_no2_ops.region_registry values ('US')")
-    with pytest.raises(RuntimeError, match="schema 0.3 requires a rebuild"):
+    with pytest.raises(RuntimeError, match="schema 0.4 requires a rebuild"):
         bootstrap_all_tempo_tables(conn)
     conn.close()
 

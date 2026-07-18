@@ -8,13 +8,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
-from titanskies_pipeline.config.settings import (
-    TEMPO_NO2_CMR_CONCEPT_ID,
-    TEMPO_NO2_CONTRACT,
-    TEMPO_NO2_DISCOVERY_LOOKBACK_HOURS,
-    TEMPO_NO2_RAW_DATA_DIR,
-    TEMPO_NO2_RAW_RETENTION_DAYS,
-)
+from titanskies_pipeline.config.settings import TEMPO_NO2_RAW_DATA_DIR
+from titanskies_pipeline.config.settings_tempo import get_tempo_scope_settings
 from titanskies_pipeline.geography.registry import (
     load_geo_artifacts,
     persist_geo_artifacts,
@@ -27,6 +22,7 @@ from titanskies_pipeline.ingestion.tempo.aggregate import (
 )
 from titanskies_pipeline.ingestion.tempo.cmr import discover_granules
 from titanskies_pipeline.ingestion.tempo.netcdf import NetcdfGrid, extract_grid
+from titanskies_pipeline.naming import SCOPE_NO2
 from titanskies_pipeline.storage.duckdb.connection import _use_conn, get_connection
 from titanskies_pipeline.storage.duckdb.granules import (
     DiscoveryMetrics,
@@ -53,30 +49,54 @@ class SyncMetrics:
 
 
 def sync_region_registry(
-    *, manifest_path: Path | None = None, allow_synthetic: bool = False
+    *,
+    manifest_path: Path | None = None,
+    scope: str = SCOPE_NO2,
+    allow_synthetic: bool = False,
 ) -> dict[str, int]:
     artifacts = load_geo_artifacts(
         manifest_path=manifest_path, allow_synthetic=allow_synthetic
     )
-    return persist_geo_artifacts(artifacts)
+    return persist_geo_artifacts(artifacts, scope=scope)
 
 
-def sync_granule_discovery(*, lookback_hours: int | None = None) -> DiscoveryMetrics:
-    hours = (
-        TEMPO_NO2_DISCOVERY_LOOKBACK_HOURS if lookback_hours is None else lookback_hours
-    )
-    if hours < 1:
-        raise ValueError("lookback_hours must be >= 1")
+def sync_granule_discovery(
+    *,
+    scope: str = SCOPE_NO2,
+    lookback_hours: int | None = None,
+    window_start: datetime | None = None,
+    window_end: datetime | None = None,
+) -> DiscoveryMetrics:
+    settings = get_tempo_scope_settings(scope)
+    has_window = window_start is not None or window_end is not None
+    if has_window:
+        if window_start is None or window_end is None:
+            raise ValueError("window_start and window_end must both be provided")
+        hours = None
+    else:
+        hours = (
+            settings.discovery_lookback_hours
+            if lookback_hours is None
+            else lookback_hours
+        )
+        if hours < 1:
+            raise ValueError("lookback_hours must be >= 1")
     granules = discover_granules(
-        lookback_hours=hours, concept_id=TEMPO_NO2_CMR_CONCEPT_ID
+        lookback_hours=hours,
+        concept_id=settings.cmr_concept_id,
+        window_start=window_start,
+        window_end=window_end,
     )
-    return upsert_discovered_granules(granules)
+    return upsert_discovered_granules(granules, scope=scope)
 
 
-def require_registered_geography(*, allow_synthetic: bool = False) -> None:
+def require_registered_geography(
+    *, scope: str = SCOPE_NO2, allow_synthetic: bool = False
+) -> None:
     with get_connection() as connection:
         row = connection.execute(
-            f"SELECT artifact_mode FROM {tempo_ops_tbl('geography_artifact_manifest')} LIMIT 1"
+            f"SELECT artifact_mode FROM "
+            f"{tempo_ops_tbl('geography_artifact_manifest', scope=scope)} LIMIT 1"
         ).fetchone()
     if not row:
         raise RuntimeError(
@@ -93,11 +113,17 @@ def _ensure_earthaccess_login() -> None:
     earthaccess.login(strategy="environment")
 
 
-def _granule_destination(granule_id: str) -> Path:
+def _raw_data_dir(scope: str) -> Path:
+    if scope == SCOPE_NO2:
+        return TEMPO_NO2_RAW_DATA_DIR
+    return get_tempo_scope_settings(scope).raw_data_dir
+
+
+def _granule_destination(granule_id: str, *, scope: str = SCOPE_NO2) -> Path:
     name = Path(granule_id).name
     if not name.endswith(".nc"):
         name = f"{granule_id.replace('/', '_')}.nc"
-    return TEMPO_NO2_RAW_DATA_DIR / name
+    return _raw_data_dir(scope) / name
 
 
 def _default_download(
@@ -106,7 +132,7 @@ def _default_download(
     import earthaccess
 
     _ensure_earthaccess_login()
-    TEMPO_NO2_RAW_DATA_DIR.mkdir(parents=True, exist_ok=True)
+    destination.parent.mkdir(parents=True, exist_ok=True)
     target = download_url or granule_id
     results = earthaccess.download([target], str(destination.parent))
     if not results:
@@ -140,6 +166,7 @@ def _load_sibling_grids(
     current_grid: NetcdfGrid,
     production: bool,
     download_fn: Callable[..., Path] | None,
+    scope: str = SCOPE_NO2,
     conn,
 ) -> tuple[list[tuple[str, NetcdfGrid]], list[tuple[str, str]]]:
     grids = [(current_granule_id, current_grid)]
@@ -147,6 +174,7 @@ def _load_sibling_grids(
     siblings = processed_sibling_records(
         _observation_hour(current_grid),
         exclude_granule_id=current_granule_id,
+        scope=scope,
         conn=conn,
     )
     seen = {current_granule_id}
@@ -154,7 +182,11 @@ def _load_sibling_grids(
         if sibling_id in seen:
             continue
         seen.add(sibling_id)
-        path = Path(local_path) if local_path else _granule_destination(sibling_id)
+        path = (
+            Path(local_path)
+            if local_path
+            else _granule_destination(sibling_id, scope=scope)
+        )
         restored_now = not path.exists()
         if restored_now:
             if not expected_checksum:
@@ -184,6 +216,7 @@ def process_downloaded_granule(
     local_path: Path,
     *,
     geometry_version: str,
+    scope: str = SCOPE_NO2,
     accepted_flags: str | None = None,
     weights: RegionWeights | None = None,
     region_meta: dict[str, tuple[str, str]] | None = None,
@@ -194,13 +227,15 @@ def process_downloaded_granule(
     download_fn: Callable[..., Path] | None = None,
     conn=None,
 ) -> int:
-    flags = accepted_flags or str(TEMPO_NO2_CONTRACT["accepted_quality_flags"])
+    flags = accepted_flags or str(
+        get_tempo_scope_settings(scope).contract["accepted_quality_flags"]
+    )
     with _use_conn(conn) as connection:
         if weights is None:
             manifest = connection.execute(
                 f"""
                 SELECT weights_path, weights_checksum, artifact_mode
-                FROM {tempo_ops_tbl("geography_artifact_manifest")}
+                FROM {tempo_ops_tbl("geography_artifact_manifest", scope=scope)}
                 WHERE geometry_version = ?
                 """,
                 [geometry_version],
@@ -219,7 +254,7 @@ def process_downloaded_granule(
             weights = load_region_weights(weights_path)
         production = bool(production)
         if region_meta is None:
-            region_meta = load_region_meta(conn=connection)
+            region_meta = load_region_meta(scope=scope, conn=connection)
 
         current_grid = extract_grid(local_path, production=production)
         grids, restored = _load_sibling_grids(
@@ -227,6 +262,7 @@ def process_downloaded_granule(
             current_grid=current_grid,
             production=production,
             download_fn=download_fn,
+            scope=scope,
             conn=connection,
         )
         aggregates = aggregate_region_hour(
@@ -255,11 +291,16 @@ def process_downloaded_granule(
 
         connection.execute("BEGIN TRANSACTION")
         try:
-            written = replace_region_hour_aggregates(aggregates, conn=connection)
-            upsert_grid_latest(latest, conn=connection)
+            written = replace_region_hour_aggregates(
+                aggregates, scope=scope, conn=connection
+            )
+            upsert_grid_latest(latest, scope=scope, conn=connection)
             for sibling_id, restored_path in restored:
                 mark_granule_status(
-                    sibling_id, local_path=restored_path, conn=connection
+                    sibling_id,
+                    local_path=restored_path,
+                    scope=scope,
+                    conn=connection,
                 )
             mark_granule_status(
                 granule_id,
@@ -272,6 +313,7 @@ def process_downloaded_granule(
                 observation_time=current_grid.observation_time,
                 observation_hour=_observation_hour(current_grid),
                 clear_error=True,
+                scope=scope,
                 conn=connection,
             )
             connection.execute("COMMIT")
@@ -283,10 +325,12 @@ def process_downloaded_granule(
 
 def process_pending_granules(
     *,
+    scope: str = SCOPE_NO2,
     download_fn: Callable[..., Path] | None = None,
     max_granules: int | None = None,
     allow_synthetic: bool = False,
 ) -> SyncMetrics:
+    settings = get_tempo_scope_settings(scope)
     downloaded = 0
     processed = 0
     aggregates_written = 0
@@ -296,7 +340,7 @@ def process_pending_granules(
         manifest = conn.execute(
             f"""
             SELECT geometry_version, weights_path, weights_checksum, artifact_mode
-            FROM {tempo_ops_tbl("geography_artifact_manifest")} LIMIT 1
+            FROM {tempo_ops_tbl("geography_artifact_manifest", scope=scope)} LIMIT 1
             """
         ).fetchone()
         if not manifest:
@@ -312,18 +356,19 @@ def process_pending_granules(
         if sha256_file(weights_path) != expected_checksum:
             raise RuntimeError("Grid-region weight artifact checksum mismatch")
         weights = load_region_weights(weights_path)
-        region_meta = load_region_meta(conn=conn)
+        region_meta = load_region_meta(scope=scope, conn=conn)
         raw_files_pruned = prune_processed_granule_files(
-            retention_days=TEMPO_NO2_RAW_RETENTION_DAYS,
-            raw_dir=TEMPO_NO2_RAW_DATA_DIR,
+            retention_days=settings.raw_retention_days,
+            raw_dir=_raw_data_dir(scope),
+            scope=scope,
             conn=conn,
         )
-        pending = list_pending_granule_records(conn=conn)
+        pending = list_pending_granule_records(scope=scope, conn=conn)
         if max_granules is not None:
             pending = pending[:max_granules]
 
         for granule_id, download_url in pending:
-            destination = _granule_destination(granule_id)
+            destination = _granule_destination(granule_id, scope=scope)
             try:
                 if not destination.exists():
                     _download_with(download_fn, granule_id, destination, download_url)
@@ -333,6 +378,7 @@ def process_pending_granules(
                     granule_id,
                     destination,
                     geometry_version=version,
+                    scope=scope,
                     weights=weights,
                     region_meta=region_meta,
                     production=mode == "production",
@@ -355,6 +401,7 @@ def process_pending_granules(
                     validation_status="failed",
                     processing_status="failed",
                     error_message=error_message,
+                    scope=scope,
                     conn=conn,
                 )
                 failures.append(granule_id)

@@ -129,22 +129,33 @@ def _preferred_netcdf_url(urls: list[str]) -> str | None:
     return usable[0] if usable else None
 
 
+def _to_naive_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value
+    return value.astimezone(timezone.utc).replace(tzinfo=None)
+
+
 def discover_granules(
     *,
-    lookback_hours: int,
+    lookback_hours: int | None = None,
+    window_start: datetime | None = None,
+    window_end: datetime | None = None,
     concept_id: str = TEMPO_NO2_CMR_CONCEPT_ID,
     now: datetime | None = None,
     search_fn: SearchGranulesFn | None = None,
 ) -> list[DiscoveredGranule]:
-    if lookback_hours < 1:
-        raise ValueError("lookback_hours must be >= 1")
-    current = now or datetime.now(timezone.utc)
-    end = (
-        current
-        if current.tzinfo is None
-        else current.astimezone(timezone.utc).replace(tzinfo=None)
-    )
-    start = end - timedelta(hours=lookback_hours)
+    has_window = window_start is not None or window_end is not None
+    if has_window:
+        if window_start is None or window_end is None:
+            raise ValueError("window_start and window_end must both be provided")
+        start = _to_naive_utc(window_start)
+        end = _to_naive_utc(window_end)
+    else:
+        if lookback_hours is None or lookback_hours < 1:
+            raise ValueError("lookback_hours must be >= 1")
+        current = now or datetime.now(timezone.utc)
+        end = _to_naive_utc(current)
+        start = end - timedelta(hours=lookback_hours)
     temporal = (
         start.strftime("%Y-%m-%dT%H:%M:%SZ"),
         end.strftime("%Y-%m-%dT%H:%M:%SZ"),

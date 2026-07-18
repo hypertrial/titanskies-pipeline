@@ -12,6 +12,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from titanskies_pipeline.config.settings import TEMPO_GEOGRAPHY_MANIFEST_PATH
+from titanskies_pipeline.naming import SCOPE_NO2
 from titanskies_pipeline.storage.duckdb.schemas.constants import (
     tempo_ops_tbl,
     tempo_raw_tbl,
@@ -192,7 +193,9 @@ def load_geo_artifacts(
     )
 
 
-def persist_geo_artifacts(artifacts: GeoArtifacts, *, conn=None) -> dict[str, int]:
+def persist_geo_artifacts(
+    artifacts: GeoArtifacts, *, scope: str = SCOPE_NO2, conn=None
+) -> dict[str, int]:
     from titanskies_pipeline.storage.duckdb.connection import _use_conn
 
     now = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -201,25 +204,29 @@ def persist_geo_artifacts(artifacts: GeoArtifacts, *, conn=None) -> dict[str, in
 
     with _use_conn(conn) as connection:
         existing = connection.execute(
-            f"SELECT geometry_version FROM {tempo_ops_tbl('geography_artifact_manifest')} LIMIT 1"
+            f"SELECT geometry_version FROM "
+            f"{tempo_ops_tbl('geography_artifact_manifest', scope=scope)} LIMIT 1"
         ).fetchone()
         if (
             existing
             and str(existing[0]) != artifacts.geometry_version
             and connection.execute(
-                f"SELECT 1 FROM {tempo_raw_tbl('region_hour_aggregates')} LIMIT 1"
+                f"SELECT 1 FROM "
+                f"{tempo_raw_tbl('region_hour_aggregates', scope=scope)} LIMIT 1"
             ).fetchone()
         ):
             raise RuntimeError(
-                "Geography version changes require a v0.3 warehouse rebuild"
+                "Geography version changes require a v0.4 warehouse rebuild"
             )
         connection.register("_tempo_region_registry", loaded)
         connection.execute("BEGIN TRANSACTION")
         try:
-            connection.execute(f"DELETE FROM {tempo_ops_tbl('region_registry')}")
+            connection.execute(
+                f"DELETE FROM {tempo_ops_tbl('region_registry', scope=scope)}"
+            )
             connection.execute(
                 f"""
-                INSERT INTO {tempo_ops_tbl("region_registry")}
+                INSERT INTO {tempo_ops_tbl("region_registry", scope=scope)}
                 SELECT country_code, region_type, source_region_id,
                        canonical_region_id, region_name, parent_region_id,
                        timezone, geometry_version, geometry_checksum, loaded_at
@@ -227,11 +234,13 @@ def persist_geo_artifacts(artifacts: GeoArtifacts, *, conn=None) -> dict[str, in
                 """
             )
             connection.execute(
-                f"DELETE FROM {tempo_ops_tbl('geography_artifact_manifest')}"
+                f"DELETE FROM "
+                f"{tempo_ops_tbl('geography_artifact_manifest', scope=scope)}"
             )
             connection.execute(
                 f"""
-                INSERT INTO {tempo_ops_tbl("geography_artifact_manifest")}
+                INSERT INTO
+                {tempo_ops_tbl("geography_artifact_manifest", scope=scope)}
                 (build_id, artifact_mode, geometry_version, source_manifest_sha256,
                  registry_path, weights_path, registry_checksum, weights_checksum,
                  grid_version, region_count, weight_count, loaded_at)

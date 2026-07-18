@@ -167,6 +167,7 @@ def test_tracked_data_files_are_inventory_scoped_and_synthetic():
     expected = {
         "config/geography_sources.json",
         "dbt/seeds/tempo_no2_contract.csv",
+        "dbt/seeds/tempo_no2_std_contract.csv",
         "tests/fixtures/cassettes/tempo_cmr_granules.json",
         "tests/fixtures/geo/tempo_grid_region_weights.parquet",
         "tests/fixtures/geo/tempo_region_registry.parquet",

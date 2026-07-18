@@ -55,3 +55,23 @@ Granule latency, checksum, and processing status.
 Explicit `zero_valid`, `low_coverage`, and `stale` issues by region and hour.
 Severity remains visible to operators but environmental quality rows are
 advisory and do not fail dbt builds.
+
+## Standard (V04) marts
+
+The `tempo:no2_std` scope publishes the identical mart shapes under a
+`tempo_no2_std_*` prefix, backed by the standard TEMPO_NO2_L3 V04 product
+(CMR `C3685896708-LARC_CLOUD`, DOI `10.5067/IS-40E/TEMPO/NO2_L3.004`). Column
+definitions and grains are the same as their NRT counterparts above; only the
+model/schema names and the source collection differ:
+
+- `tempo_no2_std_region_hourly`
+- `tempo_no2_std_region_latest`
+- `tempo_no2_std_region_anomalies`
+- `tempo_no2_std_country_hourly`
+- `tempo_no2_std_grid_latest`
+- `tempo_no2_std_region_registry`
+- `tempo_no2_std_granule_observability`
+- `tempo_no2_std_data_quality`
+
+Quality thresholds for the standard scope are governed independently by
+`dbt/seeds/tempo_no2_std_contract.csv`.

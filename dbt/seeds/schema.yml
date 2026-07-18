@@ -9,3 +9,11 @@ seeds:
         tests: [not_null]
       - name: accepted_quality_flags
         data_type: varchar
+  - name: tempo_no2_std_contract
+    columns:
+      - name: contract_key
+        tests: [not_null, unique]
+      - name: min_region_coverage
+        tests: [not_null]
+      - name: accepted_quality_flags
+        data_type: varchar

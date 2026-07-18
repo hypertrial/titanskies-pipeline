@@ -6,9 +6,11 @@ import pytest
 
 from titanskies_pipeline.config._reload_settings import reload_all_settings_modules
 from titanskies_pipeline.config.settings_tempo import (
+    get_tempo_scope_settings,
     load_tempo_no2_contract,
     resolve_geo_artifact_path,
 )
+from titanskies_pipeline.naming import SCOPE_NO2, SCOPE_NO2_STD
 
 
 def test_env_int_invalid_falls_back(monkeypatch, isolated_env):
@@ -112,6 +114,24 @@ def test_load_tempo_contract_rejects_duplicates_and_invalid_values(tmp_path):
     contract.write_text(header + "default,0.3.0,0.5,4,2,14,7,0|1\n")
     with pytest.raises(ValueError, match="thresholds"):
         load_tempo_no2_contract(contract)
+
+
+def test_get_tempo_scope_settings_nrt():
+    settings = get_tempo_scope_settings(SCOPE_NO2)
+    assert settings.hour_revision_sequence == "tempo_no2_hour_revision"
+    assert settings.cmr_concept_id
+
+
+def test_get_tempo_scope_settings_std():
+    settings = get_tempo_scope_settings(SCOPE_NO2_STD)
+    assert settings.hour_revision_sequence == "tempo_no2_std_hour_revision"
+    assert settings.raw_retention_days == 30
+    assert settings.contract["accepted_quality_flags"] == "0|1"
+
+
+def test_get_tempo_scope_settings_unknown_scope():
+    with pytest.raises(ValueError, match="Unknown TEMPO scope"):
+        get_tempo_scope_settings("bogus")
 
 
 def test_resolve_geo_artifact_path(tmp_path):

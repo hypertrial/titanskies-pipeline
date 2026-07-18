@@ -1,7 +1,10 @@
 # Data contracts
 
 `dbt/seeds/tempo_no2_contract.csv` contains exactly one `default` row and is the
-single quality-policy source for Python ingestion and dbt.
+single quality-policy source for Python ingestion and dbt for the `tempo:no2`
+(NRT) scope. `dbt/seeds/tempo_no2_std_contract.csv` is the equivalent,
+independently versioned contract for the `tempo:no2_std` (standard) scope.
+Both contracts share the same shape:
 
 | Field | Meaning |
 | --- | --- |
@@ -15,9 +18,12 @@ single quality-policy source for Python ingestion and dbt.
 
 Changes require dbt unit and golden tests plus an Unreleased changelog entry.
 Do not add environment overrides: differing runtime and warehouse policy would
-make a row appear accepted by one layer and rejected by another.
+make a row appear accepted by one layer and rejected by another. Each scope's
+contract is versioned and invalidated independently; changing
+`tempo_no2_contract.csv` does not affect `tempo_no2_std_contract.csv` or vice
+versa.
 
-Public grains are:
+Public grains are (identical for the `tempo_no2_std_*` mart family):
 
 - region-hour for `tempo_no2_region_hourly`;
 - one row per region for `tempo_no2_region_latest`;

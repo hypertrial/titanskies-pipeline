@@ -6,9 +6,16 @@ from typing import Final, Mapping, Sequence
 
 from dagster import AssetKey
 
-from titanskies_pipeline.naming import SCOPE_NO2, SOURCE_TEMPO, asset_key, schema_name
+from titanskies_pipeline.naming import (
+    SCOPE_NO2,
+    SCOPE_NO2_STD,
+    SOURCE_TEMPO,
+    asset_key,
+    schema_name,
+)
 
 DBT_SOURCE_TEMPO_NO2: Final = "tempo_no2"
+DBT_SOURCE_TEMPO_NO2_STD: Final = "tempo_no2_std"
 
 TEMPO_NO2_STAGING_SCHEMA: Final = schema_name(SOURCE_TEMPO, SCOPE_NO2, "staging")
 TEMPO_NO2_INTERMEDIATE_SCHEMA: Final = schema_name(
@@ -18,6 +25,18 @@ TEMPO_NO2_MARTS_SCHEMA: Final = schema_name(SOURCE_TEMPO, SCOPE_NO2, "marts")
 TEMPO_NO2_OBSERVABILITY_SCHEMA: Final = schema_name(
     SOURCE_TEMPO, SCOPE_NO2, "observability"
 )
+
+TEMPO_NO2_STD_STAGING_SCHEMA: Final = schema_name(
+    SOURCE_TEMPO, SCOPE_NO2_STD, "staging"
+)
+TEMPO_NO2_STD_INTERMEDIATE_SCHEMA: Final = schema_name(
+    SOURCE_TEMPO, SCOPE_NO2_STD, "intermediate"
+)
+TEMPO_NO2_STD_MARTS_SCHEMA: Final = schema_name(SOURCE_TEMPO, SCOPE_NO2_STD, "marts")
+TEMPO_NO2_STD_OBSERVABILITY_SCHEMA: Final = schema_name(
+    SOURCE_TEMPO, SCOPE_NO2_STD, "observability"
+)
+
 DBT_FALLBACK_SCHEMA: Final = "dbt"
 
 TEMPO_NO2_OBSERVABILITY_MODELS: Final[tuple[str, ...]] = (
@@ -25,11 +44,20 @@ TEMPO_NO2_OBSERVABILITY_MODELS: Final[tuple[str, ...]] = (
     "tempo_no2_granule_observability",
 )
 
+TEMPO_NO2_STD_OBSERVABILITY_MODELS: Final[tuple[str, ...]] = (
+    "tempo_no2_std_data_quality",
+    "tempo_no2_std_granule_observability",
+)
+
 DBT_MODELED_SCHEMAS: Final[tuple[str, ...]] = (
     TEMPO_NO2_STAGING_SCHEMA,
     TEMPO_NO2_INTERMEDIATE_SCHEMA,
     TEMPO_NO2_MARTS_SCHEMA,
     TEMPO_NO2_OBSERVABILITY_SCHEMA,
+    TEMPO_NO2_STD_STAGING_SCHEMA,
+    TEMPO_NO2_STD_INTERMEDIATE_SCHEMA,
+    TEMPO_NO2_STD_MARTS_SCHEMA,
+    TEMPO_NO2_STD_OBSERVABILITY_SCHEMA,
 )
 
 
@@ -39,9 +67,21 @@ def resolve_source_slug(
     fqn: Sequence[str] | None = None,
 ) -> str:
     path_fqn = list(fqn or props.get("fqn") or [])
+    # Standard-scope folder is a longer, more specific prefix of the NRT folder
+    # name, so it must be checked first to avoid the NRT branch shadowing it.
+    if len(path_fqn) >= 2 and path_fqn[1] == DBT_SOURCE_TEMPO_NO2_STD:
+        return DBT_SOURCE_TEMPO_NO2_STD
     if len(path_fqn) >= 2 and path_fqn[1] == DBT_SOURCE_TEMPO_NO2:
         return DBT_SOURCE_TEMPO_NO2
     name = str(props.get("name") or "")
+    if name.startswith(
+        (
+            "stg_tempo_no2_std_",
+            "int_tempo_no2_std_",
+            "tempo_no2_std_",
+        )
+    ):
+        return DBT_SOURCE_TEMPO_NO2_STD
     if name.startswith(
         (
             "stg_tempo_no2_",
@@ -54,27 +94,69 @@ def resolve_source_slug(
     return DBT_FALLBACK_SCHEMA
 
 
+def _tempo_layer(
+    model_name: str,
+    props: Mapping[str, object] | None = None,
+    *,
+    fqn: Sequence[str] | None = None,
+    observability_models: Sequence[str],
+    staging_prefix: str,
+    intermediate_prefix: str,
+) -> str:
+    path_fqn = list(fqn or (props or {}).get("fqn") or [])
+    for segment in path_fqn:
+        if segment in {"staging", "intermediate", "marts", "observability"}:
+            return segment
+    if model_name.startswith(staging_prefix):
+        return "staging"
+    if model_name.startswith(intermediate_prefix):
+        return "intermediate"
+    if model_name in observability_models:
+        return "observability"
+    return "marts"
+
+
 def _tempo_no2_layer(
     model_name: str,
     props: Mapping[str, object] | None = None,
     *,
     fqn: Sequence[str] | None = None,
 ) -> str:
-    path_fqn = list(fqn or (props or {}).get("fqn") or [])
-    for segment in path_fqn:
-        if segment in {"staging", "intermediate", "marts", "observability"}:
-            return segment
-    if model_name.startswith("stg_tempo_no2_"):
-        return "staging"
-    if model_name.startswith("int_tempo_no2_"):
-        return "intermediate"
-    if model_name in TEMPO_NO2_OBSERVABILITY_MODELS:
-        return "observability"
-    return "marts"
+    return _tempo_layer(
+        model_name,
+        props,
+        fqn=fqn,
+        observability_models=TEMPO_NO2_OBSERVABILITY_MODELS,
+        staging_prefix="stg_tempo_no2_",
+        intermediate_prefix="int_tempo_no2_",
+    )
+
+
+def _tempo_no2_std_layer(
+    model_name: str,
+    props: Mapping[str, object] | None = None,
+    *,
+    fqn: Sequence[str] | None = None,
+) -> str:
+    return _tempo_layer(
+        model_name,
+        props,
+        fqn=fqn,
+        observability_models=TEMPO_NO2_STD_OBSERVABILITY_MODELS,
+        staging_prefix="stg_tempo_no2_std_",
+        intermediate_prefix="int_tempo_no2_std_",
+    )
 
 
 def _tempo_no2_subject(model_name: str) -> str:
     for prefix in ("stg_tempo_no2_", "int_tempo_no2_", "tempo_no2_", "tempo_"):
+        if model_name.startswith(prefix):
+            return model_name[len(prefix) :]
+    return model_name
+
+
+def _tempo_no2_std_subject(model_name: str) -> str:
+    for prefix in ("stg_tempo_no2_std_", "int_tempo_no2_std_", "tempo_no2_std_"):
         if model_name.startswith(prefix):
             return model_name[len(prefix) :]
     return model_name
@@ -87,6 +169,13 @@ def dbt_model_asset_key(
 ) -> AssetKey:
     source = resolve_source_slug(props, fqn=fqn)
     name = str(props.get("name") or "")
+    if source == DBT_SOURCE_TEMPO_NO2_STD:
+        return asset_key(
+            SOURCE_TEMPO,
+            SCOPE_NO2_STD,
+            _tempo_no2_std_layer(name, props, fqn=fqn),
+            _tempo_no2_std_subject(name),
+        )
     if source == DBT_SOURCE_TEMPO_NO2:
         return asset_key(
             SOURCE_TEMPO,
@@ -101,10 +190,15 @@ __all__ = [
     "DBT_FALLBACK_SCHEMA",
     "DBT_MODELED_SCHEMAS",
     "DBT_SOURCE_TEMPO_NO2",
+    "DBT_SOURCE_TEMPO_NO2_STD",
     "TEMPO_NO2_INTERMEDIATE_SCHEMA",
     "TEMPO_NO2_MARTS_SCHEMA",
     "TEMPO_NO2_OBSERVABILITY_SCHEMA",
     "TEMPO_NO2_STAGING_SCHEMA",
+    "TEMPO_NO2_STD_INTERMEDIATE_SCHEMA",
+    "TEMPO_NO2_STD_MARTS_SCHEMA",
+    "TEMPO_NO2_STD_OBSERVABILITY_SCHEMA",
+    "TEMPO_NO2_STD_STAGING_SCHEMA",
     "dbt_model_asset_key",
     "resolve_source_slug",
 ]

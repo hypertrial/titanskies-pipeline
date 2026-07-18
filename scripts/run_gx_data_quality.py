@@ -40,6 +40,34 @@ PUBLIC_RELATIONS: tuple[tuple[str, str, tuple[str, ...], tuple[str, ...], int], 
         ("canonical_region_id", "observation_hour", "issue_type", "severity"),
         0,
     ),
+    (
+        "tempo_no2_std_marts",
+        "tempo_no2_std_region_hourly",
+        ("canonical_region_id", "observation_hour"),
+        ("canonical_region_id", "observation_hour", "no2_mean", "is_analysis_ready"),
+        0,
+    ),
+    (
+        "tempo_no2_std_marts",
+        "tempo_no2_std_region_latest",
+        ("canonical_region_id",),
+        ("canonical_region_id", "latest_observation_hour", "data_age_hours"),
+        0,
+    ),
+    (
+        "tempo_no2_std_marts",
+        "tempo_no2_std_country_hourly",
+        ("country_code", "observation_hour"),
+        ("country_code", "observation_hour", "no2_mean"),
+        0,
+    ),
+    (
+        "tempo_no2_std_observability",
+        "tempo_no2_std_data_quality",
+        ("canonical_region_id", "observation_hour", "issue_type"),
+        ("canonical_region_id", "observation_hour", "issue_type", "severity"),
+        0,
+    ),
 )
 
 

@@ -5,7 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from titanskies_pipeline.naming import SCOPE_NO2, SOURCE_TEMPO, flat_name
+from titanskies_pipeline.naming import (
+    SCOPE_NO2,
+    SCOPE_NO2_STD,
+    SOURCE_TEMPO,
+    flat_name,
+)
 
 ScopeStep = Literal["discovery", "ingest", "dbt", "full"]
 SCOPE_STEPS: tuple[ScopeStep, ...] = ("discovery", "ingest", "dbt", "full")
@@ -59,7 +64,18 @@ TEMPO_NO2_SCOPE = ScopeSpec(
     dbt_select="+tag:tempo,tag:no2",
 )
 
-SHIPPED_SCOPE_SPECS: tuple[ScopeSpec, ...] = (TEMPO_NO2_SCOPE,)
+TEMPO_NO2_STD_SCOPE = ScopeSpec(
+    source=SOURCE_TEMPO,
+    scope=SCOPE_NO2_STD,
+    label="TEMPO NO2 Standard",
+    discovery_job_name="tempo_no2_std_granule_discovery",
+    ingest_job_name="tempo_no2_std_hourly_ingest",
+    dbt_job_name="tempo_no2_std_dbt_build",
+    full_job_name="tempo_no2_std_full_pipeline",
+    dbt_select="+tag:tempo,tag:no2_std",
+)
+
+SHIPPED_SCOPE_SPECS: tuple[ScopeSpec, ...] = (TEMPO_NO2_SCOPE, TEMPO_NO2_STD_SCOPE)
 
 
 def iter_scope_specs(*, source: str | None = None) -> tuple[ScopeSpec, ...]:
@@ -83,6 +99,7 @@ __all__ = [
     "ScopeSpec",
     "ScopeStep",
     "TEMPO_NO2_SCOPE",
+    "TEMPO_NO2_STD_SCOPE",
     "get_scope_spec",
     "iter_scope_specs",
 ]

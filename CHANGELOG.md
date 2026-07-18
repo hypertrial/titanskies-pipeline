@@ -6,6 +6,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Added
+
+- Added a second, independent TEMPO NO2 scope, `tempo:no2_std` (standard,
+  V04, CMR `C3685896708-LARC_CLOUD`, DOI `10.5067/IS-40E/TEMPO/NO2_L3.004`),
+  alongside the existing `tempo:no2` (NRT) scope. The standard scope ships
+  its own settings, geography/granule/ops storage, Dagster assets/jobs
+  (`tempo_no2_std_granule_discovery`, `tempo_no2_std_hourly_ingest`,
+  `tempo_no2_std_dbt_build`, `tempo_no2_std_full_pipeline`), a
+  disabled-by-default schedule (`tempo_no2_std_pipeline_schedule`), and a
+  parallel `dbt/models/tempo_no2_std/` model tree with an independent
+  `dbt/seeds/tempo_no2_std_contract.csv` quality contract.
+- Added explicit `window_start_utc`/`window_end_utc` discovery-window support
+  to `discover_granules`, `sync_granule_discovery`, and the granule-discovery
+  op config, overriding `lookback_hours` for chunked, resumable backfills.
+  See the [chunked backfill guide](docs/guides/backfill-30-days.md).
+- Added [Upgrade to v0.4](docs/getting-started/upgrade-v04.md).
+
+### Changed
+
+- Bumped the warehouse schema version to `0.4`. `bootstrap_all_tempo_tables`
+  now bootstraps schemas/tables/sequences for both scopes; a populated
+  pre-0.4 warehouse now raises an error requiring a schema 0.4 rebuild rather
+  than being reused in place.
+- `tempo_ops_tbl`/`tempo_raw_tbl` and the DuckDB-backed sync/registry/granule
+  helpers are now scope-aware (`scope: str = "no2"` by default), so existing
+  NRT callers are unaffected.
+- `make demo` remains NRT-only; the standard scope's schemas and marts are
+  bootstrapped empty by the demo but are not seeded or built by it.
+
 ### Fixed
 
 - Documented the Chromium prerequisite for local docs render checks and

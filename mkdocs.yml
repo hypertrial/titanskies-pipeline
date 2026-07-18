@@ -15,6 +15,7 @@ nav:
       - Build geography artifacts: getting-started/build-geography-artifacts.md
       - Upgrade to v0.2: getting-started/upgrade-v02.md
       - Upgrade to v0.3: getting-started/upgrade-v03.md
+      - Upgrade to v0.4: getting-started/upgrade-v04.md
   - Guides:
       - Run the pipeline: guides/run-the-pipeline.md
       - Backfill 30 days: guides/backfill-30-days.md

@@ -16,8 +16,10 @@ from titanskies_pipeline.geography.tempo_grid import cell_area_km2
 from titanskies_pipeline.ingestion.tempo.aggregate import RegionHourAggregate
 from titanskies_pipeline.ingestion.tempo.cmr import DiscoveredGranule
 from titanskies_pipeline.ingestion.tempo.netcdf import NetcdfGrid, quality_mask
+from titanskies_pipeline.naming import SCOPE_NO2
 from titanskies_pipeline.storage.duckdb.connection import _use_conn
 from titanskies_pipeline.storage.duckdb.schemas.constants import (
+    hour_revision_sequence,
     tempo_ops_tbl,
     tempo_raw_tbl,
 )
@@ -35,7 +37,7 @@ def _now() -> datetime:
 
 
 def upsert_discovered_granules(
-    granules: list[DiscoveredGranule], *, conn=None
+    granules: list[DiscoveredGranule], *, scope: str = SCOPE_NO2, conn=None
 ) -> DiscoveryMetrics:
     if not granules:
         return DiscoveryMetrics(found=0, inserted=0, refreshed=0)
@@ -60,13 +62,14 @@ def upsert_discovered_granules(
             inserted = connection.execute(
                 f"""
                 SELECT count(*) FROM _tempo_discovery_batch AS source
-                LEFT JOIN {tempo_ops_tbl("granule_inventory")} AS target USING (granule_id)
+                LEFT JOIN {tempo_ops_tbl("granule_inventory", scope=scope)} AS target
+                    USING (granule_id)
                 WHERE target.granule_id IS NULL
                 """
             ).fetchone()[0]
             connection.execute(
                 f"""
-                MERGE INTO {tempo_ops_tbl("granule_inventory")} AS target
+                MERGE INTO {tempo_ops_tbl("granule_inventory", scope=scope)} AS target
                 USING _tempo_discovery_batch AS source
                 ON target.granule_id = source.granule_id
                 WHEN MATCHED THEN UPDATE SET
@@ -104,6 +107,7 @@ def upsert_discovered_granules(
 def mark_granule_status(
     granule_id: str,
     *,
+    scope: str = SCOPE_NO2,
     download_status: str | None = None,
     validation_status: str | None = None,
     processing_status: str | None = None,
@@ -149,22 +153,27 @@ def mark_granule_status(
     values.append(granule_id)
     with _use_conn(conn) as connection:
         connection.execute(
-            f"UPDATE {tempo_ops_tbl('granule_inventory')} "
+            f"UPDATE {tempo_ops_tbl('granule_inventory', scope=scope)} "
             f"SET {', '.join(fields)} WHERE granule_id = ?",
             values,
         )
 
 
-def list_pending_granules(*, conn=None) -> list[str]:
-    return [granule_id for granule_id, _url in list_pending_granule_records(conn=conn)]
+def list_pending_granules(*, scope: str = SCOPE_NO2, conn=None) -> list[str]:
+    return [
+        granule_id
+        for granule_id, _url in list_pending_granule_records(scope=scope, conn=conn)
+    ]
 
 
-def list_pending_granule_records(*, conn=None) -> list[tuple[str, str | None]]:
+def list_pending_granule_records(
+    *, scope: str = SCOPE_NO2, conn=None
+) -> list[tuple[str, str | None]]:
     with _use_conn(conn) as connection:
         rows = connection.execute(
             f"""
             SELECT granule_id, download_url
-            FROM {tempo_ops_tbl("granule_inventory")}
+            FROM {tempo_ops_tbl("granule_inventory", scope=scope)}
             WHERE download_status IN ('pending', 'failed')
                OR validation_status IN ('pending', 'failed')
                OR processing_status IN ('pending', 'failed')
@@ -175,13 +184,17 @@ def list_pending_granule_records(*, conn=None) -> list[tuple[str, str | None]]:
 
 
 def processed_sibling_records(
-    observation_hour: datetime, *, exclude_granule_id: str, conn=None
+    observation_hour: datetime,
+    *,
+    exclude_granule_id: str,
+    scope: str = SCOPE_NO2,
+    conn=None,
 ) -> list[tuple[str, str | None, str | None, str | None]]:
     with _use_conn(conn) as connection:
         rows = connection.execute(
             f"""
             SELECT granule_id, local_path, download_url, checksum_sha256
-            FROM {tempo_ops_tbl("granule_inventory")}
+            FROM {tempo_ops_tbl("granule_inventory", scope=scope)}
             WHERE observation_hour = ?
               AND processing_status = 'processed'
               AND granule_id <> ?
@@ -195,7 +208,12 @@ def processed_sibling_records(
 
 
 def prune_processed_granule_files(
-    *, retention_days: int, raw_dir: Path, now: datetime | None = None, conn=None
+    *,
+    retention_days: int,
+    raw_dir: Path,
+    scope: str = SCOPE_NO2,
+    now: datetime | None = None,
+    conn=None,
 ) -> int:
     if retention_days < 1:
         raise ValueError("retention_days must be at least 1")
@@ -205,7 +223,8 @@ def prune_processed_granule_files(
     with _use_conn(conn) as connection:
         rows = connection.execute(
             f"""
-            SELECT granule_id, local_path FROM {tempo_ops_tbl("granule_inventory")}
+            SELECT granule_id, local_path
+            FROM {tempo_ops_tbl("granule_inventory", scope=scope)}
             WHERE processing_status = 'processed' AND processed_at < ?
               AND local_path IS NOT NULL
             """,
@@ -223,7 +242,7 @@ def prune_processed_granule_files(
             existed = candidate.exists()
             candidate.unlink(missing_ok=True)
             connection.execute(
-                f"UPDATE {tempo_ops_tbl('granule_inventory')} "
+                f"UPDATE {tempo_ops_tbl('granule_inventory', scope=scope)} "
                 "SET local_path = NULL WHERE granule_id = ?",
                 [granule_id],
             )
@@ -232,7 +251,7 @@ def prune_processed_granule_files(
 
 
 def replace_region_hour_aggregates(
-    aggregates: list[RegionHourAggregate], *, conn=None
+    aggregates: list[RegionHourAggregate], *, scope: str = SCOPE_NO2, conn=None
 ) -> int:
     if not aggregates:
         raise ValueError("Region-hour replacement cannot be empty")
@@ -242,16 +261,16 @@ def replace_region_hour_aggregates(
     now = _now()
     with _use_conn(conn) as connection:
         revision = connection.execute(
-            "SELECT nextval('tempo_no2_hour_revision')"
+            f"SELECT nextval('{hour_revision_sequence(scope=scope)}')"
         ).fetchone()[0]
         connection.execute(
-            f"DELETE FROM {tempo_raw_tbl('region_hour_aggregates')} "
+            f"DELETE FROM {tempo_raw_tbl('region_hour_aggregates', scope=scope)} "
             "WHERE observation_hour = CAST(? AS TIMESTAMP)",
             [next(iter(hours))],
         )
         connection.executemany(
             f"""
-            INSERT INTO {tempo_raw_tbl("region_hour_aggregates")}
+            INSERT INTO {tempo_raw_tbl("region_hour_aggregates", scope=scope)}
             (observation_hour, canonical_region_id, country_code, region_type,
              no2_mean, no2_median, no2_p90, valid_pixel_count, total_pixel_count,
              valid_area_km2, total_area_km2, coverage_fraction,
@@ -336,13 +355,13 @@ def grid_latest_batch(
     )
 
 
-def upsert_grid_latest(batch: pa.Table, *, conn=None) -> int:
+def upsert_grid_latest(batch: pa.Table, *, scope: str = SCOPE_NO2, conn=None) -> int:
     with _use_conn(conn) as connection:
         connection.register("_tempo_grid_latest_batch", batch)
         try:
             connection.execute(
                 f"""
-                INSERT INTO {tempo_raw_tbl("grid_latest")}
+                INSERT INTO {tempo_raw_tbl("grid_latest", scope=scope)}
                 SELECT grid_row, grid_col, latitude, longitude, cell_area_km2,
                        observation_time, CAST(observation_hour AS TIMESTAMP), no2,
                        quality_flag, quality_flag_accepted, granule_id, ingested_at
@@ -368,11 +387,13 @@ def upsert_grid_latest(batch: pa.Table, *, conn=None) -> int:
     return batch.num_rows
 
 
-def load_region_meta(*, conn=None) -> dict[str, tuple[str, str]]:
+def load_region_meta(
+    *, scope: str = SCOPE_NO2, conn=None
+) -> dict[str, tuple[str, str]]:
     with _use_conn(conn) as connection:
         rows = connection.execute(
             f"SELECT canonical_region_id, country_code, region_type "
-            f"FROM {tempo_ops_tbl('region_registry')}"
+            f"FROM {tempo_ops_tbl('region_registry', scope=scope)}"
         ).fetchall()
     return {str(row[0]): (str(row[1]), str(row[2])) for row in rows}
 

@@ -167,6 +167,38 @@ def test_discovery_preserves_nullable_metadata_and_query_window():
         discover_granules(lookback_hours=0, search_fn=search_fn)
 
 
+def test_discovery_explicit_window_overrides_lookback():
+    captured = {}
+
+    def search_fn(**kwargs):
+        captured.update(kwargs)
+        return []
+
+    discover_granules(
+        window_start=datetime(2026, 7, 1, 0, tzinfo=timezone.utc),
+        window_end=datetime(2026, 7, 2, 0, tzinfo=timezone.utc),
+        concept_id="TEST",
+        search_fn=search_fn,
+    )
+    assert captured["temporal"] == (
+        "2026-07-01T00:00:00Z",
+        "2026-07-02T00:00:00Z",
+    )
+
+
+def test_discovery_requires_both_window_bounds():
+    with pytest.raises(ValueError, match="window_start and window_end"):
+        discover_granules(
+            window_start=datetime(2026, 7, 1, 0),
+            search_fn=lambda **_kwargs: [],
+        )
+    with pytest.raises(ValueError, match="window_start and window_end"):
+        discover_granules(
+            window_end=datetime(2026, 7, 1, 0),
+            search_fn=lambda **_kwargs: [],
+        )
+
+
 def test_discovery_uses_public_earthaccess_search_without_login(monkeypatch):
     earthaccess = SimpleNamespace(
         search_data=lambda **_kwargs: [

@@ -15,7 +15,7 @@ timezone-boundary-builder.
 
 ## NASA TEMPO source
 
-TitanSkies uses this collection:
+TitanSkies uses these collections:
 
 | Field | Authoritative value |
 | --- | --- |
@@ -29,13 +29,25 @@ TitanSkies uses this collection:
 | Data-use guidance | [NASA Earthdata Data Use and Citation Guidance](https://www.earthdata.nasa.gov/engage/open-data-services-software-policies/data-use-guidance) |
 | Metadata access date | 2026-07-17 |
 
-The DOI above was returned by current authoritative NASA CMR UMM-C metadata on
-2026-07-17; it was not inferred. Recheck CMR and the ASDC citation page before
-each release. NASA-led mission data without a marked restriction are CC0 by
-default under Earthdata guidance, but users should cite the dataset, describe
-how it was used, acknowledge NASA as the source, respect any item-specific
-restriction, avoid falsely claiming copyright in NASA material, and never
-imply NASA endorsement.
+| Field | Authoritative value |
+| --- | --- |
+| Short name/version | `TEMPO_NO2_L3`, `V04` |
+| Native collection ID | `TEMPO_NO2_L3_V04` |
+| CMR concept ID | `C3685896708-LARC_CLOUD` |
+| Title | TEMPO gridded NO2 tropospheric and stratospheric columns V04 (standard, PROVISIONAL) |
+| Creators | Xiong Liu |
+| DOI | [10.5067/IS-40E/TEMPO/NO2_L3.004](https://doi.org/10.5067/IS-40E/TEMPO/NO2_L3.004) |
+| Citation page | [NASA Earthdata TEMPO_NO2_L3_V04](https://www.earthdata.nasa.gov/data/catalog/larc-cloud-tempo-no2-l3-v04) |
+| Data-use guidance | [NASA Earthdata Data Use and Citation Guidance](https://www.earthdata.nasa.gov/engage/open-data-services-software-policies/data-use-guidance) |
+| Metadata access date | 2026-07-18 |
+
+The DOIs above were returned by current authoritative NASA CMR/Earthdata
+metadata on their respective access dates; they were not inferred. Recheck
+CMR and the citation pages before each release. NASA-led mission data without
+a marked restriction are CC0 by default under Earthdata guidance, but users
+should cite the dataset, describe how it was used, acknowledge NASA as the
+source, respect any item-specific restriction, avoid falsely claiming
+copyright in NASA material, and never imply NASA endorsement.
 
 TitanSkies downloads granules locally, validates the operational grid and
 quality flags, calculates area-weighted administrative aggregates, and retains

@@ -91,12 +91,16 @@ def test_environment_inventory_is_documented():
 
 def test_public_models_and_registered_jobs_are_documented():
     combined = "\n".join(path.read_text() for path in DOCS_DIR.rglob("*.md"))
+    tempo_families = ("tempo_no2", "tempo_no2_std")
     marts = {
-        path.stem for path in (REPO_ROOT / "dbt/models/tempo_no2/marts").glob("*.sql")
+        path.stem
+        for family in tempo_families
+        for path in (REPO_ROOT / f"dbt/models/{family}/marts").glob("*.sql")
     }
     observability = {
         path.stem
-        for path in (REPO_ROOT / "dbt/models/tempo_no2/observability").glob("*.sql")
+        for family in tempo_families
+        for path in (REPO_ROOT / f"dbt/models/{family}/observability").glob("*.sql")
     }
     scope_registry = (
         REPO_ROOT / "src/titanskies_pipeline/orchestration/scope_registry.py"
@@ -105,9 +109,9 @@ def test_public_models_and_registered_jobs_are_documented():
         re.findall(r'(?:discovery|ingest|dbt|full)_job_name="([^"]+)"', scope_registry)
     )
 
-    assert len(marts) == 6
-    assert len(observability) == 2
-    assert len(jobs) == 4
+    assert len(marts) == 12
+    assert len(observability) == 4
+    assert len(jobs) == 8
     for name in marts | observability | jobs:
         assert name in combined, name
 

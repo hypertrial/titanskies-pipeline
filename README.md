@@ -6,8 +6,9 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 TitanSkies Pipeline is an open-source, local-first NASA TEMPO NO₂ warehouse.
-Version `0.3.1` publishes administrative history and native-grid latest
-observations for Canada, the United States, and Mexico.
+Version `0.4.0` publishes administrative history and native-grid latest
+observations for Canada, the United States, and Mexico, across two parallel
+scopes: `tempo:no2` (near-real-time) and `tempo:no2_std` (standard, V04).
 
 Dagster coordinates Earthdata discovery, NetCDF processing, DuckDB storage,
 and dbt publication. Every operator controls the resulting local DuckDB file;
@@ -84,13 +85,16 @@ The pipeline is intentionally local and inspectable:
   processing and a durable DuckDB granule ledger.
 - Pinned overlap weights aggregate native TEMPO cells into Canadian, US, and
   Mexican administrative regions.
-- Dagster runs discovery, ingestion, dbt publication, and the full pipeline.
-- dbt publishes six analyst marts and two observability models.
+- Dagster runs discovery, ingestion, dbt publication, and the full pipeline
+  independently per scope (`tempo_no2_*` and `tempo_no2_std_*` jobs).
+- dbt publishes six analyst marts and two observability models per scope.
 
 Query `tempo_no2_marts` first and use `tempo_no2_observability` to investigate
 freshness and quality. The main historical relation is
 `tempo_no2_region_hourly`; `tempo_no2_grid_latest` intentionally retains only
-the latest supported-country observation for each native 0.02° grid cell.
+the latest supported-country observation for each native 0.02° grid cell. The
+standard scope publishes the identical shapes under `tempo_no2_std_marts`
+and `tempo_no2_std_observability`.
 
 ```sql
 select *
@@ -100,8 +104,11 @@ where is_analysis_ready;
 
 See the [Architecture](docs/concepts/architecture.md), [Data contracts](docs/reference/data-contracts.md),
 and [Data dictionary](docs/reference/data-dictionary.md) for the complete model.
-TitanSkies v0.3 requires a clean derived-warehouse rebuild; older raw NetCDF
-files and geography source caches remain reusable.
+TitanSkies v0.4 requires a clean derived-warehouse rebuild; older raw NetCDF
+files and geography source caches remain reusable. `make demo` only builds
+the `tempo:no2` (NRT) scope; see
+[Upgrade to v0.4](docs/getting-started/upgrade-v04.md) for enabling the
+standard scope.
 
 ## Community
 

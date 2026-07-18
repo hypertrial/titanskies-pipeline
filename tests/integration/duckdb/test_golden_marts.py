@@ -302,7 +302,7 @@ def test_incremental_append_late_replacement_and_contract_invalidation_match_ful
     changed_project = tmp_path / "dbt-contract-change"
     shutil.copytree(DBT_ROOT, changed_project)
     contract_seed = changed_project / "seeds" / "tempo_no2_contract.csv"
-    contract_seed.write_text(contract_seed.read_text().replace("0.3.0", "0.3-test"))
+    contract_seed.write_text(contract_seed.read_text().replace("0.4.0", "0.4-test"))
     _run_dbt(
         ["build"],
         profiles_dir=dbt_profiles_dir,
@@ -315,7 +315,7 @@ def test_incremental_append_late_replacement_and_contract_invalidation_match_ful
         select count(distinct contract_version), min(contract_version)
         from tempo_no2_intermediate.int_tempo_no2_region_hourly
         """
-    ).fetchone() == (1, "0.3-test")
+    ).fetchone() == (1, "0.4-test")
     conn.execute(
         """
         create table incremental_hourly_snapshot as

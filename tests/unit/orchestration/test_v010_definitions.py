@@ -11,6 +11,7 @@ from titanskies_pipeline.orchestration.config import tempo_no2_full_pipeline_run
 from titanskies_pipeline.orchestration.definitions import defs
 from titanskies_pipeline.orchestration.schedules import (
     tempo_no2_hourly_pipeline_schedule,
+    tempo_no2_std_pipeline_schedule,
 )
 
 
@@ -32,6 +33,10 @@ def test_definitions_expose_tempo_jobs_only():
         "tempo_no2_hourly_ingest",
         "tempo_no2_dbt_build",
         "tempo_no2_full_pipeline",
+        "tempo_no2_std_granule_discovery",
+        "tempo_no2_std_hourly_ingest",
+        "tempo_no2_std_dbt_build",
+        "tempo_no2_std_full_pipeline",
     }
     assert {
         job.name for job in defs.resolve_all_job_defs() if job.name != "__ASSET_JOB"
@@ -43,12 +48,14 @@ def test_definitions_expose_tempo_asset_keys():
         ("tempo", "no2", "ops", "region_registry"),
         ("tempo", "no2", "raw", "granule_inventory"),
         ("tempo", "no2", "raw", "region_hour_aggregates"),
+        ("tempo", "no2_std", "ops", "region_registry"),
+        ("tempo", "no2_std", "raw", "granule_inventory"),
+        ("tempo", "no2_std", "raw", "region_hour_aggregates"),
     }
     asset_keys = {tuple(key.path) for key in defs.resolve_all_asset_keys()}
     assert expected <= asset_keys
-    assert all(
-        key[:2] == ("tempo", "no2") for key in asset_keys if key[:2] == ("tempo", "no2")
-    )
+    known_tempo_scopes = {("tempo", "no2"), ("tempo", "no2_std")}
+    assert all(key[:2] in known_tempo_scopes for key in asset_keys if key[0] == "tempo")
 
 
 def test_hourly_schedule_targets_full_pipeline_and_config():
@@ -71,6 +78,28 @@ def test_hourly_schedule_targets_full_pipeline_and_config():
 def test_hourly_schedule_enabled_by_env(monkeypatch):
     schedules_mod = _reload_schedules_module(monkeypatch, hourly=True)
     assert schedules_mod.tempo_no2_hourly_pipeline_schedule.default_status == (
+        DefaultScheduleStatus.RUNNING
+    )
+
+
+def test_std_schedule_disabled_by_default():
+    assert tempo_no2_std_pipeline_schedule.default_status == (
+        DefaultScheduleStatus.STOPPED
+    )
+    assert tempo_no2_std_pipeline_schedule.job_name == "tempo_no2_std_full_pipeline"
+
+
+def test_std_schedule_enabled_by_env(monkeypatch):
+    monkeypatch.setenv("TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED", "true")
+    from titanskies_pipeline.config._reload_settings import (
+        reload_all_settings_modules,
+    )
+
+    reload_all_settings_modules()
+    import titanskies_pipeline.orchestration.schedules as schedules_mod
+
+    reloaded = importlib.reload(schedules_mod)
+    assert reloaded.tempo_no2_std_pipeline_schedule.default_status == (
         DefaultScheduleStatus.RUNNING
     )
 

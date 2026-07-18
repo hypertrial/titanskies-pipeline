@@ -1,0 +1,20 @@
+select
+    cast(observation_hour as timestamp) as observation_hour,
+    canonical_region_id,
+    country_code,
+    region_type,
+    no2_mean,
+    no2_median,
+    no2_p90,
+    valid_pixel_count,
+    total_pixel_count,
+    valid_area_km2,
+    total_area_km2,
+    coverage_fraction,
+    quality_flag_accepted,
+    source_granule_count,
+    all_granules_validated,
+    revision,
+    geometry_version,
+    ingested_at
+from {{ source('tempo_no2_std_raw', 'region_hour_aggregates') }}

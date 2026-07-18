@@ -5,6 +5,11 @@ history and native-grid latest observations for Canada, the United States,
 and Mexico. It publishes analyst-ready DuckDB marts without operating a hosted
 dataset or API.
 
+TitanSkies ships two parallel scopes from the same warehouse: `tempo:no2`
+(near-real-time) and `tempo:no2_std` (standard, V04). See
+[Orchestration](reference/orchestration.md) for the per-scope jobs and
+schedules.
+
 ## Start here
 
 | Goal | Guide |

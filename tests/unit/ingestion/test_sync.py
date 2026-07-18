@@ -22,12 +22,14 @@ from titanskies_pipeline.ingestion.tempo.sync import (
     _download_with,
     _granule_destination,
     _load_sibling_grids,
+    _raw_data_dir,
     process_downloaded_granule,
     process_pending_granules,
     require_registered_geography,
     sync_granule_discovery,
     sync_region_registry,
 )
+from titanskies_pipeline.naming import SCOPE_NO2_STD
 from titanskies_pipeline.storage.duckdb.connection import get_connection
 from titanskies_pipeline.storage.duckdb.granules import (
     mark_granule_status,
@@ -87,6 +89,30 @@ def test_sync_region_registry_and_discovery(monkeypatch, duck, artifacts):
     assert (second.found, second.inserted, second.refreshed) == (1, 0, 1)
     with pytest.raises(ValueError, match="lookback_hours"):
         sync_granule_discovery(lookback_hours=0)
+
+
+def test_sync_granule_discovery_explicit_window(monkeypatch, duck, artifacts):
+    from datetime import datetime
+
+    captured = {}
+
+    def fake_discover(**kwargs):
+        captured.update(kwargs)
+        return [_granule("G-window")]
+
+    monkeypatch.setattr(
+        "titanskies_pipeline.ingestion.tempo.sync.discover_granules", fake_discover
+    )
+    sync_granule_discovery(
+        window_start=datetime(2026, 7, 1, 0),
+        window_end=datetime(2026, 7, 2, 0),
+    )
+    assert captured["lookback_hours"] is None
+    assert captured["window_start"] == datetime(2026, 7, 1, 0)
+    assert captured["window_end"] == datetime(2026, 7, 2, 0)
+
+    with pytest.raises(ValueError, match="window_start and window_end"):
+        sync_granule_discovery(window_start=datetime(2026, 7, 1, 0))
 
 
 def test_process_downloaded_granule_writes_exact_hour(duck, artifacts, netcdf_fixture):
@@ -407,6 +433,10 @@ def test_production_guards_and_download_helpers(duck, artifacts, monkeypatch, tm
     )
     assert _granule_destination("folder/G").name == "folder_G.nc"
     assert _granule_destination("already.nc").name == "already.nc"
+    assert _raw_data_dir(SCOPE_NO2_STD).name == "tempo_no2_std"
+    assert _granule_destination("G-std", scope=SCOPE_NO2_STD).parent.name == (
+        "tempo_no2_std"
+    )
     downloaded = tmp_path / "earthaccess.nc"
     earthaccess = SimpleNamespace(
         login=lambda **_kwargs: True,

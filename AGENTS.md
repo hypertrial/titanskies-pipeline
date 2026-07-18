@@ -1,8 +1,11 @@
 # AGENTS.md
 
 TitanSkies Pipeline is an open-source, local-first NASA TEMPO NO₂ warehouse.
-Version `0.3.x` ships `TEMPO_NO2_L3_NRT` administrative history and native-grid
-latest observations over Canada, the United States, and Mexico.
+Version `0.4.x` ships two parallel scopes: `tempo:no2` (`TEMPO_NO2_L3_NRT`) and
+`tempo:no2_std` (`TEMPO_NO2_L3` V04, standard). Both publish administrative
+history and native-grid latest observations over Canada, the United States,
+and Mexico. `make demo` remains NRT-only; the standard scope's schemas are
+bootstrapped but stay empty until an explicit standard discovery/ingest run.
 Stack: **Dagster**, **earthaccess**, **xarray**, **dbt**, **DuckDB**, **uv**, **Ruff** + **sqlfluff**, **pytest**.
 
 ## Setup

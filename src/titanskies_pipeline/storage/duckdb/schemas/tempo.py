@@ -1,4 +1,4 @@
-"""TEMPO NO2 v0.3 DuckDB raw and ops table bootstrap."""
+"""TEMPO NO2 v0.4 DuckDB raw and ops table bootstrap (NRT + standard scopes)."""
 
 from __future__ import annotations
 
@@ -6,14 +6,24 @@ from datetime import datetime, timezone
 
 import duckdb
 
+from titanskies_pipeline.naming import SCOPE_NO2, SCOPE_NO2_STD
 from titanskies_pipeline.storage.duckdb.schemas.constants import (
     TEMPO_NO2_OPS_SCHEMA,
     TEMPO_NO2_RAW_SCHEMA,
+    TEMPO_NO2_STD_OPS_SCHEMA,
+    TEMPO_NO2_STD_RAW_SCHEMA,
+    hour_revision_sequence,
     tempo_ops_tbl,
     tempo_raw_tbl,
 )
 
-WAREHOUSE_SCHEMA_VERSION = "0.3"
+WAREHOUSE_SCHEMA_VERSION = "0.4"
+
+_SCOPE_SCHEMAS: dict[str, tuple[str, str]] = {
+    SCOPE_NO2: (TEMPO_NO2_RAW_SCHEMA, TEMPO_NO2_OPS_SCHEMA),
+    SCOPE_NO2_STD: (TEMPO_NO2_STD_RAW_SCHEMA, TEMPO_NO2_STD_OPS_SCHEMA),
+}
+ALL_TEMPO_SCOPES: tuple[str, ...] = (SCOPE_NO2, SCOPE_NO2_STD)
 
 
 def _table_exists(conn: duckdb.DuckDBPyConnection, schema: str, table: str) -> bool:
@@ -28,8 +38,8 @@ def _table_exists(conn: duckdb.DuckDBPyConnection, schema: str, table: str) -> b
     )
 
 
-def _prepare_v03_boundary(conn: duckdb.DuckDBPyConnection) -> None:
-    """Reject populated pre-v0.3 warehouses and remove empty bootstrap tables."""
+def _prepare_v04_boundary(conn: duckdb.DuckDBPyConnection) -> None:
+    """Reject populated pre-v0.4 warehouses and remove empty bootstrap tables."""
     old_tables = (
         (TEMPO_NO2_RAW_SCHEMA, "region_granule_aggregates"),
         (TEMPO_NO2_OPS_SCHEMA, "granule_inventory"),
@@ -47,16 +57,16 @@ def _prepare_v03_boundary(conn: duckdb.DuckDBPyConnection) -> None:
     )
     if populated:
         raise RuntimeError(
-            "TitanSkies warehouse schema 0.3 requires a rebuild; this database "
-            "contains v0.1/v0.2 TEMPO rows. Back it up and create a new warehouse."
+            "TitanSkies warehouse schema 0.4 requires a rebuild; this database "
+            "contains pre-0.4 TEMPO rows without the tempo_no2_std scope. "
+            "Back it up and create a new warehouse."
         )
     for schema, table in old_present:
         conn.execute(f'DROP TABLE "{schema}"."{table}"')
 
 
-def bootstrap_tempo_tables(conn: duckdb.DuckDBPyConnection) -> None:
-    if not _table_exists(conn, TEMPO_NO2_RAW_SCHEMA, "region_hour_aggregates"):
-        _prepare_v03_boundary(conn)
+def _check_and_stamp_schema_version(conn: duckdb.DuckDBPyConnection) -> None:
+    """Validate/record the single shared warehouse schema version (tempo_no2_ops)."""
     conn.execute(
         f"""
         CREATE TABLE IF NOT EXISTS {tempo_ops_tbl("warehouse_metadata")} (
@@ -74,7 +84,7 @@ def bootstrap_tempo_tables(conn: duckdb.DuckDBPyConnection) -> None:
     ).fetchone()
     if existing_version and existing_version[0] != WAREHOUSE_SCHEMA_VERSION:
         raise RuntimeError(
-            "TitanSkies warehouse schema 0.3 requires a rebuild; this database "
+            "TitanSkies warehouse schema 0.4 requires a rebuild; this database "
             f"contains schema {existing_version[0]}. Back it up and create a new warehouse."
         )
     conn.execute(
@@ -84,10 +94,25 @@ def bootstrap_tempo_tables(conn: duckdb.DuckDBPyConnection) -> None:
         """,
         [WAREHOUSE_SCHEMA_VERSION],
     )
-    conn.execute("CREATE SEQUENCE IF NOT EXISTS tempo_no2_hour_revision START 1")
+
+
+def bootstrap_tempo_tables(
+    conn: duckdb.DuckDBPyConnection, *, scope: str = SCOPE_NO2
+) -> None:
+    raw_schema, ops_schema = _SCOPE_SCHEMAS[scope]
+    conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{raw_schema}"')
+    conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{ops_schema}"')
+    if scope == SCOPE_NO2 and not _table_exists(
+        conn, raw_schema, "region_hour_aggregates"
+    ):
+        _prepare_v04_boundary(conn)
+    _check_and_stamp_schema_version(conn)
+    conn.execute(
+        f"CREATE SEQUENCE IF NOT EXISTS {hour_revision_sequence(scope=scope)} START 1"
+    )
     conn.execute(
         f"""
-        CREATE TABLE IF NOT EXISTS {tempo_ops_tbl("region_registry")} (
+        CREATE TABLE IF NOT EXISTS {tempo_ops_tbl("region_registry", scope=scope)} (
             country_code VARCHAR NOT NULL,
             region_type VARCHAR NOT NULL,
             source_region_id VARCHAR NOT NULL,
@@ -103,7 +128,8 @@ def bootstrap_tempo_tables(conn: duckdb.DuckDBPyConnection) -> None:
     )
     conn.execute(
         f"""
-        CREATE TABLE IF NOT EXISTS {tempo_ops_tbl("geography_artifact_manifest")} (
+        CREATE TABLE IF NOT EXISTS
+        {tempo_ops_tbl("geography_artifact_manifest", scope=scope)} (
             build_id VARCHAR NOT NULL PRIMARY KEY,
             artifact_mode VARCHAR NOT NULL,
             geometry_version VARCHAR NOT NULL,
@@ -121,7 +147,7 @@ def bootstrap_tempo_tables(conn: duckdb.DuckDBPyConnection) -> None:
     )
     conn.execute(
         f"""
-        CREATE TABLE IF NOT EXISTS {tempo_ops_tbl("granule_inventory")} (
+        CREATE TABLE IF NOT EXISTS {tempo_ops_tbl("granule_inventory", scope=scope)} (
             granule_id VARCHAR NOT NULL PRIMARY KEY,
             concept_id VARCHAR NOT NULL,
             acquisition_start TIMESTAMP,
@@ -149,7 +175,7 @@ def bootstrap_tempo_tables(conn: duckdb.DuckDBPyConnection) -> None:
     )
     conn.execute(
         f"""
-        CREATE TABLE IF NOT EXISTS {tempo_ops_tbl("pipeline_run_events")} (
+        CREATE TABLE IF NOT EXISTS {tempo_ops_tbl("pipeline_run_events", scope=scope)} (
             run_id VARCHAR NOT NULL,
             job_name VARCHAR NOT NULL,
             step VARCHAR NOT NULL,
@@ -164,7 +190,8 @@ def bootstrap_tempo_tables(conn: duckdb.DuckDBPyConnection) -> None:
     )
     conn.execute(
         f"""
-        CREATE TABLE IF NOT EXISTS {tempo_raw_tbl("region_hour_aggregates")} (
+        CREATE TABLE IF NOT EXISTS
+        {tempo_raw_tbl("region_hour_aggregates", scope=scope)} (
             observation_hour TIMESTAMP NOT NULL,
             canonical_region_id VARCHAR NOT NULL,
             country_code VARCHAR NOT NULL,
@@ -189,7 +216,7 @@ def bootstrap_tempo_tables(conn: duckdb.DuckDBPyConnection) -> None:
     )
     conn.execute(
         f"""
-        CREATE TABLE IF NOT EXISTS {tempo_raw_tbl("grid_latest")} (
+        CREATE TABLE IF NOT EXISTS {tempo_raw_tbl("grid_latest", scope=scope)} (
             grid_row INTEGER NOT NULL,
             grid_col INTEGER NOT NULL,
             latitude DOUBLE NOT NULL,
@@ -208,43 +235,55 @@ def bootstrap_tempo_tables(conn: duckdb.DuckDBPyConnection) -> None:
     )
 
 
-def ensure_tempo_indexes(conn: duckdb.DuckDBPyConnection) -> None:
+def ensure_tempo_indexes(
+    conn: duckdb.DuckDBPyConnection, *, scope: str = SCOPE_NO2
+) -> None:
     conn.execute(
-        f"CREATE INDEX IF NOT EXISTS idx_tempo_agg_hour "
-        f"ON {tempo_raw_tbl('region_hour_aggregates')} (observation_hour)"
+        f"CREATE INDEX IF NOT EXISTS idx_tempo_{scope}_agg_hour "
+        f"ON {tempo_raw_tbl('region_hour_aggregates', scope=scope)} (observation_hour)"
     )
     conn.execute(
-        f"CREATE INDEX IF NOT EXISTS idx_tempo_grid_latest_hour "
-        f"ON {tempo_raw_tbl('grid_latest')} (observation_hour)"
+        f"CREATE INDEX IF NOT EXISTS idx_tempo_{scope}_grid_latest_hour "
+        f"ON {tempo_raw_tbl('grid_latest', scope=scope)} (observation_hour)"
     )
     conn.execute(
-        f"CREATE INDEX IF NOT EXISTS idx_tempo_agg_region "
-        f"ON {tempo_raw_tbl('region_hour_aggregates')} (canonical_region_id)"
+        f"CREATE INDEX IF NOT EXISTS idx_tempo_{scope}_agg_region "
+        f"ON {tempo_raw_tbl('region_hour_aggregates', scope=scope)} "
+        "(canonical_region_id)"
     )
 
 
 def bootstrap_all_tempo_tables(conn: duckdb.DuckDBPyConnection) -> None:
-    bootstrap_tempo_tables(conn)
-    ensure_tempo_indexes(conn)
+    for scope in ALL_TEMPO_SCOPES:
+        bootstrap_tempo_tables(conn, scope=scope)
+        ensure_tempo_indexes(conn, scope=scope)
 
 
 def create_all_tempo_test_tables(conn: duckdb.DuckDBPyConnection) -> None:
-    conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{TEMPO_NO2_RAW_SCHEMA}"')
-    conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{TEMPO_NO2_OPS_SCHEMA}"')
+    for raw_schema, ops_schema in _SCOPE_SCHEMAS.values():
+        conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{raw_schema}"')
+        conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{ops_schema}"')
     bootstrap_all_tempo_tables(conn)
 
 
-def seed_test_tempo_pipeline_run_event(conn: duckdb.DuckDBPyConnection) -> None:
+def seed_test_tempo_pipeline_run_event(
+    conn: duckdb.DuckDBPyConnection, *, scope: str = SCOPE_NO2
+) -> None:
     now = datetime.now(timezone.utc).replace(tzinfo=None)
+    job_name = (
+        "tempo_no2_full_pipeline"
+        if scope == SCOPE_NO2
+        else f"tempo_{scope}_full_pipeline"
+    )
     conn.execute(
         f"""
-        INSERT OR REPLACE INTO {tempo_ops_tbl("pipeline_run_events")}
+        INSERT OR REPLACE INTO {tempo_ops_tbl("pipeline_run_events", scope=scope)}
         (run_id, job_name, step, status, started_at, finished_at, rows_written, message)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
         [
             "test-run",
-            "tempo_no2_full_pipeline",
+            job_name,
             "seed",
             "success",
             now,
@@ -256,6 +295,7 @@ def seed_test_tempo_pipeline_run_event(conn: duckdb.DuckDBPyConnection) -> None:
 
 
 __all__ = [
+    "ALL_TEMPO_SCOPES",
     "WAREHOUSE_SCHEMA_VERSION",
     "bootstrap_all_tempo_tables",
     "bootstrap_tempo_tables",
