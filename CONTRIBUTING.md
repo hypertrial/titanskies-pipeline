@@ -54,7 +54,9 @@ uv run make docs-check
 
 Before opening a pull request, run the complete gate in [AGENTS.md](AGENTS.md).
 The suite requires 100% branch coverage. Install the pinned Costguard release
-described in the development guide before running its final target.
+described in the development guide before running its final target. Maintainers
+cutting a versioned release should follow
+[docs/development/releasing.md](docs/development/releasing.md).
 
 ## Pull requests and security
 

@@ -6,10 +6,12 @@ must pass on a maintainer machine before tagging.
 
 ## Local release gate
 
-From a clean checkout on `main`, sync dependencies and run the gate in order:
+From a clean checkout on `main`, sync dependencies, install the Chromium
+browser used by the local docs render checks, and run the gate in order:
 
 ```bash
 uv sync --locked --extra dev --extra geo
+uv run playwright install chromium
 uv run make lint
 uv run make test-cov
 uv run make dagster-jobs-smoke-cov
@@ -66,7 +68,9 @@ curl -fsSL https://raw.githubusercontent.com/hypertrial/costguard/main/scripts/i
 
 ## Post-release checks
 
-- Confirm CI is green on `main` and on the release tag.
+- Confirm the GitHub Actions fast gate is green for the release commit on
+  `main`. CI does not run on tags; only `main` pushes, pull requests, and
+  manual `workflow_dispatch` trigger it.
 - Confirm `https://hypertrial.github.io/titanskies-pipeline/` returns HTTP
   200 and renders the homepage.
 - Review open Dependabot pull requests and merge compatible updates before

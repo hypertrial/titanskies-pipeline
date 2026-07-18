@@ -39,11 +39,13 @@ uv run make gx-data-quality
 uv run make costguard
 ```
 
-This is the full local release gate. GitHub Actions intentionally uses one
-runner for less than five cumulative minutes and runs lint, fast offline tests,
-saved HTTP contracts, dbt parse, and a strict documentation build. Live CMR,
-geography, NetCDF, Dagster/dbt integration, browser, 100%-coverage,
-data-quality, and Costguard validation remain local release checks.
+This is the full local release gate. For tagging, GitHub Releases, and docs
+publication, follow [docs/development/releasing.md](docs/development/releasing.md).
+GitHub Actions intentionally uses one runner for less than five cumulative
+minutes and runs lint, fast offline tests, saved HTTP contracts, dbt parse,
+and a strict documentation build. Live CMR, geography, NetCDF, Dagster/dbt
+integration, browser, 100%-coverage, data-quality, and Costguard validation
+remain local release checks.
 
 ## Do not
 

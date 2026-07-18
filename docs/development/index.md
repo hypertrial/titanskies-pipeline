@@ -30,8 +30,8 @@ credentials, network access, or previously generated geography.
 ## Complete quality gate
 
 See [Releasing](releasing.md) for the full local release gate, tagging,
-GitHub Release publication, and docs deployment checklist. While iterating,
-run:
+GitHub Release publication, and docs deployment checklist. Before opening a
+pull request or cutting a release, run:
 
 ```bash
 uv run make lint

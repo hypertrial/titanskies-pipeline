@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- Documented the Chromium prerequisite for local docs render checks and
+  corrected the releasing checklist so post-release CI verification targets
+  the `main` commit rather than a tag push.
+
 ## [0.3.1] - 2026-07-18
 
 This is the first public release. Releases and repository history before
@@ -16,6 +24,9 @@ This is the first public release. Releases and repository history before
   no-health/exposure/regulatory-advice notices, and no-endorsement language.
 - Added repository-policy checks for geography-matrix completeness, synthetic
   fixtures, and forbidden tracked artifacts.
+- Added the maintainer [releasing checklist](docs/development/releasing.md)
+  and published the MkDocs site at
+  https://hypertrial.github.io/titanskies-pipeline/.
 
 ### Changed
 
