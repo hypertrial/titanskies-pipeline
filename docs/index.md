@@ -1,33 +1,99 @@
+---
+hide:
+  - navigation
+  - toc
+---
+
+<div class="ts-hero" markdown>
+
+<div class="ts-hero__copy" markdown>
+
+<span class="ts-eyebrow">Local-first TEMPO NO₂ warehouse</span>
+
 # TitanSkies Pipeline
 
-TitanSkies is a local-first NASA TEMPO NO₂ warehouse with administrative
-history and native-grid latest observations for Canada, the United States,
-and Mexico. It publishes analyst-ready DuckDB marts without operating a hosted
-dataset or API.
+Build inspectable NASA TEMPO NO₂ warehouses for Canada, the United States, and
+Mexico with Dagster, DuckDB, and dbt.
 
-TitanSkies ships two parallel scopes from the same warehouse: `tempo:no2`
-(near-real-time) and `tempo:no2_std` (standard, V04). See
-[Orchestration](reference/orchestration.md) for the per-scope jobs and
-schedules.
+Hypertrial-owned MIT software. No hosted service or health advice.
+[Licence scope](concepts/scope-and-non-goals.md) ·
+[Operator responsibilities](concepts/operator-responsibilities.md).
 
-## Start here
+[Get started](getting-started/index.md){ .md-button .md-button--primary }
+[Query the warehouse](guides/query-the-warehouse.md){ .md-button }
 
-| Goal | Guide |
-| --- | --- |
-| Build a credential-free warehouse | [Quickstart](getting-started/index.md) |
-| Run discovery and ingestion | [Run the pipeline](guides/run-the-pipeline.md) |
-| Query or export analyst-ready data | [Query the warehouse](guides/query-the-warehouse.md) |
-| Understand tables and ownership | [Warehouse reference](reference/warehouse.md) and [Data dictionary](reference/data-dictionary.md) |
-| Configure live operation | [Configuration](reference/configuration.md) and [Live readiness](guides/live-readiness.md) |
-| Diagnose and recover a run | [Troubleshooting](guides/troubleshooting.md) |
-| Change or validate the project | [Development guide](development/index.md) |
+</div>
 
-Analysts should query `tempo_no2_marts` and filter measurements on
-`is_analysis_ready`. Operators should begin investigations in
-`tempo_no2_observability` and the durable `tempo_no2_ops` ledger.
+<div class="ts-hero__mark">
+  <span>TitanSkies</span>
+  <span>Pipeline</span>
+</div>
 
-TitanSkies is research and engineering software, not health, exposure,
-medical, safety, or regulatory advice. It has no telemetry and sends no user
-data to Hypertrial. Review the
-[source notices](https://github.com/hypertrial/titanskies-pipeline/blob/main/THIRD_PARTY_NOTICES.md)
-and [privacy notice](https://github.com/hypertrial/titanskies-pipeline/blob/main/PRIVACY.md).
+</div>
+
+<div class="ts-install" markdown>
+
+**Start in the repository**
+
+```bash
+uv sync --locked --extra dev
+```
+
+</div>
+
+## Start with a task
+
+<div class="ts-task-grid" markdown>
+
+<article class="ts-task-card" markdown>
+
+### Analyze the data
+
+Open a local DuckDB warehouse, filter on `is_analysis_ready`, and use tested
+SQL recipes.
+
+[Analysts hub](audiences/analysts.md)
+
+</article>
+
+<article class="ts-task-card" markdown>
+
+### Operate the pipeline
+
+Build the demo or live path, keep schedules disabled, then keep the warehouse
+healthy.
+
+[Operators hub](audiences/operators.md)
+
+</article>
+
+<article class="ts-task-card" markdown>
+
+### Contribute code
+
+Change ingestion, geography, dbt marts, or docs with the right quality gate.
+
+[Contributors hub](audiences/contributors.md)
+
+</article>
+
+<article class="ts-task-card" markdown>
+
+### Integrate downstream
+
+Consume public marts without treating pipeline output as health advice.
+
+[Integrators hub](audiences/integrators.md)
+
+</article>
+
+</div>
+
+## Supported local scopes
+
+Version `0.4.x` ships `tempo:no2` (near-real-time) and `tempo:no2_std`
+(standard V04). This site is software documentation and does not host datasets.
+
+[Choose a scope](getting-started/choose-a-scope.md), read the
+[FAQ](concepts/faq.md), or review the
+[architecture](concepts/architecture.md) before extending the pipeline.

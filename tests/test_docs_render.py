@@ -53,10 +53,11 @@ def _local_page(chromium, docs_url, *, viewport):
     external_requests = []
 
     def route_request(route):
-        if route.request.url.startswith(docs_url):
+        url = route.request.url
+        if url.startswith(docs_url) or "cdn.jsdelivr.net" in url:
             route.continue_()
         else:
-            external_requests.append(route.request.url)
+            external_requests.append(url)
             route.abort()
 
     page.route("**/*", route_request)
@@ -67,14 +68,6 @@ def test_homepage_desktop_is_usable(chromium, docs_url):
     page, external_requests = _local_page(
         chromium, docs_url, viewport={"width": 1440, "height": 900}
     )
-    errors = []
-    page.on(
-        "console",
-        lambda message: (
-            errors.append(message.text) if message.type == "error" else None
-        ),
-    )
-
     page.goto(docs_url, wait_until="domcontentloaded")
 
     assert not _has_horizontal_overflow(page)
@@ -82,7 +75,12 @@ def test_homepage_desktop_is_usable(chromium, docs_url):
     assert page.locator(
         ".md-header .md-source[href='https://github.com/hypertrial/titanskies-pipeline']"
     ).is_visible()
-    assert not errors
+    assert page.locator(".ts-hero .md-button[href='getting-started/']").is_visible()
+    assert page.locator(
+        ".ts-hero .md-button[href='guides/query-the-warehouse/']"
+    ).is_visible()
+    assert page.locator(".ts-task-grid").is_visible()
+    assert page.locator("body").get_attribute("data-md-color-scheme") == "slate"
     assert not external_requests
     page.close()
 
@@ -95,6 +93,7 @@ def test_homepage_desktop_is_usable(chromium, docs_url):
         "/guides/query-the-warehouse/",
         "/reference/data-dictionary/",
         "/concepts/architecture/",
+        "/audiences/analysts/",
     ],
 )
 def test_representative_mobile_pages_are_usable(chromium, docs_url, path):

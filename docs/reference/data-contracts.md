@@ -1,5 +1,10 @@
 # Data contracts
 
+!!! note "Reference ladder"
+
+    Chooser → dictionary → public contracts → warehouse reference; do not treat
+    staging/raw as APIs.
+
 `dbt/seeds/tempo_no2_contract.csv` contains exactly one `default` row and is the
 single quality-policy source for Python ingestion and dbt for the `tempo:no2`
 (NRT) scope. `dbt/seeds/tempo_no2_std_contract.csv` is the equivalent,
@@ -19,28 +24,43 @@ Both contracts share the same shape:
 Changes require dbt unit and golden tests plus an Unreleased changelog entry.
 Do not add environment overrides: differing runtime and warehouse policy would
 make a row appear accepted by one layer and rejected by another. Each scope's
-contract is versioned and invalidated independently; changing
-`tempo_no2_contract.csv` does not affect `tempo_no2_std_contract.csv` or vice
-versa.
+contract is versioned and invalidated independently.
 
-Public grains are (identical for the `tempo_no2_std_*` mart family):
+## Public mart grains
 
-- region-hour for `tempo_no2_region_hourly`;
-- one row per region for `tempo_no2_region_latest`;
-- country-hour for `tempo_no2_country_hourly`;
-- region-hour for `tempo_no2_region_anomalies` and data-quality issues.
-- native grid cell for `tempo_no2_grid_latest`, with latest observation only.
+Identical for the `tempo_no2_std_*` mart family:
 
-The v0.3 TEMPO grid contract has 2,950 latitude centers from 14.01° to 72.99° and
-7,750 longitude centers from −167.99° to −13.01°, both at 0.02° spacing.
+| Relation (NRT / std) | Grain |
+| --- | --- |
+| `tempo_no2_region_hourly` / `tempo_no2_std_region_hourly` | region × UTC hour |
+| `tempo_no2_region_latest` / `tempo_no2_std_region_latest` | region |
+| `tempo_no2_country_hourly` / `tempo_no2_std_country_hourly` | country × UTC hour |
+| `tempo_no2_region_anomalies` / `tempo_no2_std_region_anomalies` | region × hour |
+| `tempo_no2_grid_latest` / `tempo_no2_std_grid_latest` | native grid cell, latest observation only |
+| `tempo_region_registry` / `tempo_no2_std_region_registry` | canonical geography contract |
+
+## Grid geometry contract
+
+The v0.3+ TEMPO grid contract has 2,950 latitude centers from 14.01° to 72.99°
+and 7,750 longitude centers from −167.99° to −13.01°, both at 0.02° spacing.
 Ingestion rejects files whose coordinates do not match this contract.
+
+## Regional aggregation rules
 
 Raw regional grain is exactly region × UTC hour. Every valid area-weighted
 cell observation from all scans in that hour participates in mean, median, and
 p90; overlap area is repeated once per scan. `source_granule_count`,
 `all_granules_validated`, and monotonic `revision` describe each replacement.
 
+## Anomaly rules
+
 Anomalies compare an analysis-ready row with prior analysis-ready rows from the
 same IANA local hour during the preceding 28 days. The score is null until
 seven prior observations exist, when baseline MAD is zero, or when the current
 row is not analysis-ready.
+
+## Analysis-ready rule
+
+A public measurement row is analysis-ready only when it satisfies the active
+scope contract thresholds (coverage, accepted quality flags, and freshness
+policy as applied by dbt). Prefer `is_analysis_ready` in analyst queries.

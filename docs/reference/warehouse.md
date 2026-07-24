@@ -1,5 +1,10 @@
 # Warehouse reference
 
+!!! note "Reference ladder"
+
+    Chooser → dictionary → public contracts → warehouse reference; do not treat
+    staging/raw as APIs.
+
 TitanSkies stores pipeline state and analytics in a local DuckDB file. The
 default is `titanskies.duckdb`; `DUCKDB_PATH` can select another local path.
 The repository does not publish or synchronize that file.

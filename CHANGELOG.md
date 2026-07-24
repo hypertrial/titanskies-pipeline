@@ -25,6 +25,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Changed
 
+- Reorganized and thickened documentation to the Hypertrial pipeline IA
+  (audience hubs, concept sextet, query recipes, day-two / validate-recover
+  guides, Material site chrome, and `site_url` for GitHub Pages).
 - Bumped the warehouse schema version to `0.4`. `bootstrap_all_tempo_tables`
   now bootstraps schemas/tables/sequences for both scopes; a populated
   pre-0.4 warehouse now raises an error requiring a schema 0.4 rebuild rather

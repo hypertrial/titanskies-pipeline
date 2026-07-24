@@ -1,17 +1,86 @@
 site_name: TitanSkies Pipeline
 site_description: NASA TEMPO NO2 regional warehouse for Canada, the United States, and Mexico.
+site_url: https://hypertrial.github.io/titanskies-pipeline/
 repo_url: https://github.com/hypertrial/titanskies-pipeline
 repo_name: hypertrial/titanskies-pipeline
 docs_dir: docs
 strict: true
+
 theme:
   name: material
   custom_dir: overrides
+  language: en
   font: false
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.indexes
+    - navigation.path
+    - navigation.tracking
+    - navigation.footer
+    - navigation.top
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+  palette:
+    scheme: slate
+    primary: custom
+    accent: custom
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mermaid@11.15.0/dist/mermaid.min.js
+  - assets/javascripts/mermaid.js
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/hypertrial/titanskies-pipeline
+      name: TitanSkies Pipeline on GitHub
+
+copyright: >
+  Hypertrial-owned MIT software, not a hosted dataset.
+  <a href="https://hypertrial.github.io/titanskies-pipeline/concepts/scope-and-non-goals/">Scope</a> ·
+  <a href="https://hypertrial.github.io/titanskies-pipeline/concepts/operator-responsibilities/">Operator responsibilities</a> ·
+  <a href="https://github.com/hypertrial/titanskies-pipeline/blob/main/THIRD_PARTY_NOTICES.md">Third-Party Notices</a> ·
+  <a href="https://github.com/hypertrial/titanskies-pipeline/blob/main/PRIVACY.md">Privacy</a>.
+
 nav:
   - Home: index.md
+  - Audiences:
+      - Analysts: audiences/analysts.md
+      - Operators: audiences/operators.md
+      - Contributors: audiences/contributors.md
+      - Integrators: audiences/integrators.md
   - Get started:
       - Quickstart: getting-started/index.md
+      - Choose a scope: getting-started/choose-a-scope.md
       - Build geography artifacts: getting-started/build-geography-artifacts.md
       - Upgrade to v0.2: getting-started/upgrade-v02.md
       - Upgrade to v0.3: getting-started/upgrade-v03.md
@@ -20,8 +89,11 @@ nav:
       - Run the pipeline: guides/run-the-pipeline.md
       - Backfill 30 days: guides/backfill-30-days.md
       - Query the warehouse: guides/query-the-warehouse.md
-      - Enable the schedule: guides/enable-schedule.md
+      - Query recipes: guides/query-recipes.md
+      - Day-two operations: guides/day-two-operations.md
       - Live readiness: guides/live-readiness.md
+      - Enable the schedule: guides/enable-schedule.md
+      - Validate and recover: guides/validate-and-recover.md
       - Troubleshooting: guides/troubleshooting.md
   - Reference:
       - Configuration: reference/configuration.md
@@ -36,7 +108,14 @@ nav:
       - System overview: concepts/system-overview.md
       - Architecture: concepts/architecture.md
       - TEMPO product notes: concepts/tempo-product-notes.md
+      - Scope and non-goals: concepts/scope-and-non-goals.md
+      - Operator responsibilities: concepts/operator-responsibilities.md
+      - FAQ: concepts/faq.md
+      - Glossary: concepts/glossary.md
+      - Design decisions: concepts/decisions.md
+      - Integration: concepts/integration.md
   - Development:
       - Development guide: development/index.md
+      - Community: development/community.md
       - Releasing: development/releasing.md
       - Changelog: development/changelog.md

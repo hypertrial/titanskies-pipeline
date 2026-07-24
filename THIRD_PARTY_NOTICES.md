@@ -155,6 +155,11 @@ warehouses, exports, maps, or analyses must:
 This summary is not legal advice. Recheck source terms for the intended use and
 obtain professional advice where needed.
 
+## Documentation fonts
+
+Documentation fonts under `docs/assets/fonts/` are distributed under their
+included SIL Open Font License notices.
+
 ## Dependencies
 
 Runtime and development dependencies retain their own licences. `uv.lock` is

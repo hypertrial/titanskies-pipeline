@@ -8,6 +8,16 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DOCS_DIR = REPO_ROOT / "docs"
 pytestmark = pytest.mark.repo_check
 
+EXPECTED_TOP_NAV = [
+    "Home",
+    "Audiences",
+    "Get started",
+    "Guides",
+    "Reference",
+    "Concepts",
+    "Development",
+]
+
 
 def _nav_targets(items):
     for item in items:
@@ -22,11 +32,15 @@ def _nav_targets(items):
 
 
 def _config():
-    return yaml.safe_load((REPO_ROOT / "mkdocs.yml").read_text())
+    text = (REPO_ROOT / "mkdocs.yml").read_text()
+    text = re.sub(r"!!python/name:([^\s]+)", r"\1", text)
+    return yaml.safe_load(text)
 
 
 def test_navigation_contains_every_docs_page():
-    targets = set(_nav_targets(_config()["nav"]))
+    config = _config()
+    assert [next(iter(item)) for item in config["nav"]] == EXPECTED_TOP_NAV
+    targets = set(_nav_targets(config["nav"]))
     pages = {path.relative_to(DOCS_DIR).as_posix() for path in DOCS_DIR.rglob("*.md")}
 
     assert targets == pages
@@ -44,12 +58,23 @@ def test_mkdocs_is_self_contained_and_links_to_repository():
     config = _config()
 
     assert config["site_name"] == "TitanSkies Pipeline"
+    assert config["site_url"] == "https://hypertrial.github.io/titanskies-pipeline/"
     assert config["repo_url"] == "https://github.com/hypertrial/titanskies-pipeline"
     assert config["repo_name"] == "hypertrial/titanskies-pipeline"
     assert config["theme"]["name"] == "material"
     assert config["theme"]["custom_dir"] == "overrides"
     assert config["theme"]["font"] is False
-    assert "site_url" not in config
+    features = set(config["theme"]["features"])
+    for required in (
+        "navigation.tabs",
+        "navigation.sections",
+        "navigation.indexes",
+        "content.code.copy",
+        "search.suggest",
+    ):
+        assert required in features
+    assert "search" in config["plugins"]
+    assert "assets/stylesheets/extra.css" in config["extra_css"]
 
     source_override = (REPO_ROOT / "overrides/partials/source.html").read_text()
     assert 'class="md-source"' in source_override
@@ -61,6 +86,9 @@ def test_readme_links_to_canonical_guides():
     required = [
         "uv run make docs-serve",
         "http://127.0.0.1:8000",
+        "(docs/audiences/analysts.md)",
+        "(docs/audiences/operators.md)",
+        "(docs/audiences/integrators.md)",
         "(docs/guides/query-the-warehouse.md)",
         "(docs/guides/troubleshooting.md)",
         "(docs/reference/warehouse.md)",
@@ -122,6 +150,7 @@ def test_built_homepage_is_semantic():
         pytest.skip("Run make docs-build before checking generated HTML.")
 
     html = index.read_text()
-    assert re.search(r'<h1[^>]+id="titanskies-pipeline"[^>]*>TitanSkies Pipeline', html)
+    assert re.search(r"<h1[^>]*>TitanSkies Pipeline", html)
     assert 'href="https://github.com/hypertrial/titanskies-pipeline"' in html
     assert "hypertrial/titanskies-pipeline" in html
+    assert "ts-task-grid" in html

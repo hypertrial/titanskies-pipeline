@@ -65,3 +65,15 @@ Update contracts, golden fixtures, documentation, and the Unreleased changelog
 with the behavior they protect. Public mart grains, schedules, and production
 geography changes need explicit callouts in the pull request. Test clean
 rebuilds directly; do not add v0.1/v0.2 compatibility paths.
+
+## Docs IA
+
+TitanSkies docs follow the Hypertrial pipeline skeleton:
+
+- Audiences → Get started → Guides → Reference → Concepts → Development
+- Concept sextet: scope, operator responsibilities, FAQ, glossary, decisions,
+  integration
+- Analyst ladder: query chooser → recipes → dictionary → contracts → warehouse
+- Operator ladder: quickstart → day-two → validate/recover → troubleshooting
+- Every `docs/**/*.md` page must appear in `mkdocs.yml` nav
+- `uv run make docs-check` is the docs-only gate (strict build + structure/render)

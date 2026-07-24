@@ -35,9 +35,10 @@ reviewed production build described in
   executable against disposable state.
 - **Documentation:** run the strict MkDocs and local browser checks.
 
-Version `0.3.x` does not migrate populated v0.1/v0.2 derived warehouses. Test
+Version `0.4.x` does not migrate populated pre-0.4 derived warehouses. Test
 schema or geometry changes with a clean disposable database; do not add legacy
-compatibility shims or copy old derived tables into a new warehouse.
+compatibility shims or copy old derived tables into a new warehouse. See
+[Upgrade to v0.4](docs/getting-started/upgrade-v04.md).
 
 ## Validation
 

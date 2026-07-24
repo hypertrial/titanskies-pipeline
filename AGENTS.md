@@ -50,6 +50,11 @@ and a strict documentation build. Live CMR, geography, NetCDF, Dagster/dbt
 integration, browser, 100%-coverage, data-quality, and Costguard validation
 remain local release checks.
 
+## Docs
+
+Docs follow Audiences → Get started → Guides → Reference → Concepts → Development.
+Docs-only PRs: `uv run make docs-check` (strict MkDocs build + structure/render).
+
 ## Do not
 
 - Commit `.env`, secrets, `*.duckdb` files, NetCDF exports, or geo artifacts built from live boundaries unless they are explicit test fixtures.

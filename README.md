@@ -24,10 +24,13 @@ the geography providers do not endorse TitanSkies or Hypertrial.
 
 | Reader | First step |
 | --- | --- |
-| Analysts | Read [Query the warehouse](docs/guides/query-the-warehouse.md), the [Data dictionary](docs/reference/data-dictionary.md), and the [Warehouse reference](docs/reference/warehouse.md). |
-| Operators | Build the demo, then follow [Run the pipeline](docs/guides/run-the-pipeline.md) and [Troubleshooting](docs/guides/troubleshooting.md). |
-| Contributors | Use the [Development guide](docs/development/index.md) and [CONTRIBUTING.md](CONTRIBUTING.md). |
+| Analysts | [Analysts hub](docs/audiences/analysts.md), then [Query the warehouse](docs/guides/query-the-warehouse.md), the [Data dictionary](docs/reference/data-dictionary.md), and the [Warehouse reference](docs/reference/warehouse.md). |
+| Operators | [Operators hub](docs/audiences/operators.md), then build the demo, follow [Run the pipeline](docs/guides/run-the-pipeline.md) and [Troubleshooting](docs/guides/troubleshooting.md). |
+| Contributors | [Contributors hub](docs/audiences/contributors.md), the [Development guide](docs/development/index.md), and [CONTRIBUTING.md](CONTRIBUTING.md). |
+| Integrators | [Integrators hub](docs/audiences/integrators.md) and [Integration](docs/concepts/integration.md). |
 | Maintainers | Review the [Architecture](docs/concepts/architecture.md), [Orchestration reference](docs/reference/orchestration.md), [Security policy](SECURITY.md), and [Changelog](CHANGELOG.md). |
+
+Serve docs locally with `uv run make docs-serve` at `http://127.0.0.1:8000`.
 
 Review the canonical [third-party and source notices](THIRD_PARTY_NOTICES.md)
 and [privacy notice](PRIVACY.md) before use or redistribution.
