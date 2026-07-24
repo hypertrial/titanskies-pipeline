@@ -7,8 +7,9 @@ Use this guide after a successful demo or first live materialization.
 3. Inspect `tempo_no2_observability` (and `tempo_no2_std_observability` when
    used) after each successful run.
 4. Run geography rebuilds only when the pinned geometry generation changes.
-5. Prune processed NetCDF files according to `TEMPO_NO2_RAW_RETENTION_DAYS`;
-   the DuckDB ledger remains durable.
+5. Prune processed NetCDF files according to `TEMPO_NO2_RAW_RETENTION_DAYS`
+   (and `TEMPO_NO2_STD_RAW_RETENTION_DAYS` for the standard scope); the DuckDB
+   ledger remains durable.
 
 See [Enable the schedule](enable-schedule.md),
 [Live readiness](live-readiness.md), and

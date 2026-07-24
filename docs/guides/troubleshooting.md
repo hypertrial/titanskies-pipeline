@@ -61,9 +61,12 @@ directory and reviewed geography source cache, move the corrupt database and
 its WAL files out of the working path, then initialize a clean warehouse and
 rerun ingestion/dbt. Never copy partially derived tables into the replacement.
 
-Populated v0.1/v0.2 warehouses intentionally fail at startup. Follow the v0.3
-upgrade guide. A changed production geometry version also requires a clean
-warehouse because region identities and overlap weights are one contract.
+Populated pre-0.4 warehouses intentionally fail at startup. Follow the
+[v0.3 to v0.4 upgrade guide](../getting-started/upgrade-v04.md) (earlier
+rebuild notes: [v0.3](../getting-started/upgrade-v03.md),
+[v0.2](../getting-started/upgrade-v02.md)). A changed production geometry
+version also requires a clean warehouse because region identities and overlap
+weights are one contract.
 
 ## Live source drift
 

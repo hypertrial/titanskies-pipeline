@@ -77,3 +77,7 @@ TitanSkies docs follow the Hypertrial pipeline skeleton:
 - Operator ladder: quickstart → day-two → validate/recover → troubleshooting
 - Every `docs/**/*.md` page must appear in `mkdocs.yml` nav
 - `uv run make docs-check` is the docs-only gate (strict build + structure/render)
+
+Release notes live in the thin [Changelog](changelog.md) pointer to root
+`CHANGELOG.md`. Warehouse rebuild boundaries are documented under
+[Upgrade to v0.4](../getting-started/upgrade-v04.md).

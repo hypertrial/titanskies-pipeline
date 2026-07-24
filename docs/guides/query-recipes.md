@@ -70,10 +70,14 @@ order by observation_hour desc, severity desc;
 
 ## Standard scope mirror
 
+`tempo_no2_std_region_latest` already filters to analysis-ready non-country
+regions and does not expose `is_analysis_ready` (same as the NRT latest mart).
+
 ```sql
-select *
+select canonical_region_id, country_code, region_type,
+       latest_observation_hour, latest_no2_mean,
+       latest_coverage_fraction, data_age_hours
 from tempo_no2_std_marts.tempo_no2_std_region_latest
-where is_analysis_ready
 order by latest_no2_mean desc
 limit 25;
 ```

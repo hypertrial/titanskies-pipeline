@@ -21,9 +21,11 @@ Jobs:
 
 `tempo_no2_hourly_pipeline_schedule` targets `tempo_no2_full_pipeline` and runs
 registry precondition, one CMR discovery, pending processing, and incremental
-dbt publication once per hour. The manual `tempo_no2_hourly_ingest` job remains
-processing-only and accepts optional `max_granules`. Geography bootstrap is an
-explicit operator action and is excluded from recurring selections.
+dbt publication once per hour. It is **disabled by default**
+(`TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED=false`). The manual
+`tempo_no2_hourly_ingest` job remains processing-only and accepts optional
+`max_granules`. Geography bootstrap is an explicit operator action and is
+excluded from recurring selections.
 
 ## `tempo:no2_std` (standard, V04)
 

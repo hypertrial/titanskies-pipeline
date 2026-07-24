@@ -61,6 +61,11 @@ row is not analysis-ready.
 
 ## Analysis-ready rule
 
-A public measurement row is analysis-ready only when it satisfies the active
-scope contract thresholds (coverage, accepted quality flags, and freshness
-policy as applied by dbt). Prefer `is_analysis_ready` in analyst queries.
+For regional/country hourly rows, `is_analysis_ready` is true when
+`quality_flag_accepted`, `all_granules_validated`, and
+`coverage_fraction >= min_region_coverage` (from the active scope contract).
+Native-grid latest rows use `quality_flag_accepted and no2 is not null`.
+Freshness (`stale_hours_warn` / `stale_hours_error`) is reported in
+observability / `*_data_quality`, not folded into `is_analysis_ready`. Prefer
+the flag in analyst queries; `*_region_latest` marts already filter to
+analysis-ready non-country regions.

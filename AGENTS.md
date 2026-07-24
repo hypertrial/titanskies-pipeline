@@ -4,8 +4,9 @@ TitanSkies Pipeline is an open-source, local-first NASA TEMPO NO₂ warehouse.
 Version `0.4.x` ships two parallel scopes: `tempo:no2` (`TEMPO_NO2_L3_NRT`) and
 `tempo:no2_std` (`TEMPO_NO2_L3` V04, standard). Both publish administrative
 history and native-grid latest observations over Canada, the United States,
-and Mexico. `make demo` remains NRT-only; the standard scope's schemas are
-bootstrapped but stay empty until an explicit standard discovery/ingest run.
+and Mexico. `make demo` remains NRT-only; standard-scope raw/ops schemas bootstrap empty
+and std marts appear only after an explicit standard discovery/ingest (and
+dbt) run.
 Stack: **Dagster**, **earthaccess**, **xarray**, **dbt**, **DuckDB**, **uv**, **Ruff** + **sqlfluff**, **pytest**.
 
 ## Setup
@@ -20,6 +21,7 @@ Default warehouse: `titanskies.duckdb` in the repo root. Keep schedules disabled
 
 ```dotenv
 TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED=false
+TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED=false
 ```
 
 ## Quality gate

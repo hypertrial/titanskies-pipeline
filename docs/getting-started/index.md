@@ -8,7 +8,10 @@ uv run make demo
 ```
 
 Open the printed `.cache/demo.duckdb` path in DuckDB to query administrative
-history and the native-grid latest mart.
+history and the native-grid latest mart. `make demo` builds the NRT
+(`tempo:no2`) scope only; standard-scope raw/ops schemas bootstrap empty and
+std marts appear only after an explicit std dbt/ingest run. See
+[Choose a scope](choose-a-scope.md).
 
 For pipeline development:
 
@@ -20,13 +23,17 @@ uv run make dbt-parse
 uv run make dagster-dev
 ```
 
-Jobs:
+NRT jobs:
 
 - `tempo_no2_granule_discovery`
 - `tempo_no2_hourly_ingest`
 - `tempo_no2_dbt_build`
 - `tempo_no2_full_pipeline`
 
-Version 0.3 requires a new derived warehouse. See the
-[v0.2 to v0.3 upgrade guide](upgrade-v03.md) before enabling schedules against
-an existing deployment.
+Standard-scope mirrors use the `tempo_no2_std_*` job names
+([Orchestration](../reference/orchestration.md)).
+
+Version 0.4 requires a new derived warehouse for populated pre-0.4 DuckDB
+files. See the [v0.3 to v0.4 upgrade guide](upgrade-v04.md) before enabling
+schedules against an existing deployment. Older rebuild notes remain under
+[Upgrade to v0.3](upgrade-v03.md) and [Upgrade to v0.2](upgrade-v02.md).

@@ -13,7 +13,7 @@ TEMPO NO2 NRT (`tempo:no2`, CMR `C3685668637-LARC_CLOUD`):
 - `TEMPO_NO2_DISCOVERY_LOOKBACK_HOURS` (default `8`)
 - `TEMPO_NO2_RAW_DATA_DIR` (default `data/raw/tempo_no2_nrt`)
 - `TEMPO_NO2_RAW_RETENTION_DAYS` (default `30`)
-- `TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED`
+- `TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED` (default `false`)
 
 TEMPO NO2 Standard (`tempo:no2_std`, CMR `C3685896708-LARC_CLOUD`, TEMPO_NO2_L3
 V04 standard product, DOI `10.5067/IS-40E/TEMPO/NO2_L3.004`). Standard
@@ -34,6 +34,7 @@ incremental hourly/anomaly results independently. Change the reviewed
 contract for the affected scope rather than adding environment-specific
 quality policy.
 
-`make demo` only seeds and builds the NRT (`tempo:no2`) scope; the standard
-scope's marts and observability tables are created but remain empty until a
-standard discovery/ingest run populates them.
+`make demo` remains NRT-only: it seeds both contract CSVs but runs dbt with
+`--select tag:tempo,tag:no2`, so only NRT marts are built. Standard-scope
+raw/ops schemas are bootstrapped empty; std marts and observability appear
+after an explicit standard dbt/ingest run.
