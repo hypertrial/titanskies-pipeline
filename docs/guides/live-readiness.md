@@ -1,8 +1,9 @@
 # Local live readiness
 
-Live readiness is an operator-owned local workflow. GitHub Actions is limited
-to a single offline gate of less than five cumulative minutes and never
-downloads production geography or TEMPO NetCDF data.
+Live readiness is an operator-owned local workflow. The offline `ci.yml`
+fast-gate job stays under five cumulative minutes and never downloads
+production geography or TEMPO NetCDF data. A separate Docs workflow only
+publishes MkDocs to GitHub Pages.
 
 Public CMR discovery needs no Earthdata credentials:
 

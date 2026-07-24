@@ -22,6 +22,8 @@ STALE_PHRASES = (
     "Follow the v0.3 upgrade guide",
     "standard scope's marts and observability tables are created but remain empty",
     "std marts are built by make demo",
+    "Do not add a docs workflow under",
+    "Docs publish locally by design",
 )
 
 SCHEDULE_ENV_VARS = (

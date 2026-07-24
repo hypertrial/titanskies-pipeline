@@ -21,10 +21,9 @@ COPY_TO = re.compile(
 
 
 def _ensure_demo() -> None:
-    if DEMO_DB.is_file():
-        return
+    # Always rebuild so recipe smoke cannot pass against a stale schema.
     DEMO_DB.parent.mkdir(parents=True, exist_ok=True)
-    print(f"demo warehouse missing; running make demo -> {DEMO_DB}")
+    print(f"running make demo -> {DEMO_DB}")
     subprocess.run(["make", "demo"], cwd=REPO_ROOT, check=True)
     if not DEMO_DB.is_file():
         raise SystemExit(f"make demo did not create {DEMO_DB}")
@@ -49,11 +48,26 @@ def _rewrite_copy_targets(sql: str, out_dir: Path) -> str:
     return COPY_TO.sub(_replace, sql)
 
 
-def _is_skippable_std_catalog_error(message: str) -> bool:
-    lowered = message.lower()
+def _std_schema_present(conn: duckdb.DuckDBPyConnection) -> bool:
+    row = conn.execute(
+        """
+        select 1
+        from information_schema.schemata
+        where schema_name = 'tempo_no2_std_marts'
+        limit 1
+        """
+    ).fetchone()
+    return row is not None
+
+
+def _is_std_only_block(sql: str) -> bool:
+    lowered = sql.lower()
     if "tempo_no2_std_" not in lowered:
         return False
-    return "does not exist" in lowered or "catalog error" in lowered
+    # Mixed NRT+std recipes must always execute (fail on missing std).
+    if re.search(r"\btempo_no2_(marts|observability|ops|raw)\b", lowered):
+        return False
+    return True
 
 
 def main() -> int:
@@ -71,19 +85,19 @@ def main() -> int:
         out_dir = Path(tmp)
         conn = duckdb.connect(str(DEMO_DB), read_only=True)
         try:
+            std_present = _std_schema_present(conn)
             for index, block in enumerate(blocks, start=1):
                 sql = _rewrite_copy_targets(block, out_dir)
+                if not std_present and _is_std_only_block(sql):
+                    skipped += 1
+                    print(
+                        f"skip recipe #{index}: standard-scope schema absent in "
+                        "NRT-only demo warehouse"
+                    )
+                    continue
                 try:
                     conn.execute(sql)
                 except Exception as exc:  # noqa: BLE001 - surface DuckDB errors
-                    message = str(exc)
-                    if _is_skippable_std_catalog_error(message):
-                        skipped += 1
-                        print(
-                            f"skip recipe #{index}: standard-scope relation missing "
-                            f"in demo warehouse ({message.splitlines()[0]})"
-                        )
-                        continue
                     print(f"recipe #{index} failed:\n{sql}\n{exc}", file=sys.stderr)
                     return 1
                 checked += 1

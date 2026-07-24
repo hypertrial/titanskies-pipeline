@@ -46,14 +46,14 @@ uv run make costguard
 
 This is the full local release gate. For tagging, GitHub Releases, and docs
 publication, follow [docs/development/releasing.md](docs/development/releasing.md).
-GitHub Actions intentionally uses one runner for less than five cumulative
+The offline `ci.yml` fast-gate job intentionally stays under five cumulative
 minutes and runs lint, fast offline tests, saved HTTP contracts, dbt parse,
 a strict documentation build, and docs structure/inventory tests
-(`docs-build docs-structure`). Playwright render checks and demo recipe SQL
-smoke stay in local `docs-check` only. Live CMR, geography, NetCDF,
+(`docs-build docs-structure`). A separate Docs workflow publishes GH Pages on
+`main`, `workflow_dispatch`, and `v*` tags. Playwright render checks and demo
+recipe SQL smoke stay in local `docs-check` only. Live CMR, geography, NetCDF,
 Dagster/dbt integration, browser, 100%-coverage, data-quality, and Costguard
-validation remain local release checks. Documentation publishes on `main`,
-`workflow_dispatch`, and `v*` tags via `.github/workflows/docs.yml`.
+validation remain local release checks.
 
 ## Docs
 
