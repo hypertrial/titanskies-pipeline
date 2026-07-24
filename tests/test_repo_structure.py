@@ -12,6 +12,7 @@ REQUIRED = [
     "THIRD_PARTY_NOTICES.md",
     "pyproject.toml",
     ".github/workflows/ci.yml",
+    ".github/workflows/docs.yml",
     ".github/dependabot.yml",
     ".github/CODEOWNERS",
     ".github/PULL_REQUEST_TEMPLATE.md",

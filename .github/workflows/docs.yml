@@ -1,23 +1,21 @@
-name: CI
+name: Docs
 
 on:
   push:
     branches: [main]
-  pull_request:
+    tags:
+      - "v*"
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: docs-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED: "false"
-
 jobs:
-  fast-gate:
+  publish:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -28,6 +26,6 @@ jobs:
       - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
         with:
           enable-cache: true
-      - run: uv sync --locked --extra dev --extra geo
-      - name: Fast offline gate
-        run: uv run make lint test contract-http dbt-parse docs-build docs-structure
+      - run: uv sync --locked --extra dev
+      - name: Publish documentation site
+        run: uv run mkdocs gh-deploy --force

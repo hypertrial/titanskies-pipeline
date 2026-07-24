@@ -39,6 +39,9 @@ Identical for the `tempo_no2_std_*` mart family:
 | `tempo_no2_grid_latest` / `tempo_no2_std_grid_latest` | native grid cell, latest observation only |
 | `tempo_region_registry` / `tempo_no2_std_region_registry` | canonical geography contract |
 
+FQNs: NRT registry is `tempo_no2_marts.tempo_region_registry`; standard
+registry is `tempo_no2_std_marts.tempo_no2_std_region_registry`.
+
 ## Grid geometry contract
 
 The v0.3+ TEMPO grid contract has 2,950 latitude centers from 14.01° to 72.99°
@@ -55,9 +58,9 @@ p90; overlap area is repeated once per scan. `source_granule_count`,
 ## Anomaly rules
 
 Anomalies compare an analysis-ready row with prior analysis-ready rows from the
-same IANA local hour during the preceding 28 days. The score is null until
-seven prior observations exist, when baseline MAD is zero, or when the current
-row is not analysis-ready.
+same IANA local hour during the preceding baseline window. The score is null
+until the minimum prior observations exist, when baseline MAD is zero, or when
+the current row is not analysis-ready.
 
 ## Analysis-ready rule
 
@@ -65,7 +68,12 @@ For regional/country hourly rows, `is_analysis_ready` is true when
 `quality_flag_accepted`, `all_granules_validated`, and
 `coverage_fraction >= min_region_coverage` (from the active scope contract).
 Native-grid latest rows use `quality_flag_accepted and no2 is not null`.
-Freshness (`stale_hours_warn` / `stale_hours_error`) is reported in
-observability / `*_data_quality`, not folded into `is_analysis_ready`. Prefer
-the flag in analyst queries; `*_region_latest` marts already filter to
-analysis-ready non-country regions.
+
+Freshness (`stale_hours_warn` / `stale_hours_error`) is reported only in
+observability / `*_data_quality` (`issue_type = 'stale'`). It is **not**
+folded into `is_analysis_ready`.
+
+Prefer the flag in analyst queries on hourly, country, anomaly, and grid
+marts. `*_region_latest` marts already filter to analysis-ready non-country
+regions and **do not expose** `is_analysis_ready` — do not select or filter
+that column on a latest mart.

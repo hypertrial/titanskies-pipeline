@@ -56,15 +56,15 @@ curl -fsSL https://raw.githubusercontent.com/hypertrial/costguard/main/scripts/i
    gh release create vX.Y.Z --title "vX.Y.Z" --notes-file /tmp/release-notes.md
    ```
 
-6. Deploy documentation from the tagged commit:
+6. Documentation publishes automatically from `main`, `v*` tags, and
+   `workflow_dispatch` via `.github/workflows/docs.yml`. After tagging, confirm
+   the Docs workflow published
+   `https://hypertrial.github.io/titanskies-pipeline/`. Break-glass local
+   republish:
 
    ```bash
    uv run mkdocs gh-deploy --force
    ```
-
-   Docs publish locally by design. Do not add a docs workflow under
-   `.github/workflows/`; the repository policy keeps a single offline CI
-   runner.
 
 ## Post-release checks
 

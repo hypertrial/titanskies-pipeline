@@ -28,6 +28,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Reorganized and thickened documentation to the Hypertrial pipeline IA
   (audience hubs, concept sextet, query recipes, day-two / validate-recover
   guides, Material site chrome, and `site_url` for GitHub Pages).
+- Added docs anti-drift structure inventory tests, local demo recipe SQL smoke
+  (`scripts/check_docs_recipe_sql.py`), CI `docs-structure`, and a Docs
+  workflow that publishes GH Pages on `main`, `workflow_dispatch`, and `v*`
+  tags.
 - Bumped the warehouse schema version to `0.4`. `bootstrap_all_tempo_tables`
   now bootstraps schemas/tables/sequences for both scopes; a populated
   pre-0.4 warehouse now raises an error requiring a schema 0.4 rebuild rather

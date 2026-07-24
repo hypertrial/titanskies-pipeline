@@ -48,14 +48,20 @@ This is the full local release gate. For tagging, GitHub Releases, and docs
 publication, follow [docs/development/releasing.md](docs/development/releasing.md).
 GitHub Actions intentionally uses one runner for less than five cumulative
 minutes and runs lint, fast offline tests, saved HTTP contracts, dbt parse,
-and a strict documentation build. Live CMR, geography, NetCDF, Dagster/dbt
-integration, browser, 100%-coverage, data-quality, and Costguard validation
-remain local release checks.
+a strict documentation build, and docs structure/inventory tests
+(`docs-build docs-structure`). Playwright render checks and demo recipe SQL
+smoke stay in local `docs-check` only. Live CMR, geography, NetCDF,
+Dagster/dbt integration, browser, 100%-coverage, data-quality, and Costguard
+validation remain local release checks. Documentation publishes on `main`,
+`workflow_dispatch`, and `v*` tags via `.github/workflows/docs.yml`.
 
 ## Docs
 
 Docs follow Audiences → Get started → Guides → Reference → Concepts → Development.
-Docs-only PRs: `uv run make docs-check` (strict MkDocs build + structure/render).
+Docs-only PRs: `uv run make docs-check` (strict MkDocs build + structure +
+Playwright render + demo recipe SQL smoke). CI runs `docs-build docs-structure`
+only. Install Chromium once for render checks:
+`uv run playwright install chromium`.
 
 ## Do not
 

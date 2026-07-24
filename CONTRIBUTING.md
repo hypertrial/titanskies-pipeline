@@ -15,7 +15,9 @@ python scripts/build_region_artifacts.py --synthetic
 uv run make dbt-parse
 ```
 
-Keep `TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED=false` during development.
+Keep both schedule flags disabled during development
+(`TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED=false` and
+`TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED=false`).
 Use synthetic geography only for demos and tests. Live ingestion requires the
 reviewed production build described in
 [Build geography artifacts](docs/getting-started/build-geography-artifacts.md).
@@ -33,7 +35,9 @@ reviewed production build described in
   and golden rows together.
 - **Orchestration:** keep schedules opt-in and ensure registered jobs remain
   executable against disposable state.
-- **Documentation:** run the strict MkDocs and local browser checks.
+- **Documentation:** run `uv run make docs-check` (build + structure +
+  Playwright render + demo recipe SQL smoke). CI runs
+  `docs-build docs-structure` only.
 
 Version `0.4.x` does not migrate populated pre-0.4 derived warehouses. Test
 schema or geometry changes with a clean disposable database; do not add legacy

@@ -6,7 +6,6 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DOCS_DIR = REPO_ROOT / "docs"
-pytestmark = pytest.mark.repo_check
 
 EXPECTED_TOP_NAV = [
     "Home",
@@ -17,6 +16,18 @@ EXPECTED_TOP_NAV = [
     "Concepts",
     "Development",
 ]
+
+STALE_PHRASES = (
+    "Version 0.3 requires a new derived warehouse",
+    "Follow the v0.3 upgrade guide",
+    "standard scope's marts and observability tables are created but remain empty",
+    "std marts are built by make demo",
+)
+
+SCHEDULE_ENV_VARS = (
+    "TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED",
+    "TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED",
+)
 
 
 def _nav_targets(items):
@@ -35,6 +46,10 @@ def _config():
     text = (REPO_ROOT / "mkdocs.yml").read_text()
     text = re.sub(r"!!python/name:([^\s]+)", r"\1", text)
     return yaml.safe_load(text)
+
+
+def _combined_docs() -> str:
+    return "\n".join(path.read_text() for path in DOCS_DIR.rglob("*.md"))
 
 
 def test_navigation_contains_every_docs_page():
@@ -118,7 +133,7 @@ def test_environment_inventory_is_documented():
 
 
 def test_public_models_and_registered_jobs_are_documented():
-    combined = "\n".join(path.read_text() for path in DOCS_DIR.rglob("*.md"))
+    combined = _combined_docs()
     tempo_families = ("tempo_no2", "tempo_no2_std")
     marts = {
         path.stem
@@ -142,6 +157,33 @@ def test_public_models_and_registered_jobs_are_documented():
     assert len(jobs) == 8
     for name in marts | observability | jobs:
         assert name in combined, name
+    for variable in SCHEDULE_ENV_VARS:
+        assert variable in combined, variable
+
+
+def test_scripts_inventory_is_documented():
+    scripts_doc = (DOCS_DIR / "reference/scripts.md").read_text()
+    public_scripts = sorted(
+        path.name
+        for path in (REPO_ROOT / "scripts").glob("*.py")
+        if not path.name.startswith("_")
+    )
+    assert public_scripts
+    for name in public_scripts:
+        assert name in scripts_doc, name
+
+
+def test_stale_phrase_denylist():
+    paths = [
+        REPO_ROOT / "README.md",
+        REPO_ROOT / "AGENTS.md",
+        REPO_ROOT / "CONTRIBUTING.md",
+        *DOCS_DIR.rglob("*.md"),
+    ]
+    for path in paths:
+        text = path.read_text()
+        for phrase in STALE_PHRASES:
+            assert phrase not in text, f"{path.relative_to(REPO_ROOT)}: {phrase}"
 
 
 def test_built_homepage_is_semantic():
