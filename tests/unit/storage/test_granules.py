@@ -14,6 +14,8 @@ from titanskies_pipeline.ingestion.tempo.cmr import DiscoveredGranule
 from titanskies_pipeline.ingestion.tempo.netcdf import NetcdfGrid
 from titanskies_pipeline.storage.duckdb.connection import get_connection
 from titanskies_pipeline.storage.duckdb.granules import (
+    _raw_granule_path,
+    _unlink_requeued_granule_files,
     grid_latest_batch,
     list_pending_granule_records,
     list_pending_granules,
@@ -312,6 +314,42 @@ def test_failed_granule_remains_pending_without_requeue_metric(duck):
         pending = list_pending_granule_records(conn=conn)
     assert metrics.requeued == 0
     assert pending[0][0] == "G-fail"
+
+
+def test_unlink_requeued_granule_files_path_guards(tmp_path, monkeypatch):
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    monkeypatch.setattr(
+        "titanskies_pipeline.storage.duckdb.granules.get_tempo_scope_settings",
+        lambda scope: type("Settings", (), {"raw_data_dir": raw_dir})(),
+    )
+    monkeypatch.setattr(
+        "titanskies_pipeline.storage.duckdb.granules.BASE_DIR",
+        tmp_path,
+    )
+    assert _raw_granule_path("folder/G-keep.nc", scope="no2") == raw_dir / "G-keep.nc"
+    assert _raw_granule_path("folder/G-new", scope="no2") == raw_dir / "folder_G-new.nc"
+
+    inside = raw_dir / "G-keep.nc"
+    relative = Path("raw/relative.nc")
+    relative_abs = tmp_path / relative
+    outside = tmp_path / "outside.nc"
+    inside.write_text("in")
+    relative_abs.parent.mkdir(parents=True, exist_ok=True)
+    relative_abs.write_text("rel")
+    outside.write_text("out")
+
+    _unlink_requeued_granule_files(
+        [
+            ("G-keep.nc", None),
+            ("G-rel", str(relative)),
+            ("G-out", str(outside)),
+        ],
+        scope="no2",
+    )
+    assert not inside.exists()
+    assert not relative_abs.exists()
+    assert outside.exists()
 
 
 def test_replace_region_hour_aggregates(duck):

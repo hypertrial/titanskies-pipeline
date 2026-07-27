@@ -48,8 +48,12 @@ flowchart TB
 ## Per-granule ingest path
 
 Within a scope, CMR discovery upserts immutable granule identities into that
-scope's ops ledger. Hourly ingestion downloads each pending or failed granule,
-validates the NetCDF layout, computes weighted regional statistics, and writes
+scope's ops ledger. When CMR `revision-date` advances for a previously
+processed granule, discovery requeues it (pending statuses, cleared
+checksum/path, stale NetCDF removed under the scope raw directory) so ingest
+can replace the region-hour aggregates; download-URL-only refreshes do not
+requeue. Hourly ingestion downloads each pending or failed granule, validates
+the NetCDF layout, computes weighted regional statistics, and writes
 idempotent regional aggregates. The latest supported native-grid cells,
 regional aggregates, and processed-ledger success commit in one transaction
 per granule; failure rolls all three back before its error is recorded

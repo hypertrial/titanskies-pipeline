@@ -101,19 +101,26 @@ failing, so fix the shared cause once rather than cherry-picking IDs.
 
 ## Revised granule still shows old NO₂
 
-**Symptom.** Inventory `cmr_revision_at` is newer than `processed_at`, or you
-rediscovered a settling standard window, but marts still show the first
-processed values for that hour.
+**Symptom.** You rediscovered a settling window, but marts still show the
+first processed values for that hour.
 
-**Diagnostic.** Compare revision and processing timestamps for the scope:
+**Diagnostic.** Look for revision-driven requeues waiting on ingest (pending
+with a cleared checksum) and any stuck processed rows whose revision still
+outranks `processed_at`:
 
 ```sql
 select granule_id, cmr_revision_at, processed_at, processing_status,
        checksum_sha256
 from tempo_no2_ops.granule_inventory
 where cmr_revision_at is not null
-  and processed_at is not null
-  and cmr_revision_at > processed_at
+  and (
+    (processing_status = 'pending' and checksum_sha256 is null)
+    or (
+      processed_at is not null
+      and cmr_revision_at > processed_at
+      and processing_status = 'processed'
+    )
+  )
 order by cmr_revision_at desc
 limit 25;
 ```

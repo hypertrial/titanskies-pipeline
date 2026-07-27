@@ -82,6 +82,11 @@ def test_granule_discovery_config_rejects_equal_and_mixed_z_windows():
         window_end_utc="2026-06-01T01:00:00Z",
     )
     assert cfg.window_end_utc == "2026-06-01T01:00:00Z"
+    with pytest.raises(Exception, match="ISO-8601"):
+        GranuleDiscoveryConfig(
+            window_start_utc="not-a-timestamp",
+            window_end_utc="2026-06-01T01:00:00Z",
+        )
 
 
 def test_granule_discovery_config_rejects_partial_window():
