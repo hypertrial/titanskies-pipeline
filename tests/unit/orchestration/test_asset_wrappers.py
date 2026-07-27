@@ -48,7 +48,12 @@ def test_granule_inventory_asset(monkeypatch):
     result = tempo_no2_raw_granule_inventory.op.compute_fn.decorated_fn(
         ctx, orch_config.GranuleDiscoveryConfig(lookback_hours=4, allow_synthetic=True)
     )
-    assert result.metadata == {"found": 3, "inserted": 2, "refreshed": 1}
+    assert result.metadata == {
+        "found": 3,
+        "inserted": 2,
+        "refreshed": 1,
+        "requeued": 0,
+    }
 
 
 def test_granule_inventory_asset_uses_explicit_window(monkeypatch):
@@ -70,7 +75,12 @@ def test_granule_inventory_asset_uses_explicit_window(monkeypatch):
             allow_synthetic=True,
         ),
     )
-    assert result.metadata == {"found": 1, "inserted": 1, "refreshed": 0}
+    assert result.metadata == {
+        "found": 1,
+        "inserted": 1,
+        "refreshed": 0,
+        "requeued": 0,
+    }
     from datetime import datetime
 
     assert captured["window_start"] == datetime(2026, 7, 1, 0, 0, 0)

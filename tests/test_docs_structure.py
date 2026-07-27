@@ -134,6 +134,19 @@ def test_environment_inventory_is_documented():
         assert f"`{variable}`" in documented, variable
 
 
+def test_security_supported_versions_include_project_line():
+    pyproject = (REPO_ROOT / "pyproject.toml").read_text()
+    match = re.search(r'^version\s*=\s*"(\d+)\.(\d+)\.\d+"', pyproject, flags=re.M)
+    assert match is not None
+    supported_line = f"{match.group(1)}.{match.group(2)}.x"
+    security = (REPO_ROOT / "SECURITY.md").read_text()
+    assert f"| {supported_line}" in security
+    assert re.search(
+        rf"\|\s*{re.escape(supported_line)}\s*\|\s*Yes\s*\|",
+        security,
+    )
+
+
 def test_public_models_and_registered_jobs_are_documented():
     combined = _combined_docs()
     tempo_families = ("tempo_no2", "tempo_no2_std")

@@ -163,6 +163,155 @@ def test_list_pending_granules(duck):
     assert "G-pending" in pending
     assert "G-download-pending" in pending
     assert records[0][0] in pending
+    assert len(records[0]) == 3
+
+
+def test_upsert_requeues_processed_granule_on_newer_revision(
+    duck, tmp_path, monkeypatch
+):
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    monkeypatch.setattr(
+        "titanskies_pipeline.storage.duckdb.granules.get_tempo_scope_settings",
+        lambda scope: type(
+            "Settings",
+            (),
+            {"raw_data_dir": raw_dir},
+        )(),
+    )
+    older = datetime(2026, 7, 12, 12, 0, 0)
+    newer = older + timedelta(hours=6)
+    stale = raw_dir / "G-rev.nc"
+    stale.write_text("stale-netcdf")
+    with get_connection() as conn:
+        first = upsert_discovered_granules(
+            [
+                DiscoveredGranule(
+                    granule_id="G-rev",
+                    concept_id="C3685668637-LARC_CLOUD",
+                    acquisition_start=older,
+                    acquisition_end=older,
+                    download_url="https://example.test/a.nc",
+                    cmr_revision_at=older,
+                )
+            ],
+            conn=conn,
+        )
+        mark_granule_status(
+            "G-rev",
+            download_status="downloaded",
+            validation_status="validated",
+            processing_status="processed",
+            local_path=str(stale),
+            checksum_sha256="abc123",
+            file_size_bytes=12,
+            observation_time=older,
+            observation_hour=older,
+            conn=conn,
+        )
+        url_only = upsert_discovered_granules(
+            [
+                DiscoveredGranule(
+                    granule_id="G-rev",
+                    concept_id="C3685668637-LARC_CLOUD",
+                    acquisition_start=older,
+                    acquisition_end=older,
+                    download_url="https://example.test/a-signed.nc",
+                    cmr_revision_at=older,
+                )
+            ],
+            conn=conn,
+        )
+        row_after_url = conn.execute(
+            f"""
+            SELECT processing_status, checksum_sha256, download_url, cmr_revision_at
+            FROM {tempo_ops_tbl("granule_inventory")}
+            WHERE granule_id = 'G-rev'
+            """
+        ).fetchone()
+        requeue = upsert_discovered_granules(
+            [
+                DiscoveredGranule(
+                    granule_id="G-rev",
+                    concept_id="C3685668637-LARC_CLOUD",
+                    acquisition_start=older,
+                    acquisition_end=older,
+                    download_url="https://example.test/b.nc",
+                    cmr_revision_at=newer,
+                )
+            ],
+            conn=conn,
+        )
+        row = conn.execute(
+            f"""
+            SELECT processing_status, download_status, validation_status,
+                   checksum_sha256, local_path, download_url, cmr_revision_at,
+                   processed_at, error_message
+            FROM {tempo_ops_tbl("granule_inventory")}
+            WHERE granule_id = 'G-rev'
+            """
+        ).fetchone()
+        pending = list_pending_granule_records(conn=conn)
+        older_refresh = upsert_discovered_granules(
+            [
+                DiscoveredGranule(
+                    granule_id="G-rev",
+                    concept_id="C3685668637-LARC_CLOUD",
+                    acquisition_start=older,
+                    acquisition_end=older,
+                    download_url="https://example.test/old.nc",
+                    cmr_revision_at=older,
+                )
+            ],
+            conn=conn,
+        )
+        row_after_older = conn.execute(
+            f"""
+            SELECT cmr_revision_at, download_url, processing_status
+            FROM {tempo_ops_tbl("granule_inventory")}
+            WHERE granule_id = 'G-rev'
+            """
+        ).fetchone()
+
+    assert first.requeued == 0
+    assert url_only.requeued == 0
+    assert row_after_url[0] == "processed"
+    assert row_after_url[1] == "abc123"
+    assert row_after_url[2] == "https://example.test/a-signed.nc"
+    assert row_after_url[3] == older
+    assert requeue.requeued == 1
+    assert row[0] == "pending"
+    assert row[1] == "pending"
+    assert row[2] == "pending"
+    assert row[3] is None
+    assert row[4] is None
+    assert row[5] == "https://example.test/b.nc"
+    assert row[6] == newer
+    assert row[7] is None
+    assert row[8] is None
+    assert pending == [("G-rev", "https://example.test/b.nc", None)]
+    assert not stale.exists()
+    assert older_refresh.requeued == 0
+    assert row_after_older[0] == newer
+    assert row_after_older[1] == "https://example.test/b.nc"
+    assert row_after_older[2] == "pending"
+
+
+def test_failed_granule_remains_pending_without_requeue_metric(duck):
+    with get_connection() as conn:
+        upsert_discovered_granules([_sample_granule("G-fail")], conn=conn)
+        mark_granule_status(
+            "G-fail",
+            download_status="failed",
+            validation_status="failed",
+            processing_status="failed",
+            error_message="boom",
+            conn=conn,
+        )
+        metrics = upsert_discovered_granules([_sample_granule("G-fail")], conn=conn)
+        pending = list_pending_granule_records(conn=conn)
+    assert metrics.requeued == 0
+    assert pending[0][0] == "G-fail"
 
 
 def test_replace_region_hour_aggregates(duck):

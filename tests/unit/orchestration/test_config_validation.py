@@ -66,6 +66,24 @@ def test_granule_discovery_config_rejects_inverted_window():
         )
 
 
+def test_granule_discovery_config_rejects_equal_and_mixed_z_windows():
+    with pytest.raises(Exception, match="strictly before"):
+        GranuleDiscoveryConfig(
+            window_start_utc="2026-06-01T00:00:00Z",
+            window_end_utc="2026-06-01T00:00:00Z",
+        )
+    with pytest.raises(Exception, match="strictly before"):
+        GranuleDiscoveryConfig(
+            window_start_utc="2026-06-01T00:00:00",
+            window_end_utc="2026-06-01T00:00:00Z",
+        )
+    cfg = GranuleDiscoveryConfig(
+        window_start_utc="2026-06-01T00:00:00",
+        window_end_utc="2026-06-01T01:00:00Z",
+    )
+    assert cfg.window_end_utc == "2026-06-01T01:00:00Z"
+
+
 def test_granule_discovery_config_rejects_partial_window():
     with pytest.raises(Exception, match="must both be set together"):
         GranuleDiscoveryConfig(window_start_utc="2026-07-01T00:00:00")

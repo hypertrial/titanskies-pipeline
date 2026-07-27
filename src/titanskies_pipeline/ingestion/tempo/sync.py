@@ -368,7 +368,7 @@ def process_pending_granules(
         if max_granules is not None:
             pending = pending[:max_granules]
 
-        for granule_id, download_url in pending:
+        for granule_id, download_url, _checksum_sha256 in pending:
             destination = _granule_destination(granule_id, scope=scope)
             try:
                 if not destination.exists():

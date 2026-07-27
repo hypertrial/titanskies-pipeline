@@ -11,6 +11,7 @@ from typing import Any
 import numpy as np
 import pyarrow as pa
 
+from titanskies_pipeline.config.settings_tempo import get_tempo_scope_settings
 from titanskies_pipeline.config.settings_warehouse import BASE_DIR
 from titanskies_pipeline.geography.tempo_grid import cell_area_km2
 from titanskies_pipeline.ingestion.tempo.aggregate import RegionHourAggregate
@@ -30,17 +31,44 @@ class DiscoveryMetrics:
     found: int
     inserted: int
     refreshed: int
+    requeued: int = 0
 
 
 def _now() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
+def _raw_granule_path(granule_id: str, *, scope: str) -> Path:
+    name = Path(granule_id).name
+    if not name.endswith(".nc"):
+        name = f"{granule_id.replace('/', '_')}.nc"
+    return get_tempo_scope_settings(scope).raw_data_dir / name
+
+
+def _unlink_requeued_granule_files(
+    rows: list[tuple[str, str | None]], *, scope: str
+) -> None:
+    """Remove stale NetCDF files for granules requeued by a newer CMR revision."""
+    raw_root = get_tempo_scope_settings(scope).raw_data_dir.expanduser().resolve()
+    for granule_id, local_path in rows:
+        candidates = {_raw_granule_path(granule_id, scope=scope)}
+        if local_path:
+            candidate = Path(local_path).expanduser()
+            if not candidate.is_absolute():
+                candidate = BASE_DIR / candidate
+            candidates.add(candidate)
+        for candidate in candidates:
+            resolved = candidate.resolve()
+            if not resolved.is_relative_to(raw_root):
+                continue
+            resolved.unlink(missing_ok=True)
+
+
 def upsert_discovered_granules(
     granules: list[DiscoveredGranule], *, scope: str = SCOPE_NO2, conn=None
 ) -> DiscoveryMetrics:
     if not granules:
-        return DiscoveryMetrics(found=0, inserted=0, refreshed=0)
+        return DiscoveryMetrics(found=0, inserted=0, refreshed=0, requeued=0)
     now = _now()
     batch = pa.Table.from_pylist(
         [
@@ -56,28 +84,139 @@ def upsert_discovered_granules(
             for row in granules
         ]
     )
+    inventory = tempo_ops_tbl("granule_inventory", scope=scope)
+    # Newer CMR revision: source has a timestamp and target is missing one or older.
+    revision_newer = """
+        source.cmr_revision_at IS NOT NULL
+        AND (
+            target.cmr_revision_at IS NULL
+            OR source.cmr_revision_at > target.cmr_revision_at
+        )
+    """
+    # Older CMR revision: keep stored revision/URL (monotonic inventory).
+    revision_older = """
+        target.cmr_revision_at IS NOT NULL
+        AND (
+            source.cmr_revision_at IS NULL
+            OR source.cmr_revision_at < target.cmr_revision_at
+        )
+    """
     with _use_conn(conn) as connection:
         connection.register("_tempo_discovery_batch", batch)
         try:
             inserted = connection.execute(
                 f"""
                 SELECT count(*) FROM _tempo_discovery_batch AS source
-                LEFT JOIN {tempo_ops_tbl("granule_inventory", scope=scope)} AS target
+                LEFT JOIN {inventory} AS target
                     USING (granule_id)
                 WHERE target.granule_id IS NULL
                 """
             ).fetchone()[0]
+            requeue_rows = connection.execute(
+                f"""
+                SELECT target.granule_id, target.local_path
+                FROM _tempo_discovery_batch AS source
+                INNER JOIN {inventory} AS target
+                    USING (granule_id)
+                WHERE target.processing_status = 'processed'
+                  AND {revision_newer}
+                """
+            ).fetchall()
+            requeued = len(requeue_rows)
             connection.execute(
                 f"""
-                MERGE INTO {tempo_ops_tbl("granule_inventory", scope=scope)} AS target
+                MERGE INTO {inventory} AS target
                 USING _tempo_discovery_batch AS source
                 ON target.granule_id = source.granule_id
                 WHEN MATCHED THEN UPDATE SET
                     concept_id = source.concept_id,
-                    acquisition_start = coalesce(source.acquisition_start, target.acquisition_start),
-                    acquisition_end = coalesce(source.acquisition_end, target.acquisition_end),
-                    cmr_revision_at = coalesce(source.cmr_revision_at, target.cmr_revision_at),
-                    download_url = coalesce(source.download_url, target.download_url),
+                    acquisition_start = coalesce(
+                        source.acquisition_start, target.acquisition_start
+                    ),
+                    acquisition_end = coalesce(
+                        source.acquisition_end, target.acquisition_end
+                    ),
+                    cmr_revision_at = CASE
+                        WHEN {revision_older} THEN target.cmr_revision_at
+                        WHEN {revision_newer} THEN source.cmr_revision_at
+                        ELSE coalesce(source.cmr_revision_at, target.cmr_revision_at)
+                    END,
+                    download_url = CASE
+                        WHEN {revision_older} THEN target.download_url
+                        ELSE coalesce(source.download_url, target.download_url)
+                    END,
+                    download_status = CASE
+                        WHEN target.processing_status = 'processed'
+                            AND ({revision_newer})
+                        THEN 'pending'
+                        ELSE target.download_status
+                    END,
+                    validation_status = CASE
+                        WHEN target.processing_status = 'processed'
+                            AND ({revision_newer})
+                        THEN 'pending'
+                        ELSE target.validation_status
+                    END,
+                    processing_status = CASE
+                        WHEN target.processing_status = 'processed'
+                            AND ({revision_newer})
+                        THEN 'pending'
+                        ELSE target.processing_status
+                    END,
+                    local_path = CASE
+                        WHEN target.processing_status = 'processed'
+                            AND ({revision_newer})
+                        THEN NULL
+                        ELSE target.local_path
+                    END,
+                    checksum_sha256 = CASE
+                        WHEN target.processing_status = 'processed'
+                            AND ({revision_newer})
+                        THEN NULL
+                        ELSE target.checksum_sha256
+                    END,
+                    file_size_bytes = CASE
+                        WHEN target.processing_status = 'processed'
+                            AND ({revision_newer})
+                        THEN NULL
+                        ELSE target.file_size_bytes
+                    END,
+                    observation_time = CASE
+                        WHEN target.processing_status = 'processed'
+                            AND ({revision_newer})
+                        THEN NULL
+                        ELSE target.observation_time
+                    END,
+                    observation_hour = CASE
+                        WHEN target.processing_status = 'processed'
+                            AND ({revision_newer})
+                        THEN NULL
+                        ELSE target.observation_hour
+                    END,
+                    downloaded_at = CASE
+                        WHEN target.processing_status = 'processed'
+                            AND ({revision_newer})
+                        THEN NULL
+                        ELSE target.downloaded_at
+                    END,
+                    validated_at = CASE
+                        WHEN target.processing_status = 'processed'
+                            AND ({revision_newer})
+                        THEN NULL
+                        ELSE target.validated_at
+                    END,
+                    processed_at = CASE
+                        WHEN target.processing_status = 'processed'
+                            AND ({revision_newer})
+                        THEN NULL
+                        ELSE target.processed_at
+                    END,
+                    error_message = CASE
+                        WHEN target.processing_status = 'processed'
+                            AND ({revision_newer})
+                        THEN NULL
+                        ELSE target.error_message
+                    END,
                     last_seen_at = source.seen_at,
                     updated_at = source.seen_at
                 WHEN NOT MATCHED THEN INSERT (
@@ -96,11 +235,24 @@ def upsert_discovered_granules(
                 )
                 """
             )
+            _unlink_requeued_granule_files(
+                [
+                    (
+                        str(row[0]),
+                        None if row[1] is None else str(row[1]),
+                    )
+                    for row in requeue_rows
+                ],
+                scope=scope,
+            )
         finally:
             connection.unregister("_tempo_discovery_batch")
     found = len(granules)
     return DiscoveryMetrics(
-        found=found, inserted=int(inserted), refreshed=found - int(inserted)
+        found=found,
+        inserted=int(inserted),
+        refreshed=found - int(inserted),
+        requeued=int(requeued),
     )
 
 
@@ -162,17 +314,19 @@ def mark_granule_status(
 def list_pending_granules(*, scope: str = SCOPE_NO2, conn=None) -> list[str]:
     return [
         granule_id
-        for granule_id, _url in list_pending_granule_records(scope=scope, conn=conn)
+        for granule_id, _url, _checksum in list_pending_granule_records(
+            scope=scope, conn=conn
+        )
     ]
 
 
 def list_pending_granule_records(
     *, scope: str = SCOPE_NO2, conn=None
-) -> list[tuple[str, str | None]]:
+) -> list[tuple[str, str | None, str | None]]:
     with _use_conn(conn) as connection:
         rows = connection.execute(
             f"""
-            SELECT granule_id, download_url
+            SELECT granule_id, download_url, checksum_sha256
             FROM {tempo_ops_tbl("granule_inventory", scope=scope)}
             WHERE download_status IN ('pending', 'failed')
                OR validation_status IN ('pending', 'failed')
@@ -180,7 +334,14 @@ def list_pending_granule_records(
             ORDER BY discovered_at, granule_id
             """
         ).fetchall()
-    return [(str(row[0]), None if row[1] is None else str(row[1])) for row in rows]
+    return [
+        (
+            str(row[0]),
+            None if row[1] is None else str(row[1]),
+            None if row[2] is None else str(row[2]),
+        )
+        for row in rows
+    ]
 
 
 def processed_sibling_records(

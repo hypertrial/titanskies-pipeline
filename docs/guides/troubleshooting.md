@@ -99,6 +99,33 @@ automatically re-selected, downloaded from scratch, and have `error_message`
 cleared after success. The batch records every attempted granule before
 failing, so fix the shared cause once rather than cherry-picking IDs.
 
+## Revised granule still shows old NO₂
+
+**Symptom.** Inventory `cmr_revision_at` is newer than `processed_at`, or you
+rediscovered a settling standard window, but marts still show the first
+processed values for that hour.
+
+**Diagnostic.** Compare revision and processing timestamps for the scope:
+
+```sql
+select granule_id, cmr_revision_at, processed_at, processing_status,
+       checksum_sha256
+from tempo_no2_ops.granule_inventory
+where cmr_revision_at is not null
+  and processed_at is not null
+  and cmr_revision_at > processed_at
+order by cmr_revision_at desc
+limit 25;
+```
+
+Use `tempo_no2_std_ops.granule_inventory` for the standard scope.
+
+**Fix.** Rerun that scope's discovery then hourly/full ingest. Discovery
+requeues processed granules when CMR `revision-date` advances, deletes any
+stale local NetCDF under the scope raw directory, and clears checksum/path
+fields; ingest then downloads again and replaces the region-hour row.
+Download-URL-only refreshes do not requeue.
+
 ## Geography checksum / registry
 
 **Symptom.** Ingest or registry materialization fails on checksum,

@@ -58,7 +58,11 @@ The standard scope uses the same run-config shape under
 `tempo__no2_std__raw__region_hour_aggregates`. Because standard granules
 settle more slowly than NRT, prefer smaller chunks (for example 3-5 days) and
 expect discovery to surface revised granules for windows you already
-backfilled:
+backfilled. When CMR `revision-date` advances for a previously processed
+`granule_id`, discovery **requeues** that granule (pending download/validation/
+processing, cleared checksum and local path). The next ingest downloads the
+revised NetCDF, replaces the region-hour aggregates for its observation hour,
+and refreshes `grid_latest` when the observation is newer:
 
 ```yaml
 ops:

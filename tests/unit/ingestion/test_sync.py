@@ -419,6 +419,80 @@ def test_process_pending_success_and_failure(
         )
 
 
+def test_revision_requeue_forces_redownload(
+    duck, artifacts, netcdf_fixture, tmp_path, monkeypatch
+):
+    from datetime import timedelta
+
+    _seed_registry(artifacts)
+    raw_dir = tmp_path / "raw"
+    monkeypatch.setattr(
+        "titanskies_pipeline.ingestion.tempo.sync.TEMPO_NO2_RAW_DATA_DIR", raw_dir
+    )
+    monkeypatch.setattr(
+        "titanskies_pipeline.storage.duckdb.granules.get_tempo_scope_settings",
+        lambda scope: type("Settings", (), {"raw_data_dir": raw_dir})(),
+    )
+    older = datetime(2026, 7, 12, 12)
+    newer = older + timedelta(hours=3)
+    with get_connection() as conn:
+        upsert_discovered_granules(
+            [
+                DiscoveredGranule(
+                    granule_id="G-rev-sync",
+                    concept_id="TEST",
+                    acquisition_start=older,
+                    acquisition_end=older,
+                    download_url="https://example.test/a.nc",
+                    cmr_revision_at=older,
+                )
+            ],
+            conn=conn,
+        )
+
+    def download(_granule_id, destination):
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(netcdf_fixture, destination)
+        return destination
+
+    first = process_pending_granules(download_fn=download, allow_synthetic=True)
+    assert first.downloaded == 1
+    destination = _granule_destination("G-rev-sync")
+    assert destination.exists()
+    destination.write_text("stale-bytes")
+
+    with get_connection() as conn:
+        metrics = upsert_discovered_granules(
+            [
+                DiscoveredGranule(
+                    granule_id="G-rev-sync",
+                    concept_id="TEST",
+                    acquisition_start=older,
+                    acquisition_end=older,
+                    download_url="https://example.test/b.nc",
+                    cmr_revision_at=newer,
+                )
+            ],
+            conn=conn,
+        )
+    assert metrics.requeued == 1
+    assert not destination.exists()
+
+    downloads: list[str] = []
+
+    def download_again(granule_id, destination):
+        downloads.append(granule_id)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(netcdf_fixture, destination)
+        return destination
+
+    second = process_pending_granules(download_fn=download_again, allow_synthetic=True)
+    assert second.downloaded == 1
+    assert downloads == ["G-rev-sync"]
+    assert destination.exists()
+    assert destination.read_bytes() == netcdf_fixture.read_bytes()
+
+
 def test_production_guards_and_download_helpers(duck, artifacts, monkeypatch, tmp_path):
     with pytest.raises(RuntimeError, match="not registered"):
         require_registered_geography()

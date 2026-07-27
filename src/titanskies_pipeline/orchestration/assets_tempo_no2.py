@@ -13,6 +13,7 @@ from titanskies_pipeline.orchestration.config import (
 )
 from titanskies_pipeline.orchestration.dbt_build import stream_dbt_build
 from titanskies_pipeline.orchestration.dbt_project import DBT_PROJECT
+from titanskies_pipeline.orchestration.timestamps import parse_iso_utc
 from titanskies_pipeline.orchestration.translators import TempoDagsterDbtTranslator
 
 TEMPO_NO2_OPS_REGION_REGISTRY = asset_key(
@@ -66,12 +67,12 @@ def _build_granule_inventory_asset(*, scope: str, key: AssetKey):
         window_start = (
             None
             if config.window_start_utc is None
-            else _parse_iso_utc(config.window_start_utc)
+            else parse_iso_utc(config.window_start_utc)
         )
         window_end = (
             None
             if config.window_end_utc is None
-            else _parse_iso_utc(config.window_end_utc)
+            else parse_iso_utc(config.window_end_utc)
         )
         metrics = ops.sync_granule_discovery(
             scope=scope,
@@ -85,6 +86,7 @@ def _build_granule_inventory_asset(*, scope: str, key: AssetKey):
                 "found": metrics.found,
                 "inserted": metrics.inserted,
                 "refreshed": metrics.refreshed,
+                "requeued": metrics.requeued,
             }
         )
 
@@ -113,18 +115,6 @@ def _build_region_hour_aggregates_asset(*, scope: str, key: AssetKey, deps: list
         )
 
     return _region_hour_aggregates_asset
-
-
-def _parse_iso_utc(value: str):
-    from datetime import datetime, timezone
-
-    text = value.strip()
-    if text.endswith("Z"):
-        text = text[:-1] + "+00:00"
-    parsed = datetime.fromisoformat(text)
-    if parsed.tzinfo is not None:
-        return parsed.astimezone(timezone.utc).replace(tzinfo=None)
-    return parsed
 
 
 tempo_no2_ops_region_registry = _build_region_registry_asset(

@@ -8,6 +8,7 @@ from titanskies_pipeline.config.settings import (
     TEMPO_NO2_STD_DISCOVERY_LOOKBACK_HOURS,
 )
 from titanskies_pipeline.naming import SCOPE_NO2, SCOPE_NO2_STD, SOURCE_TEMPO, asset_key
+from titanskies_pipeline.orchestration.timestamps import parse_iso_utc
 
 TEMPO_NO2_OPS_REGION_REGISTRY = asset_key(
     SOURCE_TEMPO, SCOPE_NO2, "ops", "region_registry"
@@ -83,8 +84,14 @@ class GranuleDiscoveryConfig(Config):
                 "window_start_utc and window_end_utc must both be set together"
             )
         if has_start and has_end:
-            # Lexicographic compare is safe for zero-padded ISO-8601 timestamps.
-            if (self.window_start_utc or "") >= (self.window_end_utc or ""):
+            try:
+                start = parse_iso_utc(self.window_start_utc or "")
+                end = parse_iso_utc(self.window_end_utc or "")
+            except ValueError as exc:
+                raise ValueError(
+                    "window_start_utc and window_end_utc must be ISO-8601 timestamps"
+                ) from exc
+            if start >= end:
                 raise ValueError(
                     "window_start_utc must be strictly before window_end_utc"
                 )

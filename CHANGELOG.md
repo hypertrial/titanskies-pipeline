@@ -44,6 +44,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Fixed
 
+- Granule discovery now requeues previously processed granules when CMR
+  `revision-date` advances, clears checksum/local path, and deletes any stale
+  NetCDF under the scope raw directory so the next ingest re-downloads and
+  region-hour / grid-latest can pick up settling revisions. Older rediscovered
+  revisions no longer overwrite newer inventory metadata; download-URL-only
+  changes do not requeue.
+- Discovery-window config validates parsed UTC instants (including mixed
+  trailing-`Z` and offset forms) so equal or inverted windows are rejected
+  instead of relying on lexicographic string compare.
+- `SECURITY.md` supported-versions table now includes the current `0.4.x`
+  release line.
 - Granule-discovery config now defaults `lookback_hours` to unset so ad-hoc
   standard-scope materialization uses the 24-hour standard lookback instead of
   the NRT eight-hour default.
