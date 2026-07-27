@@ -72,44 +72,6 @@ def load_tempo_no2_contract(path: Path = TEMPO_NO2_CONTRACT_PATH) -> dict[str, o
     }
 
 
-TEMPO_NO2_CMR_CONCEPT_ID = _optional_env_str("TEMPO_NO2_CMR_CONCEPT_ID") or (
-    "C3685668637-LARC_CLOUD"
-)
-TEMPO_NO2_DISCOVERY_LOOKBACK_HOURS = _env_int("TEMPO_NO2_DISCOVERY_LOOKBACK_HOURS", 8)
-TEMPO_NO2_RAW_DATA_DIR = (
-    BASE_DIR / (_optional_env_str("TEMPO_NO2_RAW_DATA_DIR") or "data/raw/tempo_no2_nrt")
-).resolve()
-TEMPO_NO2_RAW_RETENTION_DAYS = _env_int("TEMPO_NO2_RAW_RETENTION_DAYS", 30)
-TEMPO_GEOGRAPHY_MANIFEST_PATH = (
-    BASE_DIR
-    / (
-        _optional_env_str("TEMPO_GEOGRAPHY_MANIFEST_PATH")
-        or "artifacts/geo/tempo_geography_artifacts.json"
-    )
-).resolve()
-TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED = _env_bool(
-    "TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED", False
-)
-TEMPO_NO2_CONTRACT = load_tempo_no2_contract()
-
-# TEMPO NO2 L3 V04 standard (validated, slower-arriving) collection.
-TEMPO_NO2_STD_CMR_CONCEPT_ID = _optional_env_str("TEMPO_NO2_STD_CMR_CONCEPT_ID") or (
-    "C3685896708-LARC_CLOUD"
-)
-TEMPO_NO2_STD_DISCOVERY_LOOKBACK_HOURS = _env_int(
-    "TEMPO_NO2_STD_DISCOVERY_LOOKBACK_HOURS", 24
-)
-TEMPO_NO2_STD_RAW_DATA_DIR = (
-    BASE_DIR
-    / (_optional_env_str("TEMPO_NO2_STD_RAW_DATA_DIR") or "data/raw/tempo_no2_std")
-).resolve()
-TEMPO_NO2_STD_RAW_RETENTION_DAYS = _env_int("TEMPO_NO2_STD_RAW_RETENTION_DAYS", 30)
-TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED = _env_bool(
-    "TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED", False
-)
-TEMPO_NO2_STD_CONTRACT = load_tempo_no2_contract(TEMPO_NO2_STD_CONTRACT_PATH)
-
-
 @dataclass(frozen=True)
 class TempoScopeSettings:
     cmr_concept_id: str
@@ -121,27 +83,71 @@ class TempoScopeSettings:
     hour_revision_sequence: str
 
 
+def _resolve_raw_data_dir(env_name: str, default_relative: str) -> Path:
+    return (BASE_DIR / (_optional_env_str(env_name) or default_relative)).resolve()
+
+
+def _build_nrt_scope_settings() -> TempoScopeSettings:
+    return TempoScopeSettings(
+        cmr_concept_id=_optional_env_str("TEMPO_NO2_CMR_CONCEPT_ID")
+        or "C3685668637-LARC_CLOUD",
+        discovery_lookback_hours=_env_int("TEMPO_NO2_DISCOVERY_LOOKBACK_HOURS", 8),
+        raw_data_dir=_resolve_raw_data_dir(
+            "TEMPO_NO2_RAW_DATA_DIR", "data/raw/tempo_no2_nrt"
+        ),
+        raw_retention_days=_env_int("TEMPO_NO2_RAW_RETENTION_DAYS", 30),
+        schedule_enabled=_env_bool("TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED", False),
+        contract=load_tempo_no2_contract(TEMPO_NO2_CONTRACT_PATH),
+        hour_revision_sequence=hour_revision_sequence(scope=SCOPE_NO2),
+    )
+
+
+def _build_std_scope_settings() -> TempoScopeSettings:
+    return TempoScopeSettings(
+        cmr_concept_id=_optional_env_str("TEMPO_NO2_STD_CMR_CONCEPT_ID")
+        or "C3685896708-LARC_CLOUD",
+        discovery_lookback_hours=_env_int("TEMPO_NO2_STD_DISCOVERY_LOOKBACK_HOURS", 24),
+        raw_data_dir=_resolve_raw_data_dir(
+            "TEMPO_NO2_STD_RAW_DATA_DIR", "data/raw/tempo_no2_std"
+        ),
+        raw_retention_days=_env_int("TEMPO_NO2_STD_RAW_RETENTION_DAYS", 30),
+        schedule_enabled=_env_bool("TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED", False),
+        contract=load_tempo_no2_contract(TEMPO_NO2_STD_CONTRACT_PATH),
+        hour_revision_sequence=hour_revision_sequence(scope=SCOPE_NO2_STD),
+    )
+
+
+# Import-time constants for Dagster schedule import / `from settings import *`.
+_IMPORT_NRT = _build_nrt_scope_settings()
+TEMPO_NO2_CMR_CONCEPT_ID = _IMPORT_NRT.cmr_concept_id
+TEMPO_NO2_DISCOVERY_LOOKBACK_HOURS = _IMPORT_NRT.discovery_lookback_hours
+TEMPO_NO2_RAW_DATA_DIR = _IMPORT_NRT.raw_data_dir
+TEMPO_NO2_RAW_RETENTION_DAYS = _IMPORT_NRT.raw_retention_days
+TEMPO_GEOGRAPHY_MANIFEST_PATH = (
+    BASE_DIR
+    / (
+        _optional_env_str("TEMPO_GEOGRAPHY_MANIFEST_PATH")
+        or "artifacts/geo/tempo_geography_artifacts.json"
+    )
+).resolve()
+TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED = _IMPORT_NRT.schedule_enabled
+TEMPO_NO2_CONTRACT = _IMPORT_NRT.contract
+
+_IMPORT_STD = _build_std_scope_settings()
+TEMPO_NO2_STD_CMR_CONCEPT_ID = _IMPORT_STD.cmr_concept_id
+TEMPO_NO2_STD_DISCOVERY_LOOKBACK_HOURS = _IMPORT_STD.discovery_lookback_hours
+TEMPO_NO2_STD_RAW_DATA_DIR = _IMPORT_STD.raw_data_dir
+TEMPO_NO2_STD_RAW_RETENTION_DAYS = _IMPORT_STD.raw_retention_days
+TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED = _IMPORT_STD.schedule_enabled
+TEMPO_NO2_STD_CONTRACT = _IMPORT_STD.contract
+
+
 def get_tempo_scope_settings(scope: str) -> TempoScopeSettings:
+    """Return scope settings from the current process environment and contracts."""
     if scope == SCOPE_NO2:
-        return TempoScopeSettings(
-            cmr_concept_id=TEMPO_NO2_CMR_CONCEPT_ID,
-            discovery_lookback_hours=TEMPO_NO2_DISCOVERY_LOOKBACK_HOURS,
-            raw_data_dir=TEMPO_NO2_RAW_DATA_DIR,
-            raw_retention_days=TEMPO_NO2_RAW_RETENTION_DAYS,
-            schedule_enabled=TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED,
-            contract=TEMPO_NO2_CONTRACT,
-            hour_revision_sequence=hour_revision_sequence(scope=SCOPE_NO2),
-        )
+        return _build_nrt_scope_settings()
     if scope == SCOPE_NO2_STD:
-        return TempoScopeSettings(
-            cmr_concept_id=TEMPO_NO2_STD_CMR_CONCEPT_ID,
-            discovery_lookback_hours=TEMPO_NO2_STD_DISCOVERY_LOOKBACK_HOURS,
-            raw_data_dir=TEMPO_NO2_STD_RAW_DATA_DIR,
-            raw_retention_days=TEMPO_NO2_STD_RAW_RETENTION_DAYS,
-            schedule_enabled=TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED,
-            contract=TEMPO_NO2_STD_CONTRACT,
-            hour_revision_sequence=hour_revision_sequence(scope=SCOPE_NO2_STD),
-        )
+        return _build_std_scope_settings()
     raise ValueError(
         f"Unknown TEMPO scope {scope!r}; expected {SCOPE_NO2!r} or {SCOPE_NO2_STD!r}"
     )

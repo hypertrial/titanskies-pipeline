@@ -56,10 +56,25 @@ def test_process_pending_granules_integration(
     with get_connection() as conn:
         upsert_discovered_granules([granule], conn=conn)
     raw_dir = tmp_path / "raw"
-    monkeypatch.setattr(
-        "titanskies_pipeline.ingestion.tempo.sync.TEMPO_NO2_RAW_DATA_DIR",
-        raw_dir,
-    )
+    from dataclasses import replace
+
+    from titanskies_pipeline.config.settings_tempo import get_tempo_scope_settings
+    from titanskies_pipeline.naming import SCOPE_NO2
+
+    real = get_tempo_scope_settings
+
+    def wrapped(scope: str):
+        settings = real(scope)
+        if scope == SCOPE_NO2:
+            return replace(settings, raw_data_dir=raw_dir)
+        return settings
+
+    for target in (
+        "titanskies_pipeline.ingestion.tempo.paths.get_tempo_scope_settings",
+        "titanskies_pipeline.ingestion.tempo.sync.get_tempo_scope_settings",
+        "titanskies_pipeline.storage.duckdb.granules.get_tempo_scope_settings",
+    ):
+        monkeypatch.setattr(target, wrapped)
 
     def download_fn(_granule_id: str, destination: Path) -> Path:
         destination.parent.mkdir(parents=True, exist_ok=True)

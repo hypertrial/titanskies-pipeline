@@ -5,10 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
+from dagster import AssetKey
+
 from titanskies_pipeline.naming import (
     SCOPE_NO2,
     SCOPE_NO2_STD,
     SOURCE_TEMPO,
+    asset_key,
     flat_name,
 )
 
@@ -26,6 +29,9 @@ class ScopeSpec:
     dbt_job_name: str
     full_job_name: str
     dbt_select: str
+    schedule_name: str
+    schedule_cron: str
+    schedule_description: str
     dbt_exclude: str | None = None
 
     @property
@@ -52,6 +58,18 @@ class ScopeSpec:
             "full": self.full_job_name,
         }[step]
 
+    @property
+    def ops_region_registry_key(self) -> AssetKey:
+        return asset_key(self.source, self.scope, "ops", "region_registry")
+
+    @property
+    def raw_granule_inventory_key(self) -> AssetKey:
+        return asset_key(self.source, self.scope, "raw", "granule_inventory")
+
+    @property
+    def raw_region_hour_aggregates_key(self) -> AssetKey:
+        return asset_key(self.source, self.scope, "raw", "region_hour_aggregates")
+
 
 TEMPO_NO2_SCOPE = ScopeSpec(
     source=SOURCE_TEMPO,
@@ -62,6 +80,12 @@ TEMPO_NO2_SCOPE = ScopeSpec(
     dbt_job_name="tempo_no2_dbt_build",
     full_job_name="tempo_no2_full_pipeline",
     dbt_select="+tag:tempo,tag:no2",
+    schedule_name="tempo_no2_hourly_pipeline_schedule",
+    schedule_cron="0 * * * *",
+    schedule_description=(
+        "Hourly TEMPO NO2 discovery, exact-hour ingestion, and dbt publication. "
+        "Controlled by TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED."
+    ),
 )
 
 TEMPO_NO2_STD_SCOPE = ScopeSpec(
@@ -73,9 +97,27 @@ TEMPO_NO2_STD_SCOPE = ScopeSpec(
     dbt_job_name="tempo_no2_std_dbt_build",
     full_job_name="tempo_no2_std_full_pipeline",
     dbt_select="+tag:tempo,tag:no2_std",
+    schedule_name="tempo_no2_std_pipeline_schedule",
+    schedule_cron="30 * * * *",
+    schedule_description=(
+        "TEMPO NO2 standard (V04) discovery, exact-hour ingestion, and dbt "
+        "publication. Runs on a wider lookback window than NRT because standard "
+        "granules settle more slowly. Controlled by "
+        "TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED."
+    ),
 )
 
 SHIPPED_SCOPE_SPECS: tuple[ScopeSpec, ...] = (TEMPO_NO2_SCOPE, TEMPO_NO2_STD_SCOPE)
+
+# Stable asset-key constants for assets, run configs, and tests.
+TEMPO_NO2_OPS_REGION_REGISTRY = TEMPO_NO2_SCOPE.ops_region_registry_key
+TEMPO_NO2_RAW_GRANULE_INVENTORY = TEMPO_NO2_SCOPE.raw_granule_inventory_key
+TEMPO_NO2_RAW_REGION_HOUR_AGGREGATES = TEMPO_NO2_SCOPE.raw_region_hour_aggregates_key
+TEMPO_NO2_STD_OPS_REGION_REGISTRY = TEMPO_NO2_STD_SCOPE.ops_region_registry_key
+TEMPO_NO2_STD_RAW_GRANULE_INVENTORY = TEMPO_NO2_STD_SCOPE.raw_granule_inventory_key
+TEMPO_NO2_STD_RAW_REGION_HOUR_AGGREGATES = (
+    TEMPO_NO2_STD_SCOPE.raw_region_hour_aggregates_key
+)
 
 
 def iter_scope_specs(*, source: str | None = None) -> tuple[ScopeSpec, ...]:
@@ -98,7 +140,13 @@ __all__ = [
     "SHIPPED_SCOPE_SPECS",
     "ScopeSpec",
     "ScopeStep",
+    "TEMPO_NO2_OPS_REGION_REGISTRY",
+    "TEMPO_NO2_RAW_GRANULE_INVENTORY",
+    "TEMPO_NO2_RAW_REGION_HOUR_AGGREGATES",
     "TEMPO_NO2_SCOPE",
+    "TEMPO_NO2_STD_OPS_REGION_REGISTRY",
+    "TEMPO_NO2_STD_RAW_GRANULE_INVENTORY",
+    "TEMPO_NO2_STD_RAW_REGION_HOUR_AGGREGATES",
     "TEMPO_NO2_STD_SCOPE",
     "get_scope_spec",
     "iter_scope_specs",

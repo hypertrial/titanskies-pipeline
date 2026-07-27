@@ -41,6 +41,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
   NRT callers are unaffected.
 - `make demo` remains NRT-only: it seeds contract CSVs but runs dbt with
   `--select tag:tempo,tag:no2`, so only NRT marts are built.
+- Dagster jobs, run configs, schedules, and shared asset keys are derived from
+  `SHIPPED_SCOPE_SPECS` so NRT/standard orchestration stays aligned without
+  hand-duplicated twin helpers.
+- `get_tempo_scope_settings()` rebuilds scope settings from the current
+  environment and contract files on each call; import-time `TEMPO_NO2_*`
+  constants remain for Dagster schedule import compatibility.
+- Present-but-invalid integer/float/date environment variables now raise
+  `ValueError` instead of silently using defaults.
+- Granule discovery upsert splits requeue (`UPDATE` + stale NetCDF unlink)
+  from metadata `MERGE`, preserving newer-revision requeue rules.
+- Ingest uses a shared `granule_raw_path` helper; when a pending checksum is
+  present and the staged NetCDF does not match, the file is unlinked and
+  re-downloaded.
+- Removed unfinished dbt staging/source surfaces for `pipeline_run_events`
+  (ops table and demo/unit seed retained).
+- Split `geography/build.py` into acquire/normalize/weights/publish modules
+  with a behavior-preserving façade.
+- Added dual-scope dbt layering coverage and an NRT↔standard SQL parity gate
+  (registry filename asymmetry remains allow-listed).
 
 ### Fixed
 

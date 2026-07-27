@@ -173,13 +173,14 @@ def test_upsert_requeues_processed_granule_on_newer_revision(
 ):
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
+    settings = type("Settings", (), {"raw_data_dir": raw_dir})()
     monkeypatch.setattr(
         "titanskies_pipeline.storage.duckdb.granules.get_tempo_scope_settings",
-        lambda scope: type(
-            "Settings",
-            (),
-            {"raw_data_dir": raw_dir},
-        )(),
+        lambda scope: settings,
+    )
+    monkeypatch.setattr(
+        "titanskies_pipeline.ingestion.tempo.paths.get_tempo_scope_settings",
+        lambda scope: settings,
     )
     older = datetime(2026, 7, 12, 12, 0, 0)
     newer = older + timedelta(hours=6)
@@ -319,9 +320,14 @@ def test_failed_granule_remains_pending_without_requeue_metric(duck):
 def test_unlink_requeued_granule_files_path_guards(tmp_path, monkeypatch):
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
+    settings = type("Settings", (), {"raw_data_dir": raw_dir})()
     monkeypatch.setattr(
         "titanskies_pipeline.storage.duckdb.granules.get_tempo_scope_settings",
-        lambda scope: type("Settings", (), {"raw_data_dir": raw_dir})(),
+        lambda scope: settings,
+    )
+    monkeypatch.setattr(
+        "titanskies_pipeline.ingestion.tempo.paths.get_tempo_scope_settings",
+        lambda scope: settings,
     )
     monkeypatch.setattr(
         "titanskies_pipeline.storage.duckdb.granules.BASE_DIR",

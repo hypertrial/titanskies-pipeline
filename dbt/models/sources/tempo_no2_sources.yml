@@ -52,10 +52,3 @@ sources:
         columns:
           - name: granule_id
             tests: [not_null, unique]
-      - name: pipeline_run_events
-        meta:
-          dagster:
-            asset_key: [tempo, no2, raw, region_hour_aggregates]
-        columns:
-          - name: run_id
-            tests: [not_null]

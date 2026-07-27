@@ -17,6 +17,7 @@ from titanskies_pipeline.geography.tempo_grid import cell_area_km2
 from titanskies_pipeline.ingestion.tempo.aggregate import RegionHourAggregate
 from titanskies_pipeline.ingestion.tempo.cmr import DiscoveredGranule
 from titanskies_pipeline.ingestion.tempo.netcdf import NetcdfGrid, quality_mask
+from titanskies_pipeline.ingestion.tempo.paths import granule_raw_path
 from titanskies_pipeline.naming import SCOPE_NO2
 from titanskies_pipeline.storage.duckdb.connection import _use_conn
 from titanskies_pipeline.storage.duckdb.schemas.constants import (
@@ -39,10 +40,7 @@ def _now() -> datetime:
 
 
 def _raw_granule_path(granule_id: str, *, scope: str) -> Path:
-    name = Path(granule_id).name
-    if not name.endswith(".nc"):
-        name = f"{granule_id.replace('/', '_')}.nc"
-    return get_tempo_scope_settings(scope).raw_data_dir / name
+    return granule_raw_path(granule_id, scope=scope)
 
 
 def _unlink_requeued_granule_files(
@@ -51,7 +49,7 @@ def _unlink_requeued_granule_files(
     """Remove stale NetCDF files for granules requeued by a newer CMR revision."""
     raw_root = get_tempo_scope_settings(scope).raw_data_dir.expanduser().resolve()
     for granule_id, local_path in rows:
-        candidates = {_raw_granule_path(granule_id, scope=scope)}
+        candidates = {granule_raw_path(granule_id, scope=scope)}
         if local_path:
             candidate = Path(local_path).expanduser()
             if not candidate.is_absolute():
@@ -123,6 +121,39 @@ def upsert_discovered_granules(
                 """
             ).fetchall()
             requeued = len(requeue_rows)
+            if requeue_rows:
+                requeue_ids = [str(row[0]) for row in requeue_rows]
+                placeholders = ", ".join("?" for _ in requeue_ids)
+                connection.execute(
+                    f"""
+                    UPDATE {inventory}
+                    SET download_status = 'pending',
+                        validation_status = 'pending',
+                        processing_status = 'pending',
+                        local_path = NULL,
+                        checksum_sha256 = NULL,
+                        file_size_bytes = NULL,
+                        observation_time = NULL,
+                        observation_hour = NULL,
+                        downloaded_at = NULL,
+                        validated_at = NULL,
+                        processed_at = NULL,
+                        error_message = NULL,
+                        updated_at = ?
+                    WHERE granule_id IN ({placeholders})
+                    """,
+                    [now, *requeue_ids],
+                )
+                _unlink_requeued_granule_files(
+                    [
+                        (
+                            str(row[0]),
+                            None if row[1] is None else str(row[1]),
+                        )
+                        for row in requeue_rows
+                    ],
+                    scope=scope,
+                )
             connection.execute(
                 f"""
                 MERGE INTO {inventory} AS target
@@ -145,78 +176,6 @@ def upsert_discovered_granules(
                         WHEN {revision_older} THEN target.download_url
                         ELSE coalesce(source.download_url, target.download_url)
                     END,
-                    download_status = CASE
-                        WHEN target.processing_status = 'processed'
-                            AND ({revision_newer})
-                        THEN 'pending'
-                        ELSE target.download_status
-                    END,
-                    validation_status = CASE
-                        WHEN target.processing_status = 'processed'
-                            AND ({revision_newer})
-                        THEN 'pending'
-                        ELSE target.validation_status
-                    END,
-                    processing_status = CASE
-                        WHEN target.processing_status = 'processed'
-                            AND ({revision_newer})
-                        THEN 'pending'
-                        ELSE target.processing_status
-                    END,
-                    local_path = CASE
-                        WHEN target.processing_status = 'processed'
-                            AND ({revision_newer})
-                        THEN NULL
-                        ELSE target.local_path
-                    END,
-                    checksum_sha256 = CASE
-                        WHEN target.processing_status = 'processed'
-                            AND ({revision_newer})
-                        THEN NULL
-                        ELSE target.checksum_sha256
-                    END,
-                    file_size_bytes = CASE
-                        WHEN target.processing_status = 'processed'
-                            AND ({revision_newer})
-                        THEN NULL
-                        ELSE target.file_size_bytes
-                    END,
-                    observation_time = CASE
-                        WHEN target.processing_status = 'processed'
-                            AND ({revision_newer})
-                        THEN NULL
-                        ELSE target.observation_time
-                    END,
-                    observation_hour = CASE
-                        WHEN target.processing_status = 'processed'
-                            AND ({revision_newer})
-                        THEN NULL
-                        ELSE target.observation_hour
-                    END,
-                    downloaded_at = CASE
-                        WHEN target.processing_status = 'processed'
-                            AND ({revision_newer})
-                        THEN NULL
-                        ELSE target.downloaded_at
-                    END,
-                    validated_at = CASE
-                        WHEN target.processing_status = 'processed'
-                            AND ({revision_newer})
-                        THEN NULL
-                        ELSE target.validated_at
-                    END,
-                    processed_at = CASE
-                        WHEN target.processing_status = 'processed'
-                            AND ({revision_newer})
-                        THEN NULL
-                        ELSE target.processed_at
-                    END,
-                    error_message = CASE
-                        WHEN target.processing_status = 'processed'
-                            AND ({revision_newer})
-                        THEN NULL
-                        ELSE target.error_message
-                    END,
                     last_seen_at = source.seen_at,
                     updated_at = source.seen_at
                 WHEN NOT MATCHED THEN INSERT (
@@ -234,16 +193,6 @@ def upsert_discovered_granules(
                     NULL, source.seen_at
                 )
                 """
-            )
-            _unlink_requeued_granule_files(
-                [
-                    (
-                        str(row[0]),
-                        None if row[1] is None else str(row[1]),
-                    )
-                    for row in requeue_rows
-                ],
-                scope=scope,
             )
         finally:
             connection.unregister("_tempo_discovery_batch")

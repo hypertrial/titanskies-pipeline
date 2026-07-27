@@ -306,14 +306,16 @@ def test_safe_extract_tolerates_concurrent_identical_extraction(tmp_path, monkey
     root = tmp_path / "extracted"
     destination = root / hashlib.sha256(archive.read_bytes()).hexdigest()
     destination.mkdir(parents=True)
-    real_replace = geo_build.os.replace
+    import titanskies_pipeline.geography.acquire as acquire_mod
+
+    real_replace = acquire_mod.os.replace
 
     def concurrent_replace(source, target):
         if Path(target) == destination:
             raise FileExistsError("published concurrently")
         return real_replace(source, target)
 
-    monkeypatch.setattr(geo_build.os, "replace", concurrent_replace)
+    monkeypatch.setattr(acquire_mod.os, "replace", concurrent_replace)
     assert _safe_extract(archive, root) == destination
     assert not [path for path in root.iterdir() if path.name.startswith(".")]
 
@@ -410,7 +412,10 @@ def test_source_download_is_atomic_and_checksum_verified(tmp_path, monkeypatch):
         "url": "https://example.test/tiny.zip",
         "sha256": hashlib.sha256(content).hexdigest(),
     }
-    monkeypatch.setattr(geo_build.requests, "get", lambda *_a, **_k: _Response(content))
+    monkeypatch.setattr(
+        "titanskies_pipeline.geography.acquire.requests.get",
+        lambda *_a, **_k: _Response(content),
+    )
     downloaded = acquire_source(source, source_cache=tmp_path, offline=False)
     assert downloaded.read_bytes() == content
     assert acquire_source(source, source_cache=tmp_path, offline=True) == downloaded
@@ -490,14 +495,16 @@ def test_atomic_parquet_writers_reject_row_count_mismatch(
             "geometry_version": ["v1"],
         }
     )
-    real_parquet_file = geo_build.pq.ParquetFile
+    import titanskies_pipeline.geography.weights as weights_mod
+
+    real_parquet_file = weights_mod.pq.ParquetFile
 
     class WrongCount:
         def __init__(self, path):
             self._delegate = real_parquet_file(path)
             self.metadata = type("Metadata", (), {"num_rows": 2})()
 
-    monkeypatch.setattr(geo_build.pq, "ParquetFile", WrongCount)
+    monkeypatch.setattr(weights_mod.pq, "ParquetFile", WrongCount)
     if writer_kind == "parquet":
         with pytest.raises(ValueError, match="Parquet validation failed"):
             _atomic_parquet(table, tmp_path / "artifact.parquet")
@@ -520,7 +527,9 @@ def test_atomic_weights_closes_writer_after_write_failure(tmp_path, monkeypatch)
         def close(self):
             closed.append(True)
 
-    monkeypatch.setattr(geo_build.pq, "ParquetWriter", BrokenWriter)
+    monkeypatch.setattr(
+        "titanskies_pipeline.geography.weights.pq.ParquetWriter", BrokenWriter
+    )
     with pytest.raises(OSError, match="disk full"):
         _atomic_weights(
             [
@@ -707,7 +716,9 @@ def test_generation_rejects_checksum_change_during_publication(
         calls += 1
         return "changed" if calls == failed_call else real_checksum(path)
 
-    monkeypatch.setattr(geo_build, "sha256_file", changing_checksum)
+    monkeypatch.setattr(
+        "titanskies_pipeline.geography.publish.sha256_file", changing_checksum
+    )
     with pytest.raises(ValueError, match=message):
         publish_artifact_generation(
             output_dir=tmp_path / "geo",

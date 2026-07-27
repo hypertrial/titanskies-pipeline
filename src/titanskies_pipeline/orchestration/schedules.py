@@ -2,51 +2,37 @@ from __future__ import annotations
 
 from dagster import DefaultScheduleStatus, ScheduleDefinition
 
-from titanskies_pipeline.config.settings import (
-    TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED,
-    TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED,
-)
-from titanskies_pipeline.orchestration.config import (
-    tempo_no2_full_pipeline_run_config,
-    tempo_no2_std_full_pipeline_run_config,
-)
-from titanskies_pipeline.orchestration.jobs import (
-    tempo_no2_full_pipeline,
-    tempo_no2_std_full_pipeline,
+from titanskies_pipeline.config.settings_tempo import get_tempo_scope_settings
+from titanskies_pipeline.orchestration.config import full_pipeline_run_config
+from titanskies_pipeline.orchestration.jobs import SCOPE_JOBS
+from titanskies_pipeline.orchestration.scope_registry import (
+    SHIPPED_SCOPE_SPECS,
+    TEMPO_NO2_SCOPE,
+    TEMPO_NO2_STD_SCOPE,
+    ScopeSpec,
 )
 
-tempo_no2_hourly_pipeline_schedule = ScheduleDefinition(
-    name="tempo_no2_hourly_pipeline_schedule",
-    job=tempo_no2_full_pipeline,
-    cron_schedule="0 * * * *",
-    run_config=tempo_no2_full_pipeline_run_config(),
-    default_status=(
-        DefaultScheduleStatus.RUNNING
-        if TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED
-        else DefaultScheduleStatus.STOPPED
-    ),
-    description=(
-        "Hourly TEMPO NO2 discovery, exact-hour ingestion, and dbt publication. "
-        "Controlled by TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED."
-    ),
-)
 
-tempo_no2_std_pipeline_schedule = ScheduleDefinition(
-    name="tempo_no2_std_pipeline_schedule",
-    job=tempo_no2_std_full_pipeline,
-    cron_schedule="30 * * * *",
-    run_config=tempo_no2_std_full_pipeline_run_config(),
-    default_status=(
-        DefaultScheduleStatus.RUNNING
-        if TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED
-        else DefaultScheduleStatus.STOPPED
-    ),
-    description=(
-        "TEMPO NO2 standard (V04) discovery, exact-hour ingestion, and dbt "
-        "publication. Runs on a wider lookback window than NRT because standard "
-        "granules settle more slowly. Controlled by "
-        "TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED."
-    ),
-)
+def _build_full_pipeline_schedule(spec: ScopeSpec) -> ScheduleDefinition:
+    enabled = get_tempo_scope_settings(spec.scope).schedule_enabled
+    return ScheduleDefinition(
+        name=spec.schedule_name,
+        job=SCOPE_JOBS[spec.full_job_name],
+        cron_schedule=spec.schedule_cron,
+        run_config=full_pipeline_run_config(spec),
+        default_status=(
+            DefaultScheduleStatus.RUNNING if enabled else DefaultScheduleStatus.STOPPED
+        ),
+        description=spec.schedule_description,
+    )
+
+
+_SCOPE_SCHEDULES = {
+    spec.schedule_name: _build_full_pipeline_schedule(spec)
+    for spec in SHIPPED_SCOPE_SPECS
+}
+
+tempo_no2_hourly_pipeline_schedule = _SCOPE_SCHEDULES[TEMPO_NO2_SCOPE.schedule_name]
+tempo_no2_std_pipeline_schedule = _SCOPE_SCHEDULES[TEMPO_NO2_STD_SCOPE.schedule_name]
 
 __all__ = ["tempo_no2_hourly_pipeline_schedule", "tempo_no2_std_pipeline_schedule"]

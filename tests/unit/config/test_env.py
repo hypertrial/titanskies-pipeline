@@ -1,5 +1,7 @@
 from datetime import date
 
+import pytest
+
 from titanskies_pipeline.config import _env
 
 
@@ -9,7 +11,8 @@ def test_env_int_branches(monkeypatch):
     monkeypatch.setenv("X_INT", "7")
     assert _env._env_int("X_INT", 3) == 7
     monkeypatch.setenv("X_INT", "bad")
-    assert _env._env_int("X_INT", 3) == 3
+    with pytest.raises(ValueError, match="X_INT"):
+        _env._env_int("X_INT", 3)
 
 
 def test_env_float_branches(monkeypatch):
@@ -18,7 +21,8 @@ def test_env_float_branches(monkeypatch):
     monkeypatch.setenv("X_FLOAT", "2.5")
     assert _env._env_float("X_FLOAT", 1.5) == 2.5
     monkeypatch.setenv("X_FLOAT", "bad")
-    assert _env._env_float("X_FLOAT", 1.5) == 1.5
+    with pytest.raises(ValueError, match="X_FLOAT"):
+        _env._env_float("X_FLOAT", 1.5)
 
 
 def test_optional_env_helpers(monkeypatch):
@@ -31,8 +35,11 @@ def test_optional_env_helpers(monkeypatch):
 
 
 def test_env_date_and_bool(monkeypatch):
-    monkeypatch.setenv("X_DATE", "bad")
+    monkeypatch.delenv("X_DATE", raising=False)
     assert _env._env_date("X_DATE", "2026-07-12") == date(2026, 7, 12)
+    monkeypatch.setenv("X_DATE", "bad")
+    with pytest.raises(ValueError, match="X_DATE"):
+        _env._env_date("X_DATE", "2026-07-12")
     monkeypatch.setenv("X_DATE", "2026-08-01")
     assert _env._env_date("X_DATE", "2026-07-12") == date(2026, 8, 1)
 

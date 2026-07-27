@@ -3,7 +3,7 @@ from pathlib import Path
 from dagster import AssetExecutionContext, AssetKey, MaterializeResult, asset
 from dagster_dbt import DbtCliResource, dbt_assets
 
-from titanskies_pipeline.naming import SCOPE_NO2, SCOPE_NO2_STD, SOURCE_TEMPO, asset_key
+from titanskies_pipeline.naming import SCOPE_NO2, SCOPE_NO2_STD
 from titanskies_pipeline.orchestration import tempo_ops as ops
 from titanskies_pipeline.orchestration.config import (
     DbtBuildConfig,
@@ -13,28 +13,16 @@ from titanskies_pipeline.orchestration.config import (
 )
 from titanskies_pipeline.orchestration.dbt_build import stream_dbt_build
 from titanskies_pipeline.orchestration.dbt_project import DBT_PROJECT
+from titanskies_pipeline.orchestration.scope_registry import (
+    TEMPO_NO2_OPS_REGION_REGISTRY,
+    TEMPO_NO2_RAW_GRANULE_INVENTORY,
+    TEMPO_NO2_RAW_REGION_HOUR_AGGREGATES,
+    TEMPO_NO2_STD_OPS_REGION_REGISTRY,
+    TEMPO_NO2_STD_RAW_GRANULE_INVENTORY,
+    TEMPO_NO2_STD_RAW_REGION_HOUR_AGGREGATES,
+)
 from titanskies_pipeline.orchestration.timestamps import parse_iso_utc
 from titanskies_pipeline.orchestration.translators import TempoDagsterDbtTranslator
-
-TEMPO_NO2_OPS_REGION_REGISTRY = asset_key(
-    SOURCE_TEMPO, SCOPE_NO2, "ops", "region_registry"
-)
-TEMPO_NO2_RAW_GRANULE_INVENTORY = asset_key(
-    SOURCE_TEMPO, SCOPE_NO2, "raw", "granule_inventory"
-)
-TEMPO_NO2_RAW_REGION_HOUR_AGGREGATES = asset_key(
-    SOURCE_TEMPO, SCOPE_NO2, "raw", "region_hour_aggregates"
-)
-
-TEMPO_NO2_STD_OPS_REGION_REGISTRY = asset_key(
-    SOURCE_TEMPO, SCOPE_NO2_STD, "ops", "region_registry"
-)
-TEMPO_NO2_STD_RAW_GRANULE_INVENTORY = asset_key(
-    SOURCE_TEMPO, SCOPE_NO2_STD, "raw", "granule_inventory"
-)
-TEMPO_NO2_STD_RAW_REGION_HOUR_AGGREGATES = asset_key(
-    SOURCE_TEMPO, SCOPE_NO2_STD, "raw", "region_hour_aggregates"
-)
 
 
 def _build_region_registry_asset(*, scope: str, key: AssetKey):

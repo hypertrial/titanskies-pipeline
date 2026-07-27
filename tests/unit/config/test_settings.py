@@ -13,10 +13,19 @@ from titanskies_pipeline.config.settings_tempo import (
 from titanskies_pipeline.naming import SCOPE_NO2, SCOPE_NO2_STD
 
 
-def test_env_int_invalid_falls_back(monkeypatch, isolated_env):
+def test_env_int_invalid_raises(monkeypatch, isolated_env):
     monkeypatch.setenv("TEMPO_NO2_DISCOVERY_LOOKBACK_HOURS", "bad")
-    settings = reload_all_settings_modules()
-    assert settings.TEMPO_NO2_DISCOVERY_LOOKBACK_HOURS == 8
+    with pytest.raises(ValueError, match="TEMPO_NO2_DISCOVERY_LOOKBACK_HOURS"):
+        reload_all_settings_modules()
+
+
+def test_get_tempo_scope_settings_reads_env_at_call_time(monkeypatch, isolated_env):
+    reload_all_settings_modules()
+    monkeypatch.setenv("TEMPO_NO2_DISCOVERY_LOOKBACK_HOURS", "11")
+    monkeypatch.setenv("TEMPO_NO2_RAW_DATA_DIR", "data/raw/runtime_nrt")
+    settings = get_tempo_scope_settings(SCOPE_NO2)
+    assert settings.discovery_lookback_hours == 11
+    assert settings.raw_data_dir.name == "runtime_nrt"
 
 
 def test_duckdb_path_env_overrides_name(monkeypatch, tmp_path, isolated_env):

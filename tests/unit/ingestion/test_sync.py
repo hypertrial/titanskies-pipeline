@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shutil
+from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -10,6 +11,7 @@ import numpy as np
 import pytest
 from scripts.build_region_artifacts import build_artifacts
 
+from titanskies_pipeline.config.settings_tempo import get_tempo_scope_settings
 from titanskies_pipeline.geography.registry import (
     load_geo_artifacts,
     persist_geo_artifacts,
@@ -29,13 +31,31 @@ from titanskies_pipeline.ingestion.tempo.sync import (
     sync_granule_discovery,
     sync_region_registry,
 )
-from titanskies_pipeline.naming import SCOPE_NO2_STD
+from titanskies_pipeline.naming import SCOPE_NO2, SCOPE_NO2_STD
 from titanskies_pipeline.storage.duckdb.connection import get_connection
 from titanskies_pipeline.storage.duckdb.granules import (
     mark_granule_status,
     sha256_file,
     upsert_discovered_granules,
 )
+
+
+def _patch_raw_data_dir(monkeypatch, raw_dir: Path) -> None:
+    real = get_tempo_scope_settings
+
+    def wrapped(scope: str):
+        settings = real(scope)
+        if scope == SCOPE_NO2:
+            return replace(settings, raw_data_dir=raw_dir)
+        return settings
+
+    for target in (
+        "titanskies_pipeline.ingestion.tempo.paths.get_tempo_scope_settings",
+        "titanskies_pipeline.ingestion.tempo.sync.get_tempo_scope_settings",
+        "titanskies_pipeline.storage.duckdb.granules.get_tempo_scope_settings",
+    ):
+        monkeypatch.setattr(target, wrapped)
+
 
 NETCDF_FIXTURE = (
     Path(__file__).resolve().parents[2] / "fixtures" / "netcdf" / "tempo_no2_sample.nc"
@@ -202,9 +222,7 @@ def test_missing_sibling_is_restored_and_checksum_verified(
 ):
     _seed_registry(artifacts)
     raw_dir = tmp_path / "raw"
-    monkeypatch.setattr(
-        "titanskies_pipeline.ingestion.tempo.sync.TEMPO_NO2_RAW_DATA_DIR", raw_dir
-    )
+    _patch_raw_data_dir(monkeypatch, raw_dir)
     with get_connection() as conn:
         upsert_discovered_granules(
             [_granule("G-missing"), _granule("G-current")], conn=conn
@@ -245,10 +263,7 @@ def test_missing_sibling_requires_prior_matching_checksum(
     duck, artifacts, netcdf_fixture, tmp_path, monkeypatch, checksum, message
 ):
     _seed_registry(artifacts)
-    monkeypatch.setattr(
-        "titanskies_pipeline.ingestion.tempo.sync.TEMPO_NO2_RAW_DATA_DIR",
-        tmp_path / "raw",
-    )
+    _patch_raw_data_dir(monkeypatch, tmp_path / "raw")
     with get_connection() as conn:
         upsert_discovered_granules(
             [_granule("G-missing"), _granule("G-current")], conn=conn
@@ -396,9 +411,7 @@ def test_process_pending_success_and_failure(
 ):
     _seed_registry(artifacts)
     raw_dir = tmp_path / "raw"
-    monkeypatch.setattr(
-        "titanskies_pipeline.ingestion.tempo.sync.TEMPO_NO2_RAW_DATA_DIR", raw_dir
-    )
+    _patch_raw_data_dir(monkeypatch, raw_dir)
     with get_connection() as conn:
         upsert_discovered_granules([_granule("G-pending")], conn=conn)
 
@@ -426,9 +439,7 @@ def test_revision_requeue_forces_redownload(
 
     _seed_registry(artifacts)
     raw_dir = tmp_path / "raw"
-    monkeypatch.setattr(
-        "titanskies_pipeline.ingestion.tempo.sync.TEMPO_NO2_RAW_DATA_DIR", raw_dir
-    )
+    _patch_raw_data_dir(monkeypatch, raw_dir)
     monkeypatch.setattr(
         "titanskies_pipeline.storage.duckdb.granules.get_tempo_scope_settings",
         lambda scope: type("Settings", (), {"raw_data_dir": raw_dir})(),
@@ -502,9 +513,7 @@ def test_production_guards_and_download_helpers(duck, artifacts, monkeypatch, tm
     require_registered_geography(allow_synthetic=True)
     with pytest.raises(RuntimeError, match="rejects synthetic"):
         process_pending_granules()
-    monkeypatch.setattr(
-        "titanskies_pipeline.ingestion.tempo.sync.TEMPO_NO2_RAW_DATA_DIR", tmp_path
-    )
+    _patch_raw_data_dir(monkeypatch, tmp_path)
     assert _granule_destination("folder/G").name == "folder_G.nc"
     assert _granule_destination("already.nc").name == "already.nc"
     assert _raw_data_dir(SCOPE_NO2_STD).name == "tempo_no2_std"
@@ -533,9 +542,7 @@ def test_pending_limit_existing_file_and_cleanup_error(
 ):
     _seed_registry(artifacts)
     raw_dir = tmp_path / "raw"
-    monkeypatch.setattr(
-        "titanskies_pipeline.ingestion.tempo.sync.TEMPO_NO2_RAW_DATA_DIR", raw_dir
-    )
+    _patch_raw_data_dir(monkeypatch, raw_dir)
     with get_connection() as conn:
         upsert_discovered_granules([_granule("G-existing")], conn=conn)
     assert process_pending_granules(
@@ -569,3 +576,60 @@ def test_pending_limit_existing_file_and_cleanup_error(
             "WHERE granule_id = 'G-cleanup'"
         ).fetchone()[0]
     assert error == "boom; cleanup failed: cannot remove"
+
+
+def test_pending_checksum_mismatch_redownloads(
+    duck, artifacts, netcdf_fixture, tmp_path, monkeypatch
+):
+    _seed_registry(artifacts)
+    raw_dir = tmp_path / "raw"
+    _patch_raw_data_dir(monkeypatch, raw_dir)
+    with get_connection() as conn:
+        upsert_discovered_granules([_granule("G-checksum")], conn=conn)
+        mark_granule_status(
+            "G-checksum",
+            checksum_sha256=sha256_file(netcdf_fixture),
+            conn=conn,
+        )
+    destination = _granule_destination("G-checksum")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text("corrupt-bytes")
+    downloads: list[str] = []
+
+    def download(granule_id, dest):
+        downloads.append(granule_id)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(netcdf_fixture, dest)
+        return dest
+
+    metrics = process_pending_granules(download_fn=download, allow_synthetic=True)
+    assert metrics.downloaded == 1
+    assert downloads == ["G-checksum"]
+    assert destination.read_bytes() == netcdf_fixture.read_bytes()
+
+
+def test_pending_matching_checksum_reuses_staged_file(
+    duck, artifacts, netcdf_fixture, tmp_path, monkeypatch
+):
+    _seed_registry(artifacts)
+    raw_dir = tmp_path / "raw"
+    _patch_raw_data_dir(monkeypatch, raw_dir)
+    destination = _granule_destination("G-match")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy(netcdf_fixture, destination)
+    with get_connection() as conn:
+        upsert_discovered_granules([_granule("G-match")], conn=conn)
+        mark_granule_status(
+            "G-match",
+            checksum_sha256=sha256_file(destination),
+            conn=conn,
+        )
+
+    metrics = process_pending_granules(
+        download_fn=lambda *_a: (_ for _ in ()).throw(
+            RuntimeError("should not download")
+        ),
+        allow_synthetic=True,
+    )
+    assert metrics.downloaded == 0
+    assert metrics.processed == 1

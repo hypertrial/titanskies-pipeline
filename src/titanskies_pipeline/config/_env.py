@@ -12,8 +12,8 @@ def _env_int(name: str, default: int) -> int:
         return default
     try:
         return int(raw)
-    except ValueError:
-        return default
+    except ValueError as exc:
+        raise ValueError(f"Environment variable {name} must be an integer") from exc
 
 
 def _env_float(name: str, default: float) -> float:
@@ -22,8 +22,8 @@ def _env_float(name: str, default: float) -> float:
         return default
     try:
         return float(raw)
-    except ValueError:
-        return default
+    except ValueError as exc:
+        raise ValueError(f"Environment variable {name} must be a float") from exc
 
 
 def _optional_env_str(name: str) -> str | None:
@@ -34,11 +34,15 @@ def _optional_env_str(name: str) -> str | None:
 
 
 def _env_date(name: str, default: str) -> date:
-    raw = os.getenv(name, default).strip()
-    try:
-        return date.fromisoformat(raw)
-    except ValueError:
+    raw = os.getenv(name)
+    if raw is None or not raw.strip():
         return date.fromisoformat(default)
+    try:
+        return date.fromisoformat(raw.strip())
+    except ValueError as exc:
+        raise ValueError(
+            f"Environment variable {name} must be an ISO date (YYYY-MM-DD)"
+        ) from exc
 
 
 def _env_bool(name: str, default: bool) -> bool:

@@ -8,7 +8,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
-from titanskies_pipeline.config.settings import TEMPO_NO2_RAW_DATA_DIR
 from titanskies_pipeline.config.settings_tempo import get_tempo_scope_settings
 from titanskies_pipeline.geography.registry import (
     load_geo_artifacts,
@@ -22,6 +21,7 @@ from titanskies_pipeline.ingestion.tempo.aggregate import (
 )
 from titanskies_pipeline.ingestion.tempo.cmr import discover_granules
 from titanskies_pipeline.ingestion.tempo.netcdf import NetcdfGrid, extract_grid
+from titanskies_pipeline.ingestion.tempo.paths import granule_raw_path
 from titanskies_pipeline.naming import SCOPE_NO2, SOURCE_TEMPO, schema_name
 from titanskies_pipeline.storage.duckdb.connection import _use_conn, get_connection
 from titanskies_pipeline.storage.duckdb.granules import (
@@ -114,16 +114,11 @@ def _ensure_earthaccess_login() -> None:
 
 
 def _raw_data_dir(scope: str) -> Path:
-    if scope == SCOPE_NO2:
-        return TEMPO_NO2_RAW_DATA_DIR
     return get_tempo_scope_settings(scope).raw_data_dir
 
 
 def _granule_destination(granule_id: str, *, scope: str = SCOPE_NO2) -> Path:
-    name = Path(granule_id).name
-    if not name.endswith(".nc"):
-        name = f"{granule_id.replace('/', '_')}.nc"
-    return _raw_data_dir(scope) / name
+    return granule_raw_path(granule_id, scope=scope)
 
 
 def _default_download(
@@ -368,9 +363,12 @@ def process_pending_granules(
         if max_granules is not None:
             pending = pending[:max_granules]
 
-        for granule_id, download_url, _checksum_sha256 in pending:
+        for granule_id, download_url, expected_checksum in pending:
             destination = _granule_destination(granule_id, scope=scope)
             try:
+                if destination.exists() and expected_checksum is not None:
+                    if sha256_file(destination) != expected_checksum:
+                        destination.unlink(missing_ok=True)
                 if not destination.exists():
                     _download_with(download_fn, granule_id, destination, download_url)
                     downloaded += 1

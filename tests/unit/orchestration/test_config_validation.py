@@ -10,6 +10,7 @@ from titanskies_pipeline.orchestration.config import (
     GuardrailConfig,
     HourlyIngestConfig,
     RegionRegistryConfig,
+    scope_run_config,
     tempo_no2_dbt_build_run_config,
     tempo_no2_full_pipeline_run_config,
     tempo_no2_granule_discovery_run_config,
@@ -21,6 +22,7 @@ from titanskies_pipeline.orchestration.config import (
     tempo_no2_std_hourly_ingest_run_config,
     tempo_no2_std_region_registry_run_config,
 )
+from titanskies_pipeline.orchestration.scope_registry import TEMPO_NO2_SCOPE
 
 
 def test_guardrail_config_rejects_invalid_timeout_order():
@@ -145,6 +147,14 @@ def test_tempo_no2_full_pipeline_run_config_merges_ops():
     assert "tempo__no2__raw__granule_inventory" in ops
     assert "tempo__no2__raw__region_hour_aggregates" in ops
     assert "titanskies_dbt" in ops
+
+
+def test_scope_run_config_full_and_rejects_unknown_step():
+    assert scope_run_config(TEMPO_NO2_SCOPE, "full") == (
+        tempo_no2_full_pipeline_run_config()
+    )
+    with pytest.raises(ValueError, match="Unsupported scope step"):
+        scope_run_config(TEMPO_NO2_SCOPE, "backfill")  # type: ignore[arg-type]
 
 
 def test_tempo_no2_std_region_registry_run_config():
