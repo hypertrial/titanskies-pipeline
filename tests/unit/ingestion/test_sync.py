@@ -633,3 +633,32 @@ def test_pending_matching_checksum_reuses_staged_file(
     )
     assert metrics.downloaded == 0
     assert metrics.processed == 1
+
+
+def test_pending_checksum_rejects_corrupt_download(
+    duck, artifacts, netcdf_fixture, tmp_path, monkeypatch
+):
+    _seed_registry(artifacts)
+    raw_dir = tmp_path / "raw"
+    _patch_raw_data_dir(monkeypatch, raw_dir)
+    with get_connection() as conn:
+        upsert_discovered_granules([_granule("G-bad-dl")], conn=conn)
+        mark_granule_status(
+            "G-bad-dl",
+            checksum_sha256=sha256_file(netcdf_fixture),
+            conn=conn,
+        )
+
+    def bad_download(_granule_id, dest):
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text("not-the-expected-bytes")
+        return dest
+
+    with pytest.raises(RuntimeError, match="G-bad-dl"):
+        process_pending_granules(download_fn=bad_download, allow_synthetic=True)
+    with get_connection() as conn:
+        error = conn.execute(
+            "SELECT error_message FROM tempo_no2_ops.granule_inventory "
+            "WHERE granule_id = 'G-bad-dl'"
+        ).fetchone()[0]
+    assert "checksum mismatch after download" in error

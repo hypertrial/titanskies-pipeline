@@ -10,8 +10,9 @@ Unset variables use the defaults below. If a numeric or date variable is
 **set** but not parseable (integer, float, or ISO `YYYY-MM-DD`), settings load
 raises `ValueError` naming that variable instead of silently falling back.
 Runtime helpers such as `get_tempo_scope_settings()` read the current process
-environment on each call; import-time `TEMPO_NO2_*` module constants remain for
-Dagster schedule wiring.
+environment on each call. Import-time `TEMPO_NO2_*` module constants remain for
+`from settings import *` compatibility; Dagster job/schedule definitions snapshot
+settings once at process import, so env changes require a reload.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |

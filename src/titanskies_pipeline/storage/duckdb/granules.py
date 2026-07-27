@@ -39,10 +39,6 @@ def _now() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
-def _raw_granule_path(granule_id: str, *, scope: str) -> Path:
-    return granule_raw_path(granule_id, scope=scope)
-
-
 def _unlink_requeued_granule_files(
     rows: list[tuple[str, str | None]], *, scope: str
 ) -> None:

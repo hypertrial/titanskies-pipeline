@@ -12,9 +12,9 @@ from titanskies_pipeline.ingestion.tempo.aggregate import (
 )
 from titanskies_pipeline.ingestion.tempo.cmr import DiscoveredGranule
 from titanskies_pipeline.ingestion.tempo.netcdf import NetcdfGrid
+from titanskies_pipeline.ingestion.tempo.paths import granule_raw_path
 from titanskies_pipeline.storage.duckdb.connection import get_connection
 from titanskies_pipeline.storage.duckdb.granules import (
-    _raw_granule_path,
     _unlink_requeued_granule_files,
     grid_latest_batch,
     list_pending_granule_records,
@@ -333,8 +333,8 @@ def test_unlink_requeued_granule_files_path_guards(tmp_path, monkeypatch):
         "titanskies_pipeline.storage.duckdb.granules.BASE_DIR",
         tmp_path,
     )
-    assert _raw_granule_path("folder/G-keep.nc", scope="no2") == raw_dir / "G-keep.nc"
-    assert _raw_granule_path("folder/G-new", scope="no2") == raw_dir / "folder_G-new.nc"
+    assert granule_raw_path("folder/G-keep.nc", scope="no2") == raw_dir / "G-keep.nc"
+    assert granule_raw_path("folder/G-new", scope="no2") == raw_dir / "folder_G-new.nc"
 
     inside = raw_dir / "G-keep.nc"
     relative = Path("raw/relative.nc")

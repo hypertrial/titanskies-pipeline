@@ -343,13 +343,13 @@ def process_pending_granules(
                 "Region registry is empty. "
                 f"Run tempo/{scope}/ops/region_registry first."
             )
-        version, weights_path_value, expected_checksum, mode = map(str, manifest)
+        version, weights_path_value, weights_checksum, mode = map(str, manifest)
         if mode != "production" and not allow_synthetic:
             raise RuntimeError(
                 "Production ingestion rejects synthetic geography artifacts"
             )
         weights_path = Path(weights_path_value)
-        if sha256_file(weights_path) != expected_checksum:
+        if sha256_file(weights_path) != weights_checksum:
             raise RuntimeError("Grid-region weight artifact checksum mismatch")
         weights = load_region_weights(weights_path)
         region_meta = load_region_meta(scope=scope, conn=conn)
@@ -363,16 +363,20 @@ def process_pending_granules(
         if max_granules is not None:
             pending = pending[:max_granules]
 
-        for granule_id, download_url, expected_checksum in pending:
+        for granule_id, download_url, pending_checksum in pending:
             destination = _granule_destination(granule_id, scope=scope)
             try:
-                if destination.exists() and expected_checksum is not None:
-                    if sha256_file(destination) != expected_checksum:
+                if destination.exists() and pending_checksum is not None:
+                    if sha256_file(destination) != pending_checksum:
                         destination.unlink(missing_ok=True)
                 if not destination.exists():
                     _download_with(download_fn, granule_id, destination, download_url)
                     downloaded += 1
                 checksum = sha256_file(destination)
+                if pending_checksum is not None and checksum != pending_checksum:
+                    raise RuntimeError(
+                        f"Granule checksum mismatch after download: {granule_id}"
+                    )
                 written = process_downloaded_granule(
                     granule_id,
                     destination,

@@ -46,14 +46,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
   hand-duplicated twin helpers.
 - `get_tempo_scope_settings()` rebuilds scope settings from the current
   environment and contract files on each call; import-time `TEMPO_NO2_*`
-  constants remain for Dagster schedule import compatibility.
+  constants remain for `from settings import *` compatibility. Dagster
+  jobs/schedules still snapshot settings at process import.
 - Present-but-invalid integer/float/date environment variables now raise
   `ValueError` instead of silently using defaults.
 - Granule discovery upsert splits requeue (`UPDATE` + stale NetCDF unlink)
   from metadata `MERGE`, preserving newer-revision requeue rules.
 - Ingest uses a shared `granule_raw_path` helper; when a pending checksum is
-  present and the staged NetCDF does not match, the file is unlinked and
-  re-downloaded.
+  present, staged NetCDF mismatches trigger unlink/redownload and the file is
+  verified against that checksum before processing.
 - Removed unfinished dbt staging/source surfaces for `pipeline_run_events`
   (ops table and demo/unit seed retained).
 - Split `geography/build.py` into acquire/normalize/weights/publish modules
