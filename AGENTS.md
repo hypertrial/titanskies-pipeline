@@ -1,7 +1,7 @@
 # AGENTS.md
 
 TitanSkies Pipeline is an open-source, local-first NASA science warehouse.
-Version `0.6.x` ships two TEMPO scopes (`tempo:no2` and `tempo:no2_std`), the
+Version `0.7.x` ships two TEMPO scopes (`tempo:no2` and `tempo:no2_std`), the
 permanent `riverpulse:events` SWOT lane, and the explicit
 `plumegraph:events` evidence ledger. TEMPO uses
 `TEMPO_NO2_L3_NRT` and
@@ -11,6 +11,9 @@ and Mexico. RiverPulse publishes SWORD v17b reaches, Hydrocron Version D
 observation/discharge revisions, current revisions, and provenance.
 PlumeGraph combines TEMPO L2 V04, HRRR analysis, and EPA CAMD emissions for a
 review-gated 2024 US power-plant benchmark.
+Two unscheduled reproduction preflight profiles (`sun2025:repro` and
+`andreadis2025:repro`) validate pinned source inventories and exactness before
+any paper-reproduction acquisition.
 `make demo` remains NRT-only; standard-scope raw/ops schemas bootstrap empty
 and std marts appear only after an explicit standard discovery/ingest (and
 dbt) run. Product demos remain separate; `make plumegraph-demo` is offline.

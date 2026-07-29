@@ -684,8 +684,7 @@ def persist_network_artifacts(
             and has_observations
         ):
             raise RuntimeError(
-                "SWORD network generation changes require a clean v0.6 "
-                "warehouse rebuild"
+                "SWORD network generation changes require a clean warehouse rebuild"
             )
         connection.register("_riverpulse_reaches", reaches)
         connection.register("_riverpulse_edges", edges)

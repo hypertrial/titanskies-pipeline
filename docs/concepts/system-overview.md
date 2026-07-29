@@ -6,7 +6,9 @@ Mexico. Version `0.5.x` also collects revision-safe NASA SWOT RiverSP reach
 observations and discharge estimates for bounded Sacramento, Rhine, and Murray
 mainstem corridors. Version `0.6.x` adds `plumegraph:events`: a frozen 2024,
 75-facility TEMPO L2/HRRR/CAMD plume-evidence benchmark and immutable local
-release format. All four lanes share one local warehouse.
+release format. Version `0.7.x` adds pinned source-contract and preflight
+ledgers for two research-paper reproduction profiles. All operational lanes
+and preflight profiles share one local warehouse.
 
 ```mermaid
 flowchart LR
@@ -43,6 +45,14 @@ local-standard-time hourly NOx. Region-date analysis retains every revision,
 promotes complete generations atomically, publishes calibrated probabilities
 only when held-out validation passes, and produces checksum-verified evidence
 releases. Attribution remains a scientific hypothesis rather than proof.
+
+The `sun2025:repro` and `andreadis2025:repro` profiles are acquisition
+preflights, not new recurring collection lanes. Each validates an
+operator-supplied provider-discovery inventory against a pinned source and
+scientific contract, rejects secret-bearing URLs, records exactness and
+completeness, checks object/storage budgets, and creates a planned generation
+for a ready production inventory or a non-promotable synthetic generation for
+a ready fixture. They have no schedules.
 
 See [Architecture](architecture.md),
 [Choose a scope](../getting-started/choose-a-scope.md), and

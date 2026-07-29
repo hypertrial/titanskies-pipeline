@@ -51,7 +51,7 @@ local collection time. Release generation refuses stale validation; rerun
 validation after any generation promotion instead of reusing an older passing
 run. A loaded benchmark version is immutable, so corrected annotations require
 a new benchmark version.
-Populated v0.5 warehouses require the v0.6 clean rebuild; verified immutable
+Populated v0.6 warehouses require the v0.7 clean rebuild; verified immutable
 source caches may be retained.
 
 See [Troubleshooting](troubleshooting.md) for common failure modes.

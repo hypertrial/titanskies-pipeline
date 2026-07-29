@@ -1,4 +1,4 @@
-.PHONY: demo riverpulse-demo riverpulse-live-smoke plumegraph-demo plumegraph-live-smoke plumegraph-release dagster-dev dagster-jobs-smoke dagster-jobs-smoke-cov dagster-refresh-cov duckdb-ui dbt-build dbt-build-ci dbt-parse dbt-test dbt-unit dbt-source-freshness-ci golden-dbt gx-data-quality data-quality contract-http costguard costguard-scan docs-serve docs-build docs-structure docs-render docs-test docs-recipe-smoke docs-check live-smoke clean-local-artifacts format lint test test-cov coverage coverage-erase coverage-report unit-core unit-ingest unit-orchestration integration-dbt integration-dbt-cov integration-dagster integration-dagster-cov check-secrets compact-warehouse
+.PHONY: demo riverpulse-demo riverpulse-live-smoke plumegraph-demo plumegraph-live-smoke plumegraph-release sun2025-preflight andreadis2025-preflight dagster-dev dagster-jobs-smoke dagster-jobs-smoke-cov dagster-refresh-cov duckdb-ui dbt-build dbt-build-ci dbt-parse dbt-test dbt-unit dbt-source-freshness-ci golden-dbt gx-data-quality data-quality contract-http costguard costguard-scan docs-serve docs-build docs-structure docs-render docs-test docs-recipe-smoke docs-check live-smoke clean-local-artifacts format lint test test-cov coverage coverage-erase coverage-report unit-core unit-ingest unit-orchestration integration-dbt integration-dbt-cov integration-dagster integration-dagster-cov check-secrets compact-warehouse
 
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 override PYTHON := $(shell if test -x "$(REPO_ROOT)/.venv/bin/python"; then printf '%s' "$(REPO_ROOT)/.venv/bin/python"; else printf 'python3'; fi)
@@ -13,6 +13,9 @@ DBT_UNIT_DUCKDB_PATH := $(REPO_ROOT)/.cache/dbt_unit.duckdb
 DBT_UNIT_ENV := DUCKDB_NAME="$(DBT_UNIT_DUCKDB_PATH)" DUCKDB_PATH="$(DBT_UNIT_DUCKDB_PATH)"
 DBT_FRESHNESS_DUCKDB_PATH := $(REPO_ROOT)/.cache/dbt_source_freshness.duckdb
 DBT_FRESHNESS_ENV := DUCKDB_NAME="$(DBT_FRESHNESS_DUCKDB_PATH)" DUCKDB_PATH="$(DBT_FRESHNESS_DUCKDB_PATH)"
+REPRO_PREFLIGHT_DUCKDB_PATH ?= $(REPO_ROOT)/.cache/reproduction_preflight.duckdb
+SUN2025_PREFLIGHT_INVENTORY ?= $(REPO_ROOT)/tests/fixtures/reproductions/sun2025_preflight.json
+ANDREADIS2025_PREFLIGHT_INVENTORY ?= $(REPO_ROOT)/tests/fixtures/reproductions/andreadis2025_preflight.json
 PYTEST_FAST_MARKERS := not integration and not performance and not slow and not repo_check and not contract
 PYTEST_COVERAGE_MARKERS := not performance and not slow and not repo_check and not contract
 COV_APPEND_ARGS := --cov=titanskies_pipeline --cov-branch --cov-append
@@ -40,6 +43,14 @@ plumegraph-live-smoke:
 plumegraph-release:
 	@test -n "$(PLUMEGRAPH_RELEASE_VERSION)" || (echo "Set PLUMEGRAPH_RELEASE_VERSION to an immutable release identifier" && exit 2)
 	$(RUN_IN_REPO) "$(PYTHON)" scripts/build_plumegraph_release.py --release-version "$(PLUMEGRAPH_RELEASE_VERSION)"
+
+sun2025-preflight:
+	$(RUN_IN_REPO) mkdir -p "$(REPO_ROOT)/.cache"
+	$(RUN_IN_REPO) "$(PYTHON)" scripts/run_reproduction_preflight.py sun2025 --inventory "$(SUN2025_PREFLIGHT_INVENTORY)" --duckdb-path "$(REPRO_PREFLIGHT_DUCKDB_PATH)"
+
+andreadis2025-preflight:
+	$(RUN_IN_REPO) mkdir -p "$(REPO_ROOT)/.cache"
+	$(RUN_IN_REPO) "$(PYTHON)" scripts/run_reproduction_preflight.py andreadis2025 --inventory "$(ANDREADIS2025_PREFLIGHT_INVENTORY)" --duckdb-path "$(REPRO_PREFLIGHT_DUCKDB_PATH)"
 
 dagster-dev:
 	mkdir -p "$(REPO_ROOT)/.dagster_home"

@@ -1,0 +1,73 @@
+{
+  "inventory_mode": "synthetic",
+  "profile_id": "andreadis2025",
+  "sources": [
+    {
+      "source_id": "swot_riversp_reach_v2",
+      "exactness_status": "exact",
+      "objects": [
+        {
+          "object_id": "SWOT_RiverSP_reach.synthetic.nc",
+          "url": "https://example.test/andreadis2025/reach.nc",
+          "size_bytes": 4096,
+          "source_revision": "2024-07-21T00:00:00Z"
+        }
+      ]
+    },
+    {
+      "source_id": "swot_riversp_node_v2",
+      "exactness_status": "exact",
+      "objects": [
+        {
+          "object_id": "SWOT_RiverSP_node.synthetic.nc",
+          "url": "https://example.test/andreadis2025/node.nc",
+          "size_bytes": 8192,
+          "source_revision": "2024-07-21T00:00:00Z"
+        }
+      ]
+    },
+    {
+      "source_id": "sword_v16",
+      "exactness_status": "exact",
+      "objects": [
+        {
+          "object_id": "SWORD_v16.synthetic.zip",
+          "url": "https://example.test/andreadis2025/sword.zip",
+          "size_bytes": 2048,
+          "checksum_algorithm": "md5",
+          "checksum": "0a3a43cc22429f25f05e7199eca9060b"
+        }
+      ]
+    },
+    {
+      "source_id": "swot_l4_sos_paper_snapshot",
+      "exactness_status": "exact",
+      "objects": [
+        {
+          "object_id": "SWOT_L4_SOS.paper-snapshot.synthetic.nc",
+          "url": "https://example.test/andreadis2025/sos.nc",
+          "size_bytes": 4096,
+          "source_revision": "2024-10-24T00:00:00Z"
+        }
+      ]
+    },
+    {
+      "source_id": "confluence_code",
+      "exactness_status": "exact",
+      "objects": [
+        {
+          "object_id": "confluence-code.synthetic.zip",
+          "url": "https://example.test/andreadis2025/confluence.zip",
+          "size_bytes": 512,
+          "source_revision": "synthetic-paper-commit"
+        }
+      ]
+    },
+    {
+      "source_id": "grdc_gauge_fallback",
+      "exactness_status": "unavailable",
+      "reason": "optional because the pinned L4 synthetic object embeds priors",
+      "objects": []
+    }
+  ]
+}

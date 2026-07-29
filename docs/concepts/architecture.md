@@ -12,7 +12,10 @@ schemas. They share pinned geography artifacts when both registries are
 materialized, but they never share raw epochs or incremental contract
 versions.
 The explicit `riverpulse:events` and `plumegraph:events` lanes share only the
-DuckDB path and v0.6 schema stamp; neither uses the TEMPO `ScopeSpec` factory.
+DuckDB path and v0.7 schema stamp; neither uses the TEMPO `ScopeSpec` factory.
+The two reproduction preflight profiles are likewise explicit, unscheduled
+assets and share only validation/persistence code for their common metadata
+invariants.
 
 ```mermaid
 flowchart TB

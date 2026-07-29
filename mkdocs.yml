@@ -83,6 +83,7 @@ nav:
       - Choose a scope: getting-started/choose-a-scope.md
       - Build geography artifacts: getting-started/build-geography-artifacts.md
       - Build RiverPulse network: getting-started/build-riverpulse-network.md
+      - Upgrade to v0.7: getting-started/upgrade-v07.md
       - Upgrade to v0.6: getting-started/upgrade-v06.md
       - Upgrade to v0.5: getting-started/upgrade-v05.md
       - Upgrade to v0.2: getting-started/upgrade-v02.md
@@ -113,6 +114,7 @@ nav:
       - TEMPO product notes: concepts/tempo-product-notes.md
       - RiverPulse product notes: concepts/riverpulse-product-notes.md
       - PlumeGraph product notes: concepts/plumegraph-product-notes.md
+      - Paper reproduction preflight: concepts/paper-reproduction-preflight.md
       - Scope and non-goals: concepts/scope-and-non-goals.md
       - Operator responsibilities: concepts/operator-responsibilities.md
       - FAQ: concepts/faq.md

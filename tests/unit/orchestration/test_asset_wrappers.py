@@ -11,6 +11,9 @@ from titanskies_pipeline.orchestration import (
     assets_plumegraph_events as plumegraph_assets,
 )
 from titanskies_pipeline.orchestration import (
+    assets_reproductions as reproduction_assets,
+)
+from titanskies_pipeline.orchestration import (
     assets_riverpulse_events as riverpulse_assets,
 )
 from titanskies_pipeline.orchestration import assets_tempo_no2 as assets_mod
@@ -34,6 +37,7 @@ from titanskies_pipeline.plumegraph.sources import (
     DiscoveryMetrics as PlumeGraphDiscoveryMetrics,
 )
 from titanskies_pipeline.plumegraph.validation import ValidationMetrics
+from titanskies_pipeline.reproductions.preflight import PreflightMetrics
 from titanskies_pipeline.riverpulse.collection import (
     DiscoveryMetrics as RiverPulseDiscoveryMetrics,
 )
@@ -183,6 +187,50 @@ def test_titanskies_dbt_asset_streams(monkeypatch):
         )
     )
     assert events == ["event"]
+
+
+def test_reproduction_preflight_assets(monkeypatch, tmp_path):
+    captured = []
+
+    def fake_preflight(profile_id, **kwargs):
+        captured.append((profile_id, kwargs))
+        return PreflightMetrics(
+            preflight_run_id=f"{profile_id}-run",
+            profile_id=profile_id,
+            status="ready",
+            inventory_mode="synthetic",
+            exact_mode=kwargs["exact_mode"],
+            source_count=1,
+            required_source_count=1,
+            object_count=1,
+            total_bytes=10,
+            unknown_size_count=0,
+            blocking_sources=(),
+            manifest_sha256="a" * 64,
+            scientific_contract_sha256="b" * 64,
+            inventory_sha256="c" * 64,
+        )
+
+    monkeypatch.setattr(reproduction_assets, "run_preflight", fake_preflight)
+    config = orch_config.ReproductionPreflightConfig(
+        manifest_path=str(tmp_path / "manifest.json"),
+        inventory_path=str(tmp_path / "inventory.json"),
+        max_objects=5,
+        max_bytes=20,
+    )
+    result = reproduction_assets.sun2025_repro_source_preflight_asset.op.compute_fn.decorated_fn(
+        MagicMock(), config
+    )
+    assert result.metadata["profile_id"] == "sun2025"
+    assert captured[0][1]["manifest_path"].is_absolute()
+    assert captured[0][1]["inventory_path"].is_absolute()
+
+    result = reproduction_assets.andreadis2025_repro_source_preflight_asset.op.compute_fn.decorated_fn(
+        MagicMock(), orch_config.ReproductionPreflightConfig()
+    )
+    assert result.metadata["profile_id"] == "andreadis2025"
+    assert captured[1][1]["manifest_path"] is None
+    assert captured[1][1]["inventory_path"] is None
 
 
 def test_riverpulse_network_asset(monkeypatch, tmp_path):

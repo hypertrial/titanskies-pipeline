@@ -1,6 +1,7 @@
 # Choose a scope
 
-TitanSkies ships four first-class scopes in one warehouse.
+TitanSkies ships four first-class collection scopes plus two unscheduled
+paper-source preflight profiles in one warehouse.
 
 | Scope | Product | Schemas | When to use |
 | --- | --- | --- | --- |
@@ -16,6 +17,12 @@ RiverPulse has explicit assets/jobs rather than using the TEMPO scope factory,
 and its science policy is `riverpulse_events_contract.csv`.
 PlumeGraph is also explicit, review-gates its cohort and benchmark, and uses
 `plumegraph_events_contract.csv` as its only scientific-policy source.
+
+`sun2025:repro` and `andreadis2025:repro` are metadata-only acquisition
+preflights. They use `sun2025_repro_ops` and `andreadis2025_repro_ops`,
+respectively, publish no marts, and run only when an operator supplies a
+provider-discovery inventory. See
+[Paper reproduction preflight](../concepts/paper-reproduction-preflight.md).
 
 See [TEMPO product notes](../concepts/tempo-product-notes.md),
 [Orchestration](../reference/orchestration.md), and

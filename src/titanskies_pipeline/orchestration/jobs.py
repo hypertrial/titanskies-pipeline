@@ -1,6 +1,7 @@
 from dagster import AssetSelection, define_asset_job, multiprocess_executor
 from dagster_dbt import build_dbt_asset_selection
 
+from titanskies_pipeline.naming import SOURCE_ANDREADIS2025, SOURCE_SUN2025
 from titanskies_pipeline.orchestration.assets_plumegraph_events import (
     PLUMEGRAPH_EVENTS_ANALYSIS_RESULTS,
     PLUMEGRAPH_EVENTS_RAW_CAMD_EMISSIONS,
@@ -9,6 +10,10 @@ from titanskies_pipeline.orchestration.assets_plumegraph_events import (
     PLUMEGRAPH_EVENTS_RAW_TEMPO_SNAPSHOTS,
     PLUMEGRAPH_EVENTS_RELEASE,
     PLUMEGRAPH_EVENTS_VALIDATION,
+)
+from titanskies_pipeline.orchestration.assets_reproductions import (
+    ANDREADIS2025_REPRO_SOURCE_PREFLIGHT,
+    SUN2025_REPRO_SOURCE_PREFLIGHT,
 )
 from titanskies_pipeline.orchestration.assets_riverpulse_events import (
     RIVERPULSE_EVENTS_RAW_OBSERVATIONS,
@@ -24,6 +29,7 @@ from titanskies_pipeline.orchestration.config import (
     plumegraph_events_ingest_run_config,
     plumegraph_events_release_run_config,
     plumegraph_events_validation_run_config,
+    reproduction_preflight_run_config,
     riverpulse_events_dbt_run_config,
     riverpulse_events_discovery_run_config,
     riverpulse_events_full_pipeline_run_config,
@@ -40,6 +46,25 @@ from titanskies_pipeline.orchestration.scope_registry import (
 _ANALYTICS_BUILD_EXECUTOR = multiprocess_executor.configured(
     {"max_concurrent": 1},
     name="duckdb_serial_multiprocess",
+)
+
+_REPRODUCTION_TAGS = {
+    "duckdb_warehouse": "true",
+    "scope": "repro",
+}
+sun2025_repro_source_preflight = define_asset_job(
+    "sun2025_repro_source_preflight",
+    selection=AssetSelection.assets(SUN2025_REPRO_SOURCE_PREFLIGHT),
+    executor_def=_ANALYTICS_BUILD_EXECUTOR,
+    config=reproduction_preflight_run_config(SOURCE_SUN2025),
+    tags={**_REPRODUCTION_TAGS, "source": SOURCE_SUN2025},
+)
+andreadis2025_repro_source_preflight = define_asset_job(
+    "andreadis2025_repro_source_preflight",
+    selection=AssetSelection.assets(ANDREADIS2025_REPRO_SOURCE_PREFLIGHT),
+    executor_def=_ANALYTICS_BUILD_EXECUTOR,
+    config=reproduction_preflight_run_config(SOURCE_ANDREADIS2025),
+    tags={**_REPRODUCTION_TAGS, "source": SOURCE_ANDREADIS2025},
 )
 
 _RIVERPULSE_TAGS = {
@@ -271,6 +296,7 @@ TEMPO_NO2_STD_FULL_PIPELINE_SELECTION = (
 )
 
 __all__ = [
+    "andreadis2025_repro_source_preflight",
     "plumegraph_events_analysis",
     "plumegraph_events_dbt_build",
     "plumegraph_events_full_pipeline",
@@ -282,6 +308,7 @@ __all__ = [
     "riverpulse_events_full_pipeline",
     "riverpulse_events_observation_ingest",
     "riverpulse_events_source_discovery",
+    "sun2025_repro_source_preflight",
     "tempo_no2_dbt_build",
     "tempo_no2_full_pipeline",
     "tempo_no2_granule_discovery",

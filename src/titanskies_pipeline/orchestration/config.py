@@ -170,10 +170,19 @@ class PlumeGraphValidationConfig(Config):
 
 
 class PlumeGraphReleaseConfig(Config):
-    release_version: str = "v0.6.0"
+    release_version: str = "v0.7.0"
     output_dir: str | None = None
     validation_run_id: str | None = None
     require_passed_validation: bool = True
+
+
+class ReproductionPreflightConfig(Config):
+    manifest_path: str | None = None
+    inventory_path: str | None = None
+    exact_mode: bool = True
+    max_objects: int | None = Field(default=None, ge=1)
+    max_bytes: int | None = Field(default=None, ge=1)
+    fail_on_blocked: bool = True
 
 
 class DbtBuildConfig(GuardrailConfig):
@@ -201,6 +210,13 @@ def _merge_op_configs(*configs: dict) -> dict:
     for config in configs:
         merged["ops"].update(config.get("ops", {}))
     return merged
+
+
+def reproduction_preflight_run_config(profile_id: str) -> dict:
+    return _op_config(
+        AssetKey([profile_id, "repro", "ops", "source_preflight"]),
+        ReproductionPreflightConfig(),
+    )
 
 
 def riverpulse_events_discovery_run_config() -> dict:
@@ -379,6 +395,7 @@ __all__ = [
     "PlumeGraphReleaseConfig",
     "PlumeGraphValidationConfig",
     "RegionRegistryConfig",
+    "ReproductionPreflightConfig",
     "RiverPulseDiscoveryConfig",
     "RiverPulseIngestConfig",
     "RiverPulseNetworkConfig",
@@ -397,6 +414,7 @@ __all__ = [
     "plumegraph_events_release_run_config",
     "plumegraph_events_validation_run_config",
     "region_registry_run_config",
+    "reproduction_preflight_run_config",
     "riverpulse_events_dbt_run_config",
     "riverpulse_events_discovery_run_config",
     "riverpulse_events_full_pipeline_run_config",

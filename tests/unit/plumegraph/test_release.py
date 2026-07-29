@@ -113,7 +113,7 @@ def test_release_preconditions_and_version_fallback(tmp_path, monkeypatch):
             release.importlib.metadata.PackageNotFoundError
         ),
     )
-    assert release._package_version() == "0.6.0"
+    assert release._package_version() == "0.7.0"
     conn.close()
 
 

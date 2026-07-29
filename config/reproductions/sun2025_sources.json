@@ -1,0 +1,181 @@
+{
+  "profile_id": "sun2025",
+  "profile_version": "1.0.0",
+  "paper_doi": "10.1029/2025JD044565",
+  "temporal_window": {
+    "start": "2023-08-02T00:00:00Z",
+    "end_exclusive": "2025-01-01T00:00:00Z"
+  },
+  "scientific_contract": "sun2025_contract.csv",
+  "sources": [
+    {
+      "id": "tempo_no2_l2_v03",
+      "provider": "NASA ASDC through Earthdata CMR",
+      "version": "V03",
+      "access_method": "cmr",
+      "required": true,
+      "required_exactness": "exact",
+      "allowed_fallbacks": [],
+      "url": "https://asdc.larc.nasa.gov/project/TEMPO/TEMPO_NO2_L2_V03",
+      "concept_id": "C2930725014-LARC_CLOUD",
+      "doi": "10.5067/IS-40e/TEMPO/NO2_L2.003",
+      "attribution": "NASA/LARC/SD/ASDC TEMPO NO2 Level 2 V03",
+      "license": "NASA data and information policy",
+      "request": {
+        "start": "2023-08-02T00:00:00Z",
+        "end_exclusive": "2025-01-01T00:00:00Z",
+        "spatial_filter": "reviewed_14_facility_cohort"
+      }
+    },
+    {
+      "id": "facility_cohort_14",
+      "provider": "Paper supplementary information",
+      "version": "paper-reviewed-14",
+      "access_method": "manual_review",
+      "required": true,
+      "required_exactness": "exact",
+      "allowed_fallbacks": [],
+      "url": "https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2025JD044565",
+      "attribution": "Paper authors and supplementary information",
+      "license": "Publisher supplementary-material terms",
+      "request": {
+        "expected_facility_count": 14,
+        "review_required": true
+      }
+    },
+    {
+      "id": "era5_single_levels",
+      "provider": "Copernicus Climate Data Store",
+      "version": "ERA5",
+      "access_method": "cds_api",
+      "required": true,
+      "required_exactness": "exact",
+      "allowed_fallbacks": [
+        "provider_reprocessed"
+      ],
+      "url": "https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels",
+      "doi": "10.24381/cds.adbb2d47",
+      "attribution": "Copernicus Climate Change Service ERA5",
+      "license": "Copernicus data licence",
+      "request": {
+        "dataset": "reanalysis-era5-single-levels",
+        "variables": [
+          "10m_u_component_of_wind",
+          "10m_v_component_of_wind",
+          "boundary_layer_height",
+          "surface_pressure"
+        ],
+        "start": "2023-08-02T00:00:00Z",
+        "end_exclusive": "2025-01-01T00:00:00Z"
+      }
+    },
+    {
+      "id": "era5_pressure_levels",
+      "provider": "Copernicus Climate Data Store",
+      "version": "ERA5",
+      "access_method": "cds_api",
+      "required": true,
+      "required_exactness": "exact",
+      "allowed_fallbacks": [
+        "provider_reprocessed"
+      ],
+      "url": "https://cds.climate.copernicus.eu/datasets/reanalysis-era5-pressure-levels",
+      "doi": "10.24381/cds.bd0915c6",
+      "attribution": "Copernicus Climate Change Service ERA5",
+      "license": "Copernicus data licence",
+      "request": {
+        "dataset": "reanalysis-era5-pressure-levels",
+        "variables": [
+          "u_component_of_wind",
+          "v_component_of_wind",
+          "geopotential"
+        ],
+        "pressure_levels_hpa": [
+          1000,
+          975,
+          950,
+          925,
+          900,
+          875,
+          850,
+          825,
+          800,
+          775,
+          750,
+          700
+        ],
+        "start": "2023-08-02T00:00:00Z",
+        "end_exclusive": "2025-01-01T00:00:00Z"
+      }
+    },
+    {
+      "id": "epa_camd_hourly",
+      "provider": "United States Environmental Protection Agency",
+      "version": "2023-2024 reported revisions",
+      "access_method": "epa_api",
+      "required": true,
+      "required_exactness": "exact",
+      "allowed_fallbacks": [
+        "provider_reprocessed"
+      ],
+      "url": "https://api.epa.gov/easey/camd-services/bulk-files",
+      "attribution": "EPA Clean Air Markets Division",
+      "license": "United States government data",
+      "request": {
+        "years": [
+          2023,
+          2024
+        ],
+        "fields": [
+          "facility",
+          "unit",
+          "operating_date",
+          "operating_hour",
+          "nox_mass",
+          "operating_time",
+          "heat_input",
+          "gross_load"
+        ],
+        "time_standard": "local_standard_time"
+      }
+    },
+    {
+      "id": "geos_cf_2024",
+      "provider": "NASA Global Modeling and Assimilation Office",
+      "version": "paper-time 2024 archive revision unresolved",
+      "access_method": "opendap",
+      "required": true,
+      "required_exactness": "exact",
+      "allowed_fallbacks": [
+        "provider_reprocessed",
+        "method_equivalent"
+      ],
+      "url": "https://gmao.gsfc.nasa.gov/weather_prediction/GEOS-CF/",
+      "attribution": "NASA GMAO GEOS Composition Forecasting",
+      "license": "NASA data and information policy",
+      "request": {
+        "year": 2024,
+        "purpose": "chemical-field comparison and sensitivity"
+      }
+    },
+    {
+      "id": "sun2025_code",
+      "provider": "Zenodo",
+      "version": "v0.4 / repository commit 69b397732ea011187d3e9178a1fca43e86692b94",
+      "access_method": "static_archive",
+      "required": true,
+      "required_exactness": "exact",
+      "allowed_fallbacks": [],
+      "url": "https://zenodo.org/records/15001466",
+      "doi": "10.5281/zenodo.15001466",
+      "checksum_algorithm": "md5",
+      "checksum": "fb3df2af6313649840a6d796c3bce2c1",
+      "attribution": "Kang Sun, Physical oversampling in python (POPy) v0.4",
+      "license": "MIT License",
+      "request": {
+        "archive_filename": "Kang-Sun-CfA/Oversampling_matlab-v0.4.zip",
+        "repository_commit": "69b397732ea011187d3e9178a1fca43e86692b94"
+      }
+    }
+  ]
+}

@@ -448,7 +448,7 @@ def test_persist_network_and_reject_version_change_with_observations(duck, tmp_p
             )
             """
         )
-        with pytest.raises(RuntimeError, match="clean v0.6"):
+        with pytest.raises(RuntimeError, match="clean warehouse"):
             persist_network_artifacts(
                 replace(artifacts, network_version="18"), conn=conn
             )

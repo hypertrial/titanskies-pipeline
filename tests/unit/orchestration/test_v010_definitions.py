@@ -54,6 +54,8 @@ def test_definitions_expose_shipped_product_jobs():
         "plumegraph_events_validation",
         "plumegraph_events_release_build",
         "plumegraph_events_full_pipeline",
+        "sun2025_repro_source_preflight",
+        "andreadis2025_repro_source_preflight",
     }
     assert {
         job.name for job in defs.resolve_all_job_defs() if job.name != "__ASSET_JOB"
@@ -77,6 +79,10 @@ def test_definitions_expose_tempo_asset_keys():
         ("riverpulse", "events", "ops", "network_registry"),
         ("riverpulse", "events", "raw", "source_inventory"),
         ("riverpulse", "events", "raw", "observations"),
+    } <= asset_keys
+    assert {
+        ("sun2025", "repro", "ops", "source_preflight"),
+        ("andreadis2025", "repro", "ops", "source_preflight"),
     } <= asset_keys
     assert {
         ("plumegraph", "events", "ops", "facility_registry"),

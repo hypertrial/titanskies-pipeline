@@ -163,3 +163,30 @@ Evidence format `plumegraph-evidence-v1` includes GeoParquet, Parquet,
 per-revision JSON with geometries, candidates, estimates, evidence pixels, and
 provenance, plus a checksum manifest. Attribution is evidence, not proof, a
 health claim, or a regulatory conclusion.
+
+## Paper-reproduction preflight contracts
+
+`config/reproductions/sun2025_sources.json` and
+`config/reproductions/andreadis2025_sources.json` pin provider, version,
+access method, canonical URL, DOI/concept identity where available, source
+terms, request shape, required status, and explicitly permitted fallbacks.
+Their adjacent `*_contract.csv` files are the sole scientific-policy inputs.
+
+Preflight status is one of `exact`, `provider_reprocessed`,
+`method_equivalent`, or `unavailable`. Exact mode requires the declared
+paper-time status for every required source. Non-exact mode accepts only
+manifest-listed fallbacks. Missing required objects, object/storage budget
+overruns, duplicates, signed or credential-bearing URLs in any metadata field,
+and secret-bearing fields block readiness.
+
+Stable identities are SHA-256 over canonical JSON:
+
+- preflight run: profile, source/science/inventory hashes, exact mode, and
+  budgets;
+- source object revision: profile, source, provider object ID, and canonical
+  object metadata; and
+- planned acquisition generation: ready preflight identity.
+
+Identical reruns replace no history and create no duplicate generation.
+Changing a source revision or canonical object record appends a new object
+revision. These are ops contracts only; v0.7 publishes no paper-result marts.

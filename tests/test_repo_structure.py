@@ -164,6 +164,10 @@ def test_source_matrix_matches_tracked_source_manifests():
     plumegraph_manifest = json.loads(
         (ROOT / "config/plumegraph_sources.json").read_text()
     )
+    reproduction_manifests = [
+        json.loads((ROOT / f"config/reproductions/{profile}_sources.json").read_text())
+        for profile in ("sun2025", "andreadis2025")
+    ]
     notices = (ROOT / "THIRD_PARTY_NOTICES.md").read_text()
 
     assert geography_manifest["sources"]
@@ -187,6 +191,10 @@ def test_source_matrix_matches_tracked_source_manifests():
     for source in plumegraph_manifest["sources"]:
         for field in ("id", "version", "url", "attribution", "license"):
             assert str(source[field]) in notices, f"{source['id']}.{field}"
+    for manifest in reproduction_manifests:
+        for source in manifest["sources"]:
+            for field in ("id", "version", "url", "attribution", "license"):
+                assert str(source[field]) in notices, f"{source['id']}.{field}"
 
 
 def test_tracked_data_files_are_inventory_scoped_and_synthetic():
@@ -203,6 +211,10 @@ def test_tracked_data_files_are_inventory_scoped_and_synthetic():
         "config/plumegraph_sources.json",
         "config/riverpulse_pilots.json",
         "config/riverpulse_sources.json",
+        "config/reproductions/andreadis2025_contract.csv",
+        "config/reproductions/andreadis2025_sources.json",
+        "config/reproductions/sun2025_contract.csv",
+        "config/reproductions/sun2025_sources.json",
         "dbt/seeds/riverpulse_events_contract.csv",
         "dbt/seeds/plumegraph_events_contract.csv",
         "dbt/seeds/tempo_no2_contract.csv",
@@ -215,6 +227,8 @@ def test_tracked_data_files_are_inventory_scoped_and_synthetic():
         "tests/fixtures/geo/tempo_grid_region_weights.parquet",
         "tests/fixtures/geo/tempo_region_registry.parquet",
         "tests/fixtures/netcdf/tempo_no2_sample.nc",
+        "tests/fixtures/reproductions/andreadis2025_preflight.json",
+        "tests/fixtures/reproductions/sun2025_preflight.json",
     }
     actual = {
         relative

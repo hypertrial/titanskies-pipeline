@@ -1,0 +1,20 @@
+contract_key,value,unit,source_note
+contract_version,sun2025-repro-v1,,TitanSkies reproduction profile
+window_start,2023-08-02T00:00:00Z,UTC,paper analysis period
+window_end_exclusive,2025-01-01T00:00:00Z,UTC,paper analysis period
+tempo_collection,TEMPO_NO2_L2 V03,,paper source
+tempo_main_quality_flag,0,,paper retrieval filter
+maximum_cloud_fraction,0.15,fraction,paper retrieval filter
+tested_wind_altitude_minimum,100,m,paper method
+tested_wind_altitude_maximum,500,m,paper method
+selected_wind_altitude,300,m,paper method
+oversampling_grid_size,1,km,paper method
+estimator_window_width,30,km,paper method
+estimator_window_height,30,km,paper method
+integration_ellipse_major_axis,20,km,paper method
+integration_ellipse_minor_axis,10,km,paper method
+require_complete_ellipse_estimators,true,,paper method excludes hours with missing estimator cells
+expected_facility_count,14,count,reviewed cohort must be extracted from supplementary material
+facility_selection_rank_pool,21,count,paper selects 14 facilities from the top 21 emitters
+reported_plant_hour_checkpoint,15558,count,paper result used only as a reproduction checkpoint
+exactness_policy,exact,,provider-reprocessed or method-equivalent inputs require explicit non-exact mode

@@ -1,0 +1,92 @@
+{
+  "inventory_mode": "synthetic",
+  "profile_id": "sun2025",
+  "sources": [
+    {
+      "source_id": "tempo_no2_l2_v03",
+      "exactness_status": "exact",
+      "objects": [
+        {
+          "object_id": "TEMPO_NO2_L2_V03.synthetic.nc",
+          "url": "https://example.test/sun2025/tempo.nc",
+          "size_bytes": 2048,
+          "checksum_algorithm": "sha256",
+          "checksum": "1d8f20bbd9a6bf5e5b0e6e465b95790df692627723bfe6ee861880adfb040459",
+          "source_revision": "2024-12-31T00:00:00Z",
+          "schema_fingerprint": "synthetic-tempo-v03"
+        }
+      ]
+    },
+    {
+      "source_id": "facility_cohort_14",
+      "exactness_status": "exact",
+      "objects": [
+        {
+          "object_id": "reviewed-facilities.synthetic.csv",
+          "url": "https://example.test/sun2025/facilities.csv",
+          "size_bytes": 1400,
+          "checksum_algorithm": "sha256",
+          "checksum": "40e0a7c8c4a24f96107158d98f1778e805a0db9998e6f6c2992425572bf28a58"
+        }
+      ]
+    },
+    {
+      "source_id": "era5_single_levels",
+      "exactness_status": "exact",
+      "objects": [
+        {
+          "object_id": "era5-single.synthetic.grib",
+          "url": "https://example.test/sun2025/era5-single.grib",
+          "size_bytes": 4096
+        }
+      ]
+    },
+    {
+      "source_id": "era5_pressure_levels",
+      "exactness_status": "exact",
+      "objects": [
+        {
+          "object_id": "era5-pressure.synthetic.grib",
+          "url": "https://example.test/sun2025/era5-pressure.grib",
+          "size_bytes": 8192
+        }
+      ]
+    },
+    {
+      "source_id": "epa_camd_hourly",
+      "exactness_status": "exact",
+      "objects": [
+        {
+          "object_id": "camd.synthetic.csv",
+          "url": "https://example.test/sun2025/camd.csv",
+          "size_bytes": 1024
+        }
+      ]
+    },
+    {
+      "source_id": "geos_cf_2024",
+      "exactness_status": "exact",
+      "objects": [
+        {
+          "object_id": "geos-cf.synthetic.nc",
+          "url": "https://example.test/sun2025/geos-cf.nc",
+          "size_bytes": null
+        }
+      ]
+    },
+    {
+      "source_id": "sun2025_code",
+      "exactness_status": "exact",
+      "objects": [
+        {
+          "object_id": "source-code.synthetic.zip",
+          "url": "https://example.test/sun2025/source.zip",
+          "size_bytes": 512,
+          "checksum_algorithm": "md5",
+          "checksum": "fb3df2af6313649840a6d796c3bce2c1",
+          "source_revision": "69b397732ea011187d3e9178a1fca43e86692b94"
+        }
+      ]
+    }
+  ]
+}

@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Added
 
+- Added explicit, unscheduled `sun2025:repro` and `andreadis2025:repro`
+  source-preflight profiles for DOI `10.1029/2025JD044565` and DOI
+  `10.1029/2024GL114185`. Pinned source/scientific manifests, strict
+  exact/provider-reprocessed/method-equivalent/unavailable classification,
+  secret-safe metadata validation, per-source completeness, storage budgets,
+  idempotent source-object identities, and mode-gated acquisition generations
+  are retained in independent ops schemas.
+- Added `sun2025_repro_source_preflight` and
+  `andreadis2025_repro_source_preflight` Dagster jobs, offline synthetic
+  inventory fixtures, `make sun2025-preflight`,
+  `make andreadis2025-preflight`, source notices, and operator guidance. The
+  jobs are unscheduled and do not download or claim to reproduce either paper.
 - Added the explicit `plumegraph:events` lane for a review-gated 75-facility
   2024 US power-plant cohort, TEMPO NO2 L2 V04 Harmony subsets, HRRR
   forecast-hour-zero analysis, EPA CAMD hourly emissions, deterministic
@@ -63,6 +75,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Changed
 
+- Bumped package, dbt project, and warehouse schema version to `0.7.0`.
+  Populated v0.6 warehouses fail with clean-rebuild guidance.
 - Bumped package, dbt project, and warehouse schema version to `0.6.0`.
   Populated v0.5 warehouses fail with clean-rebuild guidance.
 - Bumped the package, dbt project, and warehouse schema version to `0.5.0`.

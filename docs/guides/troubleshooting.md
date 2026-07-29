@@ -190,13 +190,13 @@ Do not delete successful siblings or snapshots. Checksum, path containment,
 topology, and collection/SWORD mismatches are integrity failures rather than
 quality filters.
 
-## Corrupt or pre-0.6 warehouse
+## Corrupt or pre-0.7 warehouse
 
 **Symptom.** Startup refuses the warehouse, schema version errors mention a
-0.6 rebuild, or derived tables look partially upgraded.
+0.7 rebuild, or derived tables look partially upgraded.
 
-**Diagnostic.** Confirm whether the DuckDB file predates schema `0.6.0` or is
-corrupt (failed compact, killed writer, mixed generations). Populated v0.5
+**Diagnostic.** Confirm whether the DuckDB file predates schema `0.7.0` or is
+corrupt (failed compact, killed writer, mixed generations). Populated v0.6
 warehouses intentionally fail at startup.
 
 **Fix.** Stop Dagster and any DuckDB clients. Preserve the raw download
@@ -204,8 +204,9 @@ directories and reviewed geography source cache. Move the corrupt/old
 database and its WAL/SHM files out of the working path. Point `DUCKDB_PATH`
 at a new file, initialize a clean warehouse, register geography, and rerun
 ingestion/dbt per scope. Follow the
-[v0.6 upgrade guide](../getting-started/upgrade-v06.md) (earlier rebuild
-notes: [v0.5](../getting-started/upgrade-v05.md),
+[v0.7 upgrade guide](../getting-started/upgrade-v07.md) (earlier rebuild
+notes: [v0.6](../getting-started/upgrade-v06.md),
+[v0.5](../getting-started/upgrade-v05.md),
 [v0.4](../getting-started/upgrade-v04.md),
 [v0.3](../getting-started/upgrade-v03.md),
 [v0.2](../getting-started/upgrade-v02.md)). Never copy partially derived

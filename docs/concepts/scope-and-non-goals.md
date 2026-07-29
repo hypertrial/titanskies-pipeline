@@ -20,6 +20,9 @@ For the operator checklist, see
 - One explicit `plumegraph:events` lane for a reviewed 2024 US power-plant
   cohort, TEMPO L2/HRRR/CAMD revisions, auditable plume episodes, validation,
   and immutable local evidence releases.
+- Two unscheduled research profiles that pin and preflight the source inputs
+  needed to reproduce DOI `10.1029/2025JD044565` and DOI
+  `10.1029/2024GL114185`.
 
 ## What It Does Not Ship Or Operate
 
@@ -35,6 +38,9 @@ For the operator checklist, see
 - No bundled production NetCDF, HRRR, EPA, benchmark-output, PlumeGraph
   release, Hydrocron response, SWORD, network-generation, live geography, or
   DuckDB artifacts in the canonical repository.
+- No claim that the papers have been reproduced. v0.7 preflight validates a
+  discovery inventory; full provider acquisition, normalization, analysis,
+  and result comparison remain follow-on work.
 
 ## Operator Ownership
 
@@ -50,3 +56,4 @@ benchmark, and stores results in their own DuckDB file.
 - [TEMPO product notes](tempo-product-notes.md)
 - [RiverPulse product notes](riverpulse-product-notes.md)
 - [PlumeGraph product notes](plumegraph-product-notes.md)
+- [Paper reproduction preflight](paper-reproduction-preflight.md)

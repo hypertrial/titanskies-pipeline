@@ -120,3 +120,24 @@ uses a 14-day rediscovery window and excludes cohort bootstrap and immutable
 release publication. Successful region-day partitions commit independently;
 any failure blocks publication until a clean retry. PlumeGraph dbt uses
 `tag:plumegraph,tag:events`.
+
+## Paper-reproduction preflight
+
+The two paper profiles are explicit assets and jobs; they are not added to the
+TEMPO `ScopeSpec` factory and have no schedules.
+
+Assets:
+
+- `sun2025/repro/ops/source_preflight`
+- `andreadis2025/repro/ops/source_preflight`
+
+Jobs:
+
+- `sun2025_repro_source_preflight`
+- `andreadis2025_repro_source_preflight`
+
+Each job validates a metadata-only discovery inventory, persists contracts,
+requests, source objects, completeness, and the preflight report, and creates
+a `planned` production generation or `synthetic` fixture generation only when
+ready. `exact_mode=true` and `fail_on_blocked=true` are the defaults. The jobs
+never download production payloads and are intentionally unscheduled.

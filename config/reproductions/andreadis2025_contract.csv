@@ -1,0 +1,28 @@
+contract_key,value,unit,source_note
+contract_version,andreadis2025-repro-v1,,TitanSkies reproduction profile
+window_start,2023-03-30T00:00:00Z,UTC,paper analysis period
+window_end_exclusive,2024-07-22T00:00:00Z,UTC,paper analysis period
+paper_access_cutoff,2024-10-24T23:59:59Z,UTC,maximum upstream revision time for exact mode
+riversp_version,2.0,,Version C reach and node products
+sword_version,16,,paper network version
+discharge_branch,unconstrained,,paper method does not calibrate algorithms with gauges
+discharge_algorithm_count,6,count,paper method
+discharge_consensus,median,,paper method
+minimum_prior_width,80,m,paper quality screen
+minimum_reach_length,7,km,paper quality screen
+minimum_prior_slope,0.000017,m/m,paper quality screen of 1.7 cm/km
+minimum_absolute_cross_track_distance,15,km,paper quality screen
+maximum_absolute_cross_track_distance,60,km,paper quality screen
+maximum_ice_climatology_fraction,0,fraction,paper quality screen
+maximum_dark_water_fraction,0.1,fraction,paper quality screen
+accepted_crossover_calibration_flags,0|1,,paper quality screen
+maximum_absolute_wse_uncertainty,0.5,m,paper quality screen
+maximum_absolute_slope_uncertainty,0.0001,m/m,paper quality screen
+rejected_reach_quality_bits,classification_qual_suspect|geolocation_qual_suspect|water_fraction_suspect|few_wse_observations|geolocation_qual_degraded|below_min_fit_points|no_wse_observations,,paper reach and node quality screen
+timeseries_outlier_filter,tukey,,paper WSE width and slope follow-on screen
+reported_conditionally_observed_gauged_reaches,827,count,paper result checkpoint
+reported_highest_quality_gauged_reaches,65,count,paper result checkpoint
+reported_hydraulic_consistency_gauged_reaches,54,count,paper result checkpoint
+reported_global_highest_quality_reaches,11389,count,paper result checkpoint
+reported_ungauged_highest_quality_reaches,11274,count,paper result checkpoint
+exactness_policy,exact,,current Version 3 SoS is never silently treated as the paper-time snapshot

@@ -14,6 +14,9 @@ from titanskies_pipeline.orchestration import (
     assets_plumegraph_events as plumegraph_assets,
 )
 from titanskies_pipeline.orchestration import (
+    assets_reproductions as reproduction_assets,
+)
+from titanskies_pipeline.orchestration import (
     assets_riverpulse_events as riverpulse_assets,
 )
 from titanskies_pipeline.orchestration import assets_tempo_no2 as assets_mod
@@ -39,6 +42,8 @@ def _expected_public_job_names() -> set[str]:
         "plumegraph_events_validation",
         "plumegraph_events_release_build",
         "plumegraph_events_full_pipeline",
+        "sun2025_repro_source_preflight",
+        "andreadis2025_repro_source_preflight",
     }
 
 
@@ -173,6 +178,28 @@ titanskies:
             "a" * 64,
             1,
             12,
+        ),
+    )
+    from titanskies_pipeline.reproductions.preflight import PreflightMetrics
+
+    monkeypatch.setattr(
+        reproduction_assets,
+        "run_preflight",
+        lambda profile_id, **kwargs: PreflightMetrics(
+            f"{profile_id}-run",
+            profile_id,
+            "ready",
+            "synthetic",
+            kwargs["exact_mode"],
+            1,
+            1,
+            1,
+            10,
+            0,
+            (),
+            "a" * 64,
+            "b" * 64,
+            "c" * 64,
         ),
     )
     yield

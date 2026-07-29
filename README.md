@@ -6,10 +6,11 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 TitanSkies Pipeline is an open-source, local-first NASA science warehouse.
-Version `0.6.0` adds the explicit `plumegraph:events` evidence ledger for a
-frozen 2024 US power-plant benchmark. It combines standard TEMPO Level 2 V04
-NO₂, HRRR analysis meteorology, and EPA CAMD emissions while preserving the
-existing TEMPO and `riverpulse:events` lanes.
+Version `0.7.0` adds pinned, unscheduled source-preflight profiles for
+reproducing DOI `10.1029/2025JD044565` and DOI `10.1029/2024GL114185`. They
+classify exact, provider-reprocessed, method-equivalent, and unavailable
+inputs before acquisition while preserving every existing TEMPO,
+`riverpulse:events`, and `plumegraph:events` lane.
 
 Dagster coordinates discovery, NetCDF/CSV processing, DuckDB storage, and dbt
 publication. Every operator controls the resulting local DuckDB file;
@@ -58,6 +59,14 @@ and immutable-release demo with:
 
 ```bash
 uv run make plumegraph-demo
+```
+
+Validate the two tracked synthetic source inventories without downloading
+production payloads:
+
+```bash
+uv run make sun2025-preflight
+uv run make andreadis2025-preflight
 ```
 
 The demo prints its `.cache/demo.duckdb` path, relation counts, sample queries,
@@ -113,6 +122,10 @@ The pipeline is intentionally local and inspectable:
 - PlumeGraph pins `TEMPO_NO2_L2` V04, HRRR forecast-hour-zero analysis, and
   EPA CAMD apportioned hourly emissions. It publishes eight evidence marts,
   seven observability surfaces, and checksum-addressed local releases.
+- The two reproduction profiles pin paper-time collection, code, network,
+  meteorology, emissions, and supplementary-artifact requirements. Preflight
+  creates an auditable acquisition plan but does not download or reproduce the
+  papers.
 
 Query `tempo_no2_marts` first and use `tempo_no2_observability` to investigate
 freshness and quality. The main historical relation is
@@ -134,13 +147,13 @@ where is_analysis_ready;
 
 See the [Architecture](docs/concepts/architecture.md), [Data contracts](docs/reference/data-contracts.md),
 and [Data dictionary](docs/reference/data-dictionary.md) for the complete model.
-TitanSkies v0.6 requires a clean derived-warehouse rebuild; older raw NetCDF,
+TitanSkies v0.7 requires a clean derived-warehouse rebuild; older raw NetCDF,
 verified geography, verified SWORD archives, and checksum-verified source
 caches remain reusable.
 `make demo` only builds
 the `tempo:no2` (NRT) scope; see
-[Upgrade to v0.6](docs/getting-started/upgrade-v06.md) for the rebuild and
-PlumeGraph rollout.
+[Upgrade to v0.7](docs/getting-started/upgrade-v07.md) for the rebuild and
+reproduction-preflight rollout.
 
 ## Community
 

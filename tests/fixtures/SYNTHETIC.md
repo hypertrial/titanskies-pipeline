@@ -18,6 +18,10 @@ not downloaded NASA observations or boundary data.
   winds and scalar meteorology.
 - `cassettes/plumegraph_camd_hourly.csv` contains invented CAMD-shaped
   facility/unit emissions with `example.test` provenance.
+- `reproductions/sun2025_preflight.json` and
+  `reproductions/andreadis2025_preflight.json` are hand-authored
+  metadata-only source inventories with invented object IDs, sizes, and
+  `example.test` URLs. They do not establish production-source availability.
 - `scripts/build_riverpulse_network.py --synthetic` creates invented
   Sacramento/Rhine/Murray mini-corridors without downloading SWORD.
 

@@ -23,6 +23,7 @@ inventory.
 | `run_live_smoke.py` | Opt-in CMR discovery, pinned geography build helpers, or credentialed disposable two-granule validation | Local live readiness and weekly operator smoke (`make live-smoke`, `--mode discovery`) | CI/GitHub Actions; committing downloaded payloads |
 | `run_riverpulse_live_smoke.py` | Opt-in one-reach, at-most-90-day Hydrocron run against a production network and disposable warehouse | RiverPulse release/operator readiness (`make riverpulse-live-smoke`) | CI/GitHub Actions; broad backfills |
 | `run_plumegraph_live_smoke.py` | Run one reviewed facility/day through Harmony, HRRR, CAMD, analysis, and dbt | PlumeGraph readiness (`make plumegraph-live-smoke`) | CI, broad backfills, or release publication |
+| `run_reproduction_preflight.py` | Validate and ledger a paper-profile provider-discovery inventory without payload downloads | Before source acquisition; offline contract checks | Claiming that either paper has been reproduced |
 
 ## Related Make targets
 
@@ -34,6 +35,8 @@ inventory.
 | `make plumegraph-demo` | `build_plumegraph_demo.py` |
 | `make plumegraph-live-smoke` | `run_plumegraph_live_smoke.py` with `PLUMEGRAPH_COHORT_MANIFEST` |
 | `make plumegraph-release` | `build_plumegraph_release.py` with `PLUMEGRAPH_RELEASE_VERSION` |
+| `make sun2025-preflight` | `run_reproduction_preflight.py sun2025` with `SUN2025_PREFLIGHT_INVENTORY` |
+| `make andreadis2025-preflight` | `run_reproduction_preflight.py andreadis2025` with `ANDREADIS2025_PREFLIGHT_INVENTORY` |
 | `make docs-recipe-smoke` | `check_docs_recipe_sql.py` |
 | `make live-smoke` | `run_live_smoke.py --mode live-smoke` |
 | `make gx-data-quality` | `run_gx_data_quality.py` |

@@ -68,7 +68,7 @@ validation until a clean retry.
 Build an immutable release only after the held-out benchmark has passed:
 
 ```bash
-PLUMEGRAPH_RELEASE_VERSION=v0.6.0 uv run make plumegraph-release
+PLUMEGRAPH_RELEASE_VERSION=v0.7.0 uv run make plumegraph-release
 ```
 
 Benchmark versions are byte-frozen after their first successful load. The

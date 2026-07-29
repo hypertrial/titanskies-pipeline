@@ -1,0 +1,126 @@
+{
+  "profile_id": "andreadis2025",
+  "profile_version": "1.0.0",
+  "paper_doi": "10.1029/2024GL114185",
+  "temporal_window": {
+    "start": "2023-03-30T00:00:00Z",
+    "end_exclusive": "2024-07-22T00:00:00Z",
+    "paper_access_cutoff": "2024-10-24T23:59:59Z"
+  },
+  "scientific_contract": "andreadis2025_contract.csv",
+  "sources": [
+    {
+      "id": "swot_riversp_reach_v2",
+      "provider": "NASA PO.DAAC through Earthdata CMR",
+      "version": "2.0 / Version C",
+      "access_method": "cmr",
+      "required": true,
+      "required_exactness": "exact",
+      "allowed_fallbacks": [],
+      "url": "https://podaac.jpl.nasa.gov/dataset/SWOT_L2_HR_RiverSP_reach_2.0",
+      "concept_id": "C2799438303-POCLOUD",
+      "doi": "10.5067/SWOT-RIVERSP-2.0",
+      "attribution": "NASA/JPL PO.DAAC SWOT RiverSP reach Version C",
+      "license": "NASA data and information policy",
+      "request": {
+        "start": "2023-03-30T00:00:00Z",
+        "end_exclusive": "2024-07-22T00:00:00Z",
+        "global": true
+      }
+    },
+    {
+      "id": "swot_riversp_node_v2",
+      "provider": "NASA PO.DAAC through Earthdata CMR",
+      "version": "2.0 / Version C",
+      "access_method": "cmr",
+      "required": true,
+      "required_exactness": "exact",
+      "allowed_fallbacks": [],
+      "url": "https://podaac.jpl.nasa.gov/dataset/SWOT_L2_HR_RiverSP_node_2.0",
+      "concept_id": "C2799438301-POCLOUD",
+      "attribution": "NASA/JPL PO.DAAC SWOT RiverSP node Version C",
+      "license": "NASA data and information policy",
+      "request": {
+        "start": "2023-03-30T00:00:00Z",
+        "end_exclusive": "2024-07-22T00:00:00Z",
+        "global": true
+      }
+    },
+    {
+      "id": "sword_v16",
+      "provider": "Zenodo",
+      "version": "SWORD v16",
+      "access_method": "static_archive",
+      "required": true,
+      "required_exactness": "exact",
+      "allowed_fallbacks": [],
+      "url": "https://zenodo.org/records/10013982/files/SWORD_v16_gpkg.zip?download=1",
+      "checksum_algorithm": "md5",
+      "checksum": "0a3a43cc22429f25f05e7199eca9060b",
+      "attribution": "SWOT River Database v16",
+      "license": "Creative Commons Attribution 4.0 International",
+      "request": {
+        "format": "GeoPackage"
+      }
+    },
+    {
+      "id": "swot_l4_sos_paper_snapshot",
+      "provider": "NASA PO.DAAC",
+      "version": "Version 1; paper-time 2024-10-24 object generation unresolved",
+      "access_method": "manual_revision_resolution",
+      "required": true,
+      "required_exactness": "exact",
+      "allowed_fallbacks": [
+        "provider_reprocessed",
+        "method_equivalent"
+      ],
+      "url": "https://podaac.jpl.nasa.gov/dataset/SWOT_L4_DAWG_SOS_DISCHARGE",
+      "doi": "10.5067/SWOT-SOS-V1",
+      "attribution": "NASA SWOT Discharge Algorithm Working Group",
+      "license": "NASA data and information policy",
+      "request": {
+        "collection_short_name": "SWOT_L4_DAWG_SOS_DISCHARGE",
+        "collection_version": "1",
+        "paper_access_cutoff": "2024-10-24T23:59:59Z",
+        "current_fallback_short_name": "SWOT_L4_HR_DAWG_SOS_DISCHARGE_V3",
+        "current_fallback_concept_id": "C3905028734-POCLOUD",
+        "current_fallback_doi": "10.5067/SWOT-SOS-RD3"
+      }
+    },
+    {
+      "id": "confluence_code",
+      "provider": "Confluence project GitHub organization",
+      "version": "paper-time commit unresolved",
+      "access_method": "git_revision",
+      "required": true,
+      "required_exactness": "exact",
+      "allowed_fallbacks": [
+        "method_equivalent"
+      ],
+      "url": "https://github.com/SWOT-Confluence",
+      "attribution": "SWOT Confluence project contributors",
+      "license": "Repository-declared software licences",
+      "request": {
+        "paper_access_cutoff": "2024-10-24T23:59:59Z"
+      }
+    },
+    {
+      "id": "grdc_gauge_fallback",
+      "provider": "Global Runoff Data Centre",
+      "version": "paper station records",
+      "access_method": "research_request",
+      "required": false,
+      "required_exactness": "exact",
+      "allowed_fallbacks": [
+        "method_equivalent"
+      ],
+      "url": "https://portal.grdc.bafg.de/",
+      "attribution": "Global Runoff Data Centre",
+      "license": "Research-use terms; source observations are not redistributable",
+      "request": {
+        "use_only_when_not_embedded_in_pinned_l4_snapshot": true,
+        "redistribution": "prohibited"
+      }
+    }
+  ]
+}

@@ -18,7 +18,7 @@ boundary data, or ODbL-derived geography is transferred by local file control.
 | Schema | Audience | Purpose |
 | --- | --- | --- |
 | `tempo_no2_raw` | Internal | Regional hourly aggregates and latest native-grid observations (NRT). |
-| `titanskies_ops` | Operators | Shared `warehouse_metadata` schema-version stamp (`0.6.0`). |
+| `titanskies_ops` | Operators | Shared `warehouse_metadata` schema-version stamp (`0.7.0`). |
 | `tempo_no2_ops` | Operators | Granule inventory, geography registry, and durable pipeline state (NRT). |
 | `tempo_no2_staging` | dbt internal | Typed source projections (NRT). |
 | `tempo_no2_intermediate` | dbt internal | Reusable hourly and anomaly calculations (NRT). |
@@ -42,6 +42,8 @@ boundary data, or ODbL-derived geography is transferred by local file control.
 | `plumegraph_events_intermediate` | dbt internal | Current source and promoted episode revisions. |
 | `plumegraph_events_marts` | Analysts | Eight stable facility, episode, source-attribution, estimate, evidence, and provenance relations. |
 | `plumegraph_events_observability` | Operators and analysts | Request, partition, revision, quality, benchmark, calibration, and release-integrity status. |
+| `sun2025_repro_ops` | Operators | DOI `10.1029/2025JD044565` source contracts, planned requests, preflight runs, completeness, object revisions, and mode-labeled acquisition generations. |
+| `andreadis2025_repro_ops` | Operators | DOI `10.1029/2024GL114185` source contracts, planned requests, preflight runs, completeness, object revisions, and mode-labeled acquisition generations. |
 
 Query marts for analysis. Raw, ops, staging, and intermediate relations are
 debugging and implementation surfaces rather than public data contracts. The
@@ -74,6 +76,12 @@ source snapshot checksums, science contract, algorithm, cohort, code version,
 validation run, normalized artifacts, and sanitized source request/result
 lineage. EPA API keys, signed URLs, and Earthdata credentials are never
 stored.
+
+Reproduction preflight stores metadata only. Canonical source URLs are
+sanitized before persistence; signed URLs and secret-bearing fields are
+rejected. Unknown object sizes remain explicit and are not treated as zero in
+the unknown-size count. v0.7 creates no reproduction raw/staging/mart schemas
+and downloads no paper source payloads.
 
 DuckDB, WAL files, raw downloads, generated geography, dbt targets, and the
 built documentation site are local artifacts and must not be committed.

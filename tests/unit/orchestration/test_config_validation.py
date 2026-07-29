@@ -16,6 +16,7 @@ from titanskies_pipeline.orchestration.config import (
     PlumeGraphReleaseConfig,
     PlumeGraphValidationConfig,
     RegionRegistryConfig,
+    ReproductionPreflightConfig,
     RiverPulseDiscoveryConfig,
     RiverPulseIngestConfig,
     RiverPulseNetworkConfig,
@@ -26,6 +27,7 @@ from titanskies_pipeline.orchestration.config import (
     plumegraph_events_ingest_run_config,
     plumegraph_events_release_run_config,
     plumegraph_events_validation_run_config,
+    reproduction_preflight_run_config,
     riverpulse_events_dbt_run_config,
     riverpulse_events_discovery_run_config,
     riverpulse_events_full_pipeline_run_config,
@@ -292,3 +294,22 @@ def test_plumegraph_configs_and_run_configs():
     assert "plumegraph__events__ops__facility_registry" not in full
     assert "plumegraph__events__releases__evidence_ledger" not in full
     assert "plumegraph__events__observability__validation" in full
+
+
+def test_reproduction_preflight_config_and_run_config():
+    config = ReproductionPreflightConfig(
+        inventory_path="/tmp/inventory.json",
+        exact_mode=False,
+        max_objects=10,
+        max_bytes=100,
+    )
+    assert config.inventory_path == "/tmp/inventory.json"
+    assert config.exact_mode is False
+    assert (
+        "sun2025__repro__ops__source_preflight"
+        in reproduction_preflight_run_config("sun2025")["ops"]
+    )
+    with pytest.raises(Exception):
+        ReproductionPreflightConfig(max_objects=0)
+    with pytest.raises(Exception):
+        ReproductionPreflightConfig(max_bytes=0)

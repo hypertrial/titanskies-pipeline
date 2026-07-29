@@ -91,10 +91,11 @@ Consume public marts without treating pipeline output as health advice.
 
 ## Supported local scopes
 
-Version `0.6.x` ships `tempo:no2` (near-real-time), `tempo:no2_std` (standard
+Version `0.7.x` ships `tempo:no2` (near-real-time), `tempo:no2_std` (standard
 V04), `riverpulse:events` (SWOT RiverSP Version D), and
-`plumegraph:events` (TEMPO L2/HRRR/CAMD evidence). This site is software
-documentation and does not host datasets.
+`plumegraph:events` (TEMPO L2/HRRR/CAMD evidence), plus two paper-reproduction
+source-preflight profiles. This site is software documentation and does not
+host datasets.
 
 [Choose a scope](getting-started/choose-a-scope.md), read the
 [FAQ](concepts/faq.md), or review the

@@ -6,8 +6,11 @@ from titanskies_pipeline.naming import (
     SCOPE_EVENTS,
     SCOPE_NO2,
     SCOPE_NO2_STD,
+    SCOPE_REPRO,
+    SOURCE_ANDREADIS2025,
     SOURCE_PLUMEGRAPH,
     SOURCE_RIVERPULSE,
+    SOURCE_SUN2025,
     SOURCE_TEMPO,
     schema_name,
 )
@@ -21,6 +24,13 @@ RIVERPULSE_EVENTS_RAW_SCHEMA = schema_name(SOURCE_RIVERPULSE, SCOPE_EVENTS, "raw
 RIVERPULSE_EVENTS_OPS_SCHEMA = schema_name(SOURCE_RIVERPULSE, SCOPE_EVENTS, "ops")
 PLUMEGRAPH_EVENTS_RAW_SCHEMA = schema_name(SOURCE_PLUMEGRAPH, SCOPE_EVENTS, "raw")
 PLUMEGRAPH_EVENTS_OPS_SCHEMA = schema_name(SOURCE_PLUMEGRAPH, SCOPE_EVENTS, "ops")
+SUN2025_REPRO_OPS_SCHEMA = schema_name(SOURCE_SUN2025, SCOPE_REPRO, "ops")
+ANDREADIS2025_REPRO_OPS_SCHEMA = schema_name(SOURCE_ANDREADIS2025, SCOPE_REPRO, "ops")
+
+_REPRO_OPS_SCHEMAS_BY_PROFILE = {
+    SOURCE_SUN2025: SUN2025_REPRO_OPS_SCHEMA,
+    SOURCE_ANDREADIS2025: ANDREADIS2025_REPRO_OPS_SCHEMA,
+}
 
 _RAW_SCHEMAS_BY_SCOPE = {
     SCOPE_NO2: TEMPO_NO2_RAW_SCHEMA,
@@ -64,6 +74,17 @@ def plumegraph_ops_tbl(name: str) -> str:
     return tempo_q(PLUMEGRAPH_EVENTS_OPS_SCHEMA, name)
 
 
+def reproduction_ops_tbl(profile_id: str, name: str) -> str:
+    try:
+        schema = _REPRO_OPS_SCHEMAS_BY_PROFILE[profile_id]
+    except KeyError as exc:
+        raise ValueError(
+            f"Unknown reproduction profile {profile_id!r}; expected one of: "
+            f"{_known_scopes(_REPRO_OPS_SCHEMAS_BY_PROFILE)}"
+        ) from exc
+    return tempo_q(schema, name)
+
+
 def tempo_raw_tbl(name: str, *, scope: str = SCOPE_NO2) -> str:
     try:
         schema = _RAW_SCHEMAS_BY_SCOPE[scope]
@@ -97,10 +118,12 @@ def hour_revision_sequence(*, scope: str = SCOPE_NO2) -> str:
 
 
 __all__ = [
+    "ANDREADIS2025_REPRO_OPS_SCHEMA",
     "RIVERPULSE_EVENTS_OPS_SCHEMA",
     "RIVERPULSE_EVENTS_RAW_SCHEMA",
     "PLUMEGRAPH_EVENTS_OPS_SCHEMA",
     "PLUMEGRAPH_EVENTS_RAW_SCHEMA",
+    "SUN2025_REPRO_OPS_SCHEMA",
     "TEMPO_NO2_OPS_SCHEMA",
     "TEMPO_NO2_RAW_SCHEMA",
     "TEMPO_NO2_STD_OPS_SCHEMA",
@@ -111,6 +134,7 @@ __all__ = [
     "riverpulse_raw_tbl",
     "plumegraph_ops_tbl",
     "plumegraph_raw_tbl",
+    "reproduction_ops_tbl",
     "tempo_ops_tbl",
     "tempo_q",
     "tempo_raw_tbl",

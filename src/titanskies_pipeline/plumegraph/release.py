@@ -150,7 +150,7 @@ def _package_version() -> str:
     try:
         return importlib.metadata.version("titanskies-pipeline")
     except importlib.metadata.PackageNotFoundError:
-        return "0.6.0"
+        return "0.7.0"
 
 
 def build_release(

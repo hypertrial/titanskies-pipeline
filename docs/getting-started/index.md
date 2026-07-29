@@ -7,6 +7,8 @@ uv sync --locked --extra dev
 uv run make demo
 uv run make riverpulse-demo
 uv run make plumegraph-demo
+uv run make sun2025-preflight
+uv run make andreadis2025-preflight
 ```
 
 Open the printed `.cache/demo.duckdb` path in DuckDB to query administrative
@@ -41,10 +43,13 @@ RiverPulse jobs use `riverpulse_events_source_discovery`,
 PlumeGraph jobs run discovery, three-source ingest, analysis, dbt, validation,
 and optional release publication through the documented
 `plumegraph_events_*` job family.
+Paper-source preflight jobs are `sun2025_repro_source_preflight` and
+`andreadis2025_repro_source_preflight`; neither has a schedule.
 
-Version 0.6 requires a new warehouse for populated v0.5 DuckDB files. See the
-[v0.6 upgrade guide](upgrade-v06.md) before enabling
+Version 0.7 requires a new warehouse for populated v0.6 DuckDB files. See the
+[v0.7 upgrade guide](upgrade-v07.md) before enabling
 schedules against an existing deployment. Older rebuild notes remain under
+[Upgrade to v0.6](upgrade-v06.md),
 [Upgrade to v0.5](upgrade-v05.md),
 [Upgrade to v0.4](upgrade-v04.md),
 [Upgrade to v0.3](upgrade-v03.md) and [Upgrade to v0.2](upgrade-v02.md).

@@ -13,6 +13,111 @@ TitanSkies and Hypertrial are not affiliated with or endorsed by NASA,
 PO.DAAC, the SWORD project, the U.S. Census Bureau, Statistics Canada, INEGI,
 OpenStreetMap, or timezone-boundary-builder.
 
+## Paper-reproduction source matrix
+
+Every literal in this section mirrors the tracked manifests under
+`config/reproductions/`. A preflight record is source metadata, not a licence
+grant and not proof that the production object is available.
+
+### `sun2025:repro`
+
+#### `tempo_no2_l2_v03`
+
+- Version: `V03`
+- URL: `https://asdc.larc.nasa.gov/project/TEMPO/TEMPO_NO2_L2_V03`
+- Attribution: `NASA/LARC/SD/ASDC TEMPO NO2 Level 2 V03`
+- Licence field: `NASA data and information policy`
+
+#### `facility_cohort_14`
+
+- Version: `paper-reviewed-14`
+- URL: `https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2025JD044565`
+- Attribution: `Paper authors and supplementary information`
+- Licence field: `Publisher supplementary-material terms`
+
+#### `era5_single_levels`
+
+- Version: `ERA5`
+- URL: `https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels`
+- Attribution: `Copernicus Climate Change Service ERA5`
+- Licence field: `Copernicus data licence`
+
+#### `era5_pressure_levels`
+
+- Version: `ERA5`
+- URL: `https://cds.climate.copernicus.eu/datasets/reanalysis-era5-pressure-levels`
+- Attribution: `Copernicus Climate Change Service ERA5`
+- Licence field: `Copernicus data licence`
+
+#### `epa_camd_hourly`
+
+- Version: `2023-2024 reported revisions`
+- URL: `https://api.epa.gov/easey/camd-services/bulk-files`
+- Attribution: `EPA Clean Air Markets Division`
+- Licence field: `United States government data`
+
+#### `geos_cf_2024`
+
+- Version: `paper-time 2024 archive revision unresolved`
+- URL: `https://gmao.gsfc.nasa.gov/weather_prediction/GEOS-CF/`
+- Attribution: `NASA GMAO GEOS Composition Forecasting`
+- Licence field: `NASA data and information policy`
+
+#### `sun2025_code`
+
+- Version: `v0.4 / repository commit 69b397732ea011187d3e9178a1fca43e86692b94`
+- URL: `https://zenodo.org/records/15001466`
+- Attribution: `Kang Sun, Physical oversampling in python (POPy) v0.4`
+- Licence field: `MIT License`
+
+### `andreadis2025:repro`
+
+#### `swot_riversp_reach_v2`
+
+- Version: `2.0 / Version C`
+- URL: `https://podaac.jpl.nasa.gov/dataset/SWOT_L2_HR_RiverSP_reach_2.0`
+- Attribution: `NASA/JPL PO.DAAC SWOT RiverSP reach Version C`
+- Licence field: `NASA data and information policy`
+
+#### `swot_riversp_node_v2`
+
+- Version: `2.0 / Version C`
+- URL: `https://podaac.jpl.nasa.gov/dataset/SWOT_L2_HR_RiverSP_node_2.0`
+- Attribution: `NASA/JPL PO.DAAC SWOT RiverSP node Version C`
+- Licence field: `NASA data and information policy`
+
+#### `sword_v16`
+
+- Version: `SWORD v16`
+- URL: `https://zenodo.org/records/10013982/files/SWORD_v16_gpkg.zip?download=1`
+- Attribution: `SWOT River Database v16`
+- Licence field: `Creative Commons Attribution 4.0 International`
+
+#### `swot_l4_sos_paper_snapshot`
+
+- Version: `Version 1; paper-time 2024-10-24 object generation unresolved`
+- URL: `https://podaac.jpl.nasa.gov/dataset/SWOT_L4_DAWG_SOS_DISCHARGE`
+- Attribution: `NASA SWOT Discharge Algorithm Working Group`
+- Licence field: `NASA data and information policy`
+
+#### `confluence_code`
+
+- Version: `paper-time commit unresolved`
+- URL: `https://github.com/SWOT-Confluence`
+- Attribution: `SWOT Confluence project contributors`
+- Licence field: `Repository-declared software licences`
+
+#### `grdc_gauge_fallback`
+
+- Version: `paper station records`
+- URL: `https://portal.grdc.bafg.de/`
+- Attribution: `Global Runoff Data Centre`
+- Licence field: `Research-use terms; source observations are not redistributable`
+
+GRDC observations must not be committed or redistributed. Current SWOT L4
+Version 3, a later Confluence revision, or provider-reprocessed ERA5/GEOS-CF
+content must retain its non-exact status through every downstream artifact.
+
 ## PlumeGraph source matrix
 
 Every literal below mirrors `config/plumegraph_sources.json`.

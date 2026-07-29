@@ -45,7 +45,7 @@ def test_populated_pre_v04_warehouse_requires_rebuild(tmp_path):
         "create table tempo_no2_raw.region_granule_aggregates (granule_id varchar)"
     )
     conn.execute("insert into tempo_no2_raw.region_granule_aggregates values ('old')")
-    with pytest.raises(RuntimeError, match="schema 0.6.0 requires a clean rebuild"):
+    with pytest.raises(RuntimeError, match="schema 0.7.0 requires a clean rebuild"):
         bootstrap_all_tempo_tables(conn)
     conn.close()
 
@@ -77,7 +77,7 @@ def test_v01_ops_data_also_marks_warehouse_as_populated(tmp_path):
     )
     conn.execute("create table tempo_no2_ops.region_registry (id varchar)")
     conn.execute("insert into tempo_no2_ops.region_registry values ('US')")
-    with pytest.raises(RuntimeError, match="schema 0.6.0 requires a clean rebuild"):
+    with pytest.raises(RuntimeError, match="schema 0.7.0 requires a clean rebuild"):
         bootstrap_all_tempo_tables(conn)
     conn.close()
 
@@ -103,7 +103,7 @@ def test_explicit_older_schema_metadata_requires_rebuild(tmp_path):
     conn.close()
 
 
-def test_v06_shared_metadata_and_product_tables_are_bootstrapped(duck):
+def test_v07_shared_metadata_and_product_tables_are_bootstrapped(duck):
     with duck.get_connection() as conn:
         version = conn.execute(
             """
@@ -122,8 +122,18 @@ def test_v06_shared_metadata_and_product_tables_are_bootstrapped(duck):
                 """
             ).fetchall()
         }
-    assert WAREHOUSE_SCHEMA_VERSION == "0.6.0"
-    assert version == "0.6.0"
+        reproduction_tables = {
+            row[0]
+            for row in conn.execute(
+                """
+                select table_name
+                from information_schema.tables
+                where table_schema = 'sun2025_repro_ops'
+                """
+            ).fetchall()
+        }
+    assert WAREHOUSE_SCHEMA_VERSION == "0.7.0"
+    assert version == "0.7.0"
     assert {
         "reaches",
         "reach_edges",
@@ -131,6 +141,15 @@ def test_v06_shared_metadata_and_product_tables_are_bootstrapped(duck):
         "discharge_revisions",
         "observation_snapshot_links",
     } <= tables
+    assert {
+        "source_contracts",
+        "source_requests",
+        "preflight_runs",
+        "source_completeness",
+        "source_objects",
+        "preflight_source_objects",
+        "acquisition_generations",
+    } <= reproduction_tables
 
 
 def test_shared_older_schema_metadata_requires_clean_rebuild(tmp_path):
@@ -176,7 +195,7 @@ def test_empty_schema_metadata_table_can_be_bootstrapped(tmp_path, schema):
         where metadata_key = 'schema_version'
         """
         ).fetchone()[0]
-        == "0.6.0"
+        == "0.7.0"
     )
     conn.close()
 
