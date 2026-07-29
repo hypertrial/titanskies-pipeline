@@ -13,6 +13,56 @@ TitanSkies and Hypertrial are not affiliated with or endorsed by NASA,
 PO.DAAC, the SWORD project, the U.S. Census Bureau, Statistics Canada, INEGI,
 OpenStreetMap, or timezone-boundary-builder.
 
+## PlumeGraph source matrix
+
+Every literal below mirrors `config/plumegraph_sources.json`.
+
+### `tempo_no2_l2_v04`
+
+- Version: `V04`
+- URL: `https://asdc.larc.nasa.gov/project/TEMPO/TEMPO_NO2_L2_V04`
+- CMR concept ID: `C3685896872-LARC_CLOUD`
+- DOI: `10.5067/IS-40e/TEMPO/NO2_L2.004`
+- Attribution: `NASA/LARC/SD/ASDC TEMPO NO2 Level 2 V04`
+- Licence field: `NASA data and information policy`
+
+The collection is provisional. PlumeGraph retains parseable AOI pixels and
+derives background, plume, attribution, and emission evidence. Those
+transformations are Hypertrial's, not NASA's.
+
+### `hrrr_analysis`
+
+- Version: `analysis-f00`
+- URL: `s3://hrrrzarr`
+- Attribution: `NOAA High-Resolution Rapid Refresh; public Zarr archive managed by University of Utah`
+- Licence field: `United States government work; public domain`
+
+### `epa_camd`
+
+- Version: `2024`
+- URL: `https://api.epa.gov/easey/emissions-mgmt`
+- Attribution: `United States Environmental Protection Agency Power Sector Emissions Data`
+- Licence field: `United States government data`
+
+### `epa_egrid`
+
+- Version: `eGRID2023`
+- URL: `https://www.epa.gov/egrid/download-data`
+- Attribution: `United States Environmental Protection Agency eGRID`
+- Licence field: `United States government data`
+
+### `epa_eia_crosswalk`
+
+- Version: `October-2022-v0.3`
+- URL: `https://www.epa.gov/power-sector/power-sector-data-crosswalk`
+- Attribution: `United States Environmental Protection Agency and United States Energy Information Administration Power Sector Data Crosswalk`
+- Licence field: `United States government data`
+
+PlumeGraph uses EPA CAMD apportioned hourly emissions, facility/unit
+attributes, eGRID 2023 metadata, and the EPA–EIA crosswalk. Empty values stay
+missing rather than becoming zero. Preserve attribution and access dates.
+Source attribution is scientific evidence, not proof or a regulatory finding.
+
 ## NASA TEMPO source
 
 TitanSkies uses these collections:

@@ -1,22 +1,25 @@
 # Architecture
 
-Stack: Dagster, earthaccess, requests, xarray, PyArrow, DuckDB, dbt.
+Stack: Dagster, earthaccess/Harmony, requests, xarray/Zarr, PyArrow, DuckDB,
+dbt.
 
-TitanSkies runs **two independent TEMPO NO2 scopes plus RiverPulse** in one local warehouse:
+TitanSkies runs **two independent TEMPO NO2 scopes, RiverPulse, and
+PlumeGraph** in one local warehouse:
 `tempo:no2` (NRT) and `tempo:no2_std` (standard V04). Each scope has its own
 CMR concept ID, raw directory, ops ledger, hour-revision sequence, quality
 contract CSV, Dagster jobs/schedule flag, and published mart/observability
 schemas. They share pinned geography artifacts when both registries are
 materialized, but they never share raw epochs or incremental contract
 versions.
-The explicit `riverpulse:events` lane shares only the DuckDB path and v0.5
-schema stamp; it does not use the TEMPO `ScopeSpec` factory.
+The explicit `riverpulse:events` and `plumegraph:events` lanes share only the
+DuckDB path and v0.6 schema stamp; neither uses the TEMPO `ScopeSpec` factory.
 
 ```mermaid
 flowchart TB
   subgraph shared["Shared local host"]
     geo["Pinned geography manifest + overlap weights"]
     sword["Pinned SWORD v17b network generations"]
+    cohort["Approved 75-facility PlumeGraph cohort"]
     duck["One DuckDB warehouse path"]
     stamp["titanskies_ops.warehouse_metadata"]
   end
@@ -51,15 +54,27 @@ flowchart TB
     riverDisc --> riverLedger --> riverIngest --> riverRaw --> riverDbt --> riverMarts
   end
 
+  subgraph plumes["plumegraph:events lane"]
+    plumeDisc["Harmony + HRRR + CAMD requests"]
+    plumeLedger["immutable source revisions"]
+    plumeAnalysis["region-date plume graph analysis"]
+    plumeDbt["dbt tag:plumegraph,tag:events"]
+    plumeRelease["marts + validated evidence release"]
+    plumeDisc --> plumeLedger --> plumeAnalysis --> plumeDbt --> plumeRelease
+  end
+
   geo --> nrtIngest
   geo --> stdIngest
   sword --> riverDisc
+  cohort --> plumeDisc
   nrtRaw --> duck
   stdRaw --> duck
   nrtMarts --> duck
   stdMarts --> duck
   riverRaw --> duck
   riverMarts --> duck
+  plumeLedger --> duck
+  plumeRelease --> duck
   stamp --> duck
 ```
 
@@ -108,6 +123,9 @@ explicit standard discovery/ingest and dbt run.
 `make riverpulse-demo` separately exercises synthetic network registration,
 request/snapshot persistence, multiple revisions, discharge normalization,
 and RiverPulse-only dbt publication.
+`make plumegraph-demo` separately exercises an invented 75-facility cohort,
+source revisions, plume analysis, abstaining calibration, dbt publication,
+and checksum verification of an immutable local evidence release.
 
 ## Per-request RiverPulse path
 
@@ -123,6 +141,27 @@ revisions, provenance links, and request success. Successful siblings survive
 a partial batch; any failure keeps publication blocked. Current revision
 selection happens in dbt and cannot be reversed by an older rediscovery.
 
+## Per-partition PlumeGraph path
+
+An approved frozen cohort produces immutable overlapping 100 km analysis
+regions. Discovery plans deterministic region/month Harmony and HRRR requests
+plus CAMD hours. Ingestion retains source snapshots and append-only pixel,
+meteorology, and CEMS revisions. Snapshot registration, date-partitioned
+normalized Parquet registration, normalized DuckDB rows, and request success
+commit in one transaction. Source lineage records Harmony job/results, HRRR
+source-path manifests, and CAMD endpoint/page state without credentials or
+signed URLs.
+
+Region × UTC-date analysis uses a three-hour overlap, commits successful
+siblings, and promotes only complete generations. Its identity includes both
+contract and algorithm versions. The scan graph retains every qualifying
+many-to-many edge; episode revision identity includes the graph edge, source
+candidate, and pixel identities. dbt publishes the current episode view plus
+historical detail evidence for every retained revision. Validation controls
+whether probabilities are enabled and whether an immutable release may be
+built.
+
 See [Orchestration](../reference/orchestration.md) and
 [TEMPO product notes](tempo-product-notes.md), plus
-[RiverPulse product notes](riverpulse-product-notes.md).
+[RiverPulse product notes](riverpulse-product-notes.md) and
+[PlumeGraph product notes](plumegraph-product-notes.md).

@@ -12,8 +12,8 @@ hide:
 
 # TitanSkies Pipeline
 
-Build inspectable NASA TEMPO NO₂ and SWOT river warehouses with Dagster,
-DuckDB, and dbt.
+Build inspectable NASA TEMPO NO₂, SWOT river, and plume-evidence warehouses
+with Dagster, DuckDB, and dbt.
 
 Hypertrial-owned MIT software. No hosted service or health advice.
 [Licence scope](concepts/scope-and-non-goals.md) ·
@@ -91,8 +91,9 @@ Consume public marts without treating pipeline output as health advice.
 
 ## Supported local scopes
 
-Version `0.5.x` ships `tempo:no2` (near-real-time), `tempo:no2_std` (standard
-V04), and `riverpulse:events` (SWOT RiverSP Version D). This site is software
+Version `0.6.x` ships `tempo:no2` (near-real-time), `tempo:no2_std` (standard
+V04), `riverpulse:events` (SWOT RiverSP Version D), and
+`plumegraph:events` (TEMPO L2/HRRR/CAMD evidence). This site is software
 documentation and does not host datasets.
 
 [Choose a scope](getting-started/choose-a-scope.md), read the

@@ -161,6 +161,9 @@ def test_source_matrix_matches_tracked_source_manifests():
     riverpulse_manifest = json.loads(
         (ROOT / "config/riverpulse_sources.json").read_text()
     )
+    plumegraph_manifest = json.loads(
+        (ROOT / "config/plumegraph_sources.json").read_text()
+    )
     notices = (ROOT / "THIRD_PARTY_NOTICES.md").read_text()
 
     assert geography_manifest["sources"]
@@ -180,6 +183,10 @@ def test_source_matrix_matches_tracked_source_manifests():
             "license",
         ):
             assert source[field] in notices, f"{source['id']}.{field}"
+    assert plumegraph_manifest["sources"]
+    for source in plumegraph_manifest["sources"]:
+        for field in ("id", "version", "url", "attribution", "license"):
+            assert str(source[field]) in notices, f"{source['id']}.{field}"
 
 
 def test_tracked_data_files_are_inventory_scoped_and_synthetic():
@@ -193,12 +200,17 @@ def test_tracked_data_files_are_inventory_scoped_and_synthetic():
     data_suffixes = {".csv", ".json", ".nc", ".parquet"}
     expected = {
         "config/geography_sources.json",
+        "config/plumegraph_sources.json",
         "config/riverpulse_pilots.json",
         "config/riverpulse_sources.json",
         "dbt/seeds/riverpulse_events_contract.csv",
+        "dbt/seeds/plumegraph_events_contract.csv",
         "dbt/seeds/tempo_no2_contract.csv",
         "dbt/seeds/tempo_no2_std_contract.csv",
         "tests/fixtures/cassettes/riverpulse_hydrocron.csv",
+        "tests/fixtures/cassettes/plumegraph_camd_hourly.csv",
+        "tests/fixtures/cassettes/plumegraph_hrrr_analysis.csv",
+        "tests/fixtures/cassettes/plumegraph_tempo_pixels.csv",
         "tests/fixtures/cassettes/tempo_cmr_granules.json",
         "tests/fixtures/geo/tempo_grid_region_weights.parquet",
         "tests/fixtures/geo/tempo_region_registry.parquet",

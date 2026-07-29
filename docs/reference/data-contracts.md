@@ -113,3 +113,53 @@ identity, and canonical record content. Current selection orders by source
 | `riverpulse_events_observation_revisions` | observation revision |
 | `riverpulse_events_discharges` | current observation × algorithm × variant |
 | `riverpulse_events_discharge_revisions` | observation revision × algorithm × variant |
+
+## PlumeGraph science contract
+
+`dbt/seeds/plumegraph_events_contract.csv` is the sole policy source for
+`plumegraph:events`. It pins the TEMPO L2 V04 collection/concept, algorithm
+version, 100 km AOI, pixel readiness, background/detection thresholds,
+tracking gap, candidate classification, calibration, and complete
+wind/lifetime/conversion ensemble. Environment variables cannot override
+these scientific values.
+
+A pixel is analysis-ready only when `main_data_quality_flag = 0`, effective
+cloud fraction is below `0.1`, VCD and positive uncertainty are finite, WKB
+geometry is valid, collection version matches, and provenance is complete.
+Negative VCD values remain valid inputs to background estimation. Detection
+uses a median/MAD background from at least 30 eligible upwind pixels,
+dual 3×MAD and 2×combined-uncertainty seeding, native-grid connectivity, and
+a three-pixel minimum.
+
+Stable pixel, CEMS-hour, analysis-partition, and episode-revision identities
+are SHA-256 hashes over the documented canonical inputs. Analysis partition
+identity includes the contract and algorithm versions; episode revision
+identity includes its ordered candidate, retained scan-edge, and pixel
+identities. Source corrections append revisions. A region-date generation
+becomes current only after its transaction succeeds; immutable releases pin
+exact generations, snapshots, and normalized artifacts.
+The three-hour boundary overlap consults the immediately preceding promoted
+partition for conservative lineage matching. The current episode mart then
+selects exactly one latest promoted revision per stable plume lineage; all
+partition-specific revisions remain in the history and evidence marts.
+
+Candidate score weights are trajectory `0.40`, concurrent CAMD `0.30`,
+distance `0.20`, and annual-emissions prior `0.10`. Missing concurrent CAMD
+prevents probability readiness. When held-out ECE exceeds `0.10`, ranks remain
+published while probabilities are null and classification abstains.
+
+| Relation | Grain |
+| --- | --- |
+| `plumegraph_events_facilities` | cohort version × facility |
+| `plumegraph_events_episodes` | stable plume lineage, current complete revision |
+| `plumegraph_events_episode_revisions` | episode revision |
+| `plumegraph_events_episode_geometries` | episode revision × observation time |
+| `plumegraph_events_candidate_sources` | episode revision × facility |
+| `plumegraph_events_emission_estimates` | episode revision × sensitivity variant |
+| `plumegraph_events_evidence_pixels` | episode revision × pixel revision × evidence role |
+| `plumegraph_events_provenance` | episode revision × source snapshot × input identity |
+
+Evidence format `plumegraph-evidence-v1` includes GeoParquet, Parquet,
+per-revision JSON with geometries, candidates, estimates, evidence pixels, and
+provenance, plus a checksum manifest. Attribution is evidence, not proof, a
+health claim, or a regulatory conclusion.

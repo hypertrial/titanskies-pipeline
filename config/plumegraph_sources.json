@@ -1,0 +1,42 @@
+{
+  "contract_version": "0.6.0",
+  "sources": [
+    {
+      "id": "tempo_no2_l2_v04",
+      "version": "V04",
+      "url": "https://asdc.larc.nasa.gov/project/TEMPO/TEMPO_NO2_L2_V04",
+      "concept_id": "C3685896872-LARC_CLOUD",
+      "doi": "10.5067/IS-40e/TEMPO/NO2_L2.004",
+      "attribution": "NASA/LARC/SD/ASDC TEMPO NO2 Level 2 V04",
+      "license": "NASA data and information policy"
+    },
+    {
+      "id": "hrrr_analysis",
+      "version": "analysis-f00",
+      "url": "s3://hrrrzarr",
+      "attribution": "NOAA High-Resolution Rapid Refresh; public Zarr archive managed by University of Utah",
+      "license": "United States government work; public domain"
+    },
+    {
+      "id": "epa_camd",
+      "version": "2024",
+      "url": "https://api.epa.gov/easey/emissions-mgmt",
+      "attribution": "United States Environmental Protection Agency Power Sector Emissions Data",
+      "license": "United States government data"
+    },
+    {
+      "id": "epa_egrid",
+      "version": "eGRID2023",
+      "url": "https://www.epa.gov/egrid/download-data",
+      "attribution": "United States Environmental Protection Agency eGRID",
+      "license": "United States government data"
+    },
+    {
+      "id": "epa_eia_crosswalk",
+      "version": "October-2022-v0.3",
+      "url": "https://www.epa.gov/power-sector/power-sector-data-crosswalk",
+      "attribution": "United States Environmental Protection Agency and United States Energy Information Administration Power Sector Data Crosswalk",
+      "license": "United States government data"
+    }
+  ]
+}

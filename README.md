@@ -6,9 +6,10 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 TitanSkies Pipeline is an open-source, local-first NASA science warehouse.
-Version `0.5.0` publishes TEMPO NO₂ administrative/native-grid data and a
-permanent `riverpulse:events` lane for SWORD v17b reaches plus revision-safe
-SWOT Version D Hydrocron observations and discharge estimates.
+Version `0.6.0` adds the explicit `plumegraph:events` evidence ledger for a
+frozen 2024 US power-plant benchmark. It combines standard TEMPO Level 2 V04
+NO₂, HRRR analysis meteorology, and EPA CAMD emissions while preserving the
+existing TEMPO and `riverpulse:events` lanes.
 
 Dagster coordinates discovery, NetCDF/CSV processing, DuckDB storage, and dbt
 publication. Every operator controls the resulting local DuckDB file;
@@ -52,6 +53,13 @@ provenance, and observability demo with:
 uv run make riverpulse-demo
 ```
 
+Build the separate credential-free PlumeGraph cohort, analysis, validation,
+and immutable-release demo with:
+
+```bash
+uv run make plumegraph-demo
+```
+
 The demo prints its `.cache/demo.duckdb` path, relation counts, sample queries,
 and verified CSV/Parquet export paths. Synthetic geography is demo/test-only.
 Serve the complete documentation locally with:
@@ -67,7 +75,7 @@ also available at
 For development:
 
 ```bash
-uv sync --locked --extra dev --extra geo
+uv sync --locked --extra dev --extra geo --extra plumegraph
 cp .env.example .env
 python scripts/build_region_artifacts.py --synthetic
 python scripts/build_riverpulse_network.py --synthetic
@@ -102,6 +110,9 @@ The pipeline is intentionally local and inspectable:
 - RiverPulse pins SWORD v17b, collects `SWOT_L2_HR_RiverSP_reach_D` through
   bounded Hydrocron requests, and publishes five marts plus two observability
   models without filtering source-quality rows.
+- PlumeGraph pins `TEMPO_NO2_L2` V04, HRRR forecast-hour-zero analysis, and
+  EPA CAMD apportioned hourly emissions. It publishes eight evidence marts,
+  seven observability surfaces, and checksum-addressed local releases.
 
 Query `tempo_no2_marts` first and use `tempo_no2_observability` to investigate
 freshness and quality. The main historical relation is
@@ -111,6 +122,9 @@ standard scope publishes the identical shapes under `tempo_no2_std_marts`
 and `tempo_no2_std_observability`.
 RiverPulse relations live under `riverpulse_events_marts` and
 `riverpulse_events_observability`.
+PlumeGraph relations live under `plumegraph_events_marts` and
+`plumegraph_events_observability`; attribution is evidence, not proof or a
+regulatory conclusion.
 
 ```sql
 select *
@@ -120,12 +134,13 @@ where is_analysis_ready;
 
 See the [Architecture](docs/concepts/architecture.md), [Data contracts](docs/reference/data-contracts.md),
 and [Data dictionary](docs/reference/data-dictionary.md) for the complete model.
-TitanSkies v0.5 requires a clean derived-warehouse rebuild; older raw NetCDF,
-verified geography, and verified SWORD source caches remain reusable.
+TitanSkies v0.6 requires a clean derived-warehouse rebuild; older raw NetCDF,
+verified geography, verified SWORD archives, and checksum-verified source
+caches remain reusable.
 `make demo` only builds
 the `tempo:no2` (NRT) scope; see
-[Upgrade to v0.5](docs/getting-started/upgrade-v05.md) for the rebuild and
-RiverPulse rollout.
+[Upgrade to v0.6](docs/getting-started/upgrade-v06.md) for the rebuild and
+PlumeGraph rollout.
 
 ## Community
 

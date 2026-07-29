@@ -9,10 +9,23 @@ from titanskies_pipeline.orchestration.config import (
     GranuleDiscoveryConfig,
     GuardrailConfig,
     HourlyIngestConfig,
+    PlumeGraphAnalysisConfig,
+    PlumeGraphDiscoveryConfig,
+    PlumeGraphFacilityRegistryConfig,
+    PlumeGraphIngestConfig,
+    PlumeGraphReleaseConfig,
+    PlumeGraphValidationConfig,
     RegionRegistryConfig,
     RiverPulseDiscoveryConfig,
     RiverPulseIngestConfig,
     RiverPulseNetworkConfig,
+    plumegraph_events_analysis_run_config,
+    plumegraph_events_dbt_run_config,
+    plumegraph_events_discovery_run_config,
+    plumegraph_events_full_pipeline_run_config,
+    plumegraph_events_ingest_run_config,
+    plumegraph_events_release_run_config,
+    plumegraph_events_validation_run_config,
     riverpulse_events_dbt_run_config,
     riverpulse_events_discovery_run_config,
     riverpulse_events_full_pipeline_run_config,
@@ -232,3 +245,50 @@ def test_riverpulse_configs_and_run_configs():
         "riverpulse__events__raw__observations",
         "titanskies_dbt",
     }
+
+
+def test_plumegraph_configs_and_run_configs():
+    assert PlumeGraphFacilityRegistryConfig().allow_synthetic is False
+    assert PlumeGraphIngestConfig(max_requests=1).max_requests == 1
+    assert PlumeGraphAnalysisConfig(partition_dates=["2024-01-01"]).partition_dates
+    assert PlumeGraphValidationConfig().benchmark_version
+    assert PlumeGraphReleaseConfig().require_passed_validation
+    discovery = PlumeGraphDiscoveryConfig(
+        window_start_utc="2024-01-01T00:00:00Z",
+        window_end_utc="2024-01-02T00:00:00Z",
+        backfill=True,
+    )
+    assert discovery.backfill
+    with pytest.raises(Exception, match="must both be set"):
+        PlumeGraphDiscoveryConfig(window_start_utc="2024-01-01T00:00:00Z")
+    with pytest.raises(Exception, match="strictly before"):
+        PlumeGraphDiscoveryConfig(
+            window_start_utc="2024-01-02T00:00:00Z",
+            window_end_utc="2024-01-01T00:00:00Z",
+        )
+    assert (
+        "plumegraph__events__raw__source_inventory"
+        in plumegraph_events_discovery_run_config()["ops"]
+    )
+    assert set(plumegraph_events_ingest_run_config()["ops"]) == {
+        "plumegraph__events__raw__tempo_snapshots",
+        "plumegraph__events__raw__hrrr_snapshots",
+        "plumegraph__events__raw__camd_emissions",
+    }
+    assert "analysis_results" in next(
+        iter(plumegraph_events_analysis_run_config()["ops"])
+    )
+    assert (
+        plumegraph_events_dbt_run_config()["ops"]["titanskies_dbt"]["config"][
+            "dbt_select"
+        ]
+        == "tag:plumegraph,tag:events"
+    )
+    assert "validation" in next(iter(plumegraph_events_validation_run_config()["ops"]))
+    assert "evidence_ledger" in next(
+        iter(plumegraph_events_release_run_config()["ops"])
+    )
+    full = plumegraph_events_full_pipeline_run_config()["ops"]
+    assert "plumegraph__events__ops__facility_registry" not in full
+    assert "plumegraph__events__releases__evidence_ledger" not in full
+    assert "plumegraph__events__observability__validation" in full

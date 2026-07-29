@@ -2,16 +2,21 @@ from __future__ import annotations
 
 from dagster import DefaultScheduleStatus, ScheduleDefinition
 
+from titanskies_pipeline.config.settings_plumegraph import (
+    get_plumegraph_settings,
+)
 from titanskies_pipeline.config.settings_riverpulse import (
     get_riverpulse_settings,
 )
 from titanskies_pipeline.config.settings_tempo import get_tempo_scope_settings
 from titanskies_pipeline.orchestration.config import (
     full_pipeline_run_config,
+    plumegraph_events_full_pipeline_run_config,
     riverpulse_events_full_pipeline_run_config,
 )
 from titanskies_pipeline.orchestration.jobs import (
     SCOPE_JOBS,
+    plumegraph_events_full_pipeline,
     riverpulse_events_full_pipeline,
 )
 from titanskies_pipeline.orchestration.scope_registry import (
@@ -61,7 +66,26 @@ riverpulse_events_pipeline_schedule = ScheduleDefinition(
     ),
 )
 
+plumegraph_events_daily_pipeline_schedule = ScheduleDefinition(
+    name="plumegraph_events_daily_pipeline_schedule",
+    job=plumegraph_events_full_pipeline,
+    cron_schedule="0 6 * * *",
+    execution_timezone="UTC",
+    run_config=plumegraph_events_full_pipeline_run_config(),
+    default_status=(
+        DefaultScheduleStatus.RUNNING
+        if get_plumegraph_settings().schedule_enabled
+        else DefaultScheduleStatus.STOPPED
+    ),
+    description=(
+        "Daily PlumeGraph 14-day source rediscovery, ingestion, analysis, dbt "
+        "publication, and validation; cohort bootstrap and immutable release "
+        "publication are intentionally excluded."
+    ),
+)
+
 __all__ = [
+    "plumegraph_events_daily_pipeline_schedule",
     "riverpulse_events_pipeline_schedule",
     "tempo_no2_hourly_pipeline_schedule",
     "tempo_no2_std_pipeline_schedule",

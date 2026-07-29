@@ -12,6 +12,12 @@ not downloaded NASA observations or boundary data.
 - `cassettes/riverpulse_hydrocron.csv` is a hand-authored Hydrocron-shaped
   response with invented reach/granule IDs, two revisions of one observation,
   and an `example.test` provenance value.
+- `cassettes/plumegraph_tempo_pixels.csv` is an invented TEMPO L2-shaped scene
+  with plume, background, and rejected pixels.
+- `cassettes/plumegraph_hrrr_analysis.csv` contains invented bracketing HRRR
+  winds and scalar meteorology.
+- `cassettes/plumegraph_camd_hourly.csv` contains invented CAMD-shaped
+  facility/unit emissions with `example.test` provenance.
 - `scripts/build_riverpulse_network.py --synthetic` creates invented
   Sacramento/Rhine/Murray mini-corridors without downloading SWORD.
 

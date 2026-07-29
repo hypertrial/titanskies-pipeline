@@ -15,6 +15,36 @@ and schemas. Column guidance below applies to both families unless noted.
 Quality thresholds differ by scope contract CSV; do not mix NRT and std rows
 in one analysis without an explicit cross-scope design.
 
+## PlumeGraph public relations
+
+PlumeGraph publishes the evidence ledger under `plumegraph_events_marts`.
+
+| Relation | Grain | Key analyst fields |
+| --- | --- | --- |
+| `plumegraph_events_facilities` | cohort version × facility | reviewed cohort/alternative status, coordinates, timezone, annual NOx, analysis region |
+| `plumegraph_events_episodes` | stable plume lineage, current promoted revision | time range, pixel counts, enhancement/background, attribution and readiness state |
+| `plumegraph_events_episode_revisions` | immutable analysis revision | analysis run, contract/algorithm versions, scan-graph edges, lineage, complete correction history |
+| `plumegraph_events_episode_geometries` | episode revision × observation time | EPSG:4326 WKB, centroid, interpolated wind, trajectory state |
+| `plumegraph_events_candidate_sources` | episode revision × CAMD facility | fixed-weight features, rank, score, optional calibrated probability, classification, alternative status |
+| `plumegraph_events_emission_estimates` | episode revision × sensitivity variant | NO₂-equivalent and NOx flux, wind/lifetime/ratio variant, separate uncertainty components |
+| `plumegraph_events_evidence_pixels` | episode revision × linked pixel × evidence role | plume/background/rejected role, filter decision, source retrieval and geometry |
+| `plumegraph_events_provenance` | episode revision × source snapshot × normalized artifact × input identity | connector, raw and normalized artifact/checksum, source revision and request/result lineage, analysis lineage |
+
+The seven operator relations are
+`plumegraph_events_request_health`,
+`plumegraph_events_partition_completeness`,
+`plumegraph_events_source_revisions`,
+`plumegraph_events_data_quality_issues`,
+`plumegraph_events_benchmark_metrics`,
+`plumegraph_events_calibration_state`, and
+`plumegraph_events_release_integrity`.
+
+Use rankings as source hypotheses. `attribution_probability` is populated only
+after the held-out benchmark meets the contract ECE threshold; otherwise the
+row remains available with a null probability and `insufficient_evidence`.
+All detail marts retain rows for every episode revision; only
+`plumegraph_events_episodes` selects the current promoted revision.
+
 ## RiverPulse public relations
 
 RiverPulse is a separate science family under `riverpulse_events_marts`.

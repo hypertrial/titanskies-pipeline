@@ -6,6 +6,7 @@ from titanskies_pipeline.naming import (
     SCOPE_EVENTS,
     SCOPE_NO2,
     SCOPE_NO2_STD,
+    SOURCE_PLUMEGRAPH,
     SOURCE_RIVERPULSE,
     SOURCE_TEMPO,
     schema_name,
@@ -18,6 +19,8 @@ TEMPO_NO2_STD_RAW_SCHEMA = schema_name(SOURCE_TEMPO, SCOPE_NO2_STD, "raw")
 TEMPO_NO2_STD_OPS_SCHEMA = schema_name(SOURCE_TEMPO, SCOPE_NO2_STD, "ops")
 RIVERPULSE_EVENTS_RAW_SCHEMA = schema_name(SOURCE_RIVERPULSE, SCOPE_EVENTS, "raw")
 RIVERPULSE_EVENTS_OPS_SCHEMA = schema_name(SOURCE_RIVERPULSE, SCOPE_EVENTS, "ops")
+PLUMEGRAPH_EVENTS_RAW_SCHEMA = schema_name(SOURCE_PLUMEGRAPH, SCOPE_EVENTS, "raw")
+PLUMEGRAPH_EVENTS_OPS_SCHEMA = schema_name(SOURCE_PLUMEGRAPH, SCOPE_EVENTS, "ops")
 
 _RAW_SCHEMAS_BY_SCOPE = {
     SCOPE_NO2: TEMPO_NO2_RAW_SCHEMA,
@@ -51,6 +54,14 @@ def riverpulse_raw_tbl(name: str) -> str:
 
 def riverpulse_ops_tbl(name: str) -> str:
     return tempo_q(RIVERPULSE_EVENTS_OPS_SCHEMA, name)
+
+
+def plumegraph_raw_tbl(name: str) -> str:
+    return tempo_q(PLUMEGRAPH_EVENTS_RAW_SCHEMA, name)
+
+
+def plumegraph_ops_tbl(name: str) -> str:
+    return tempo_q(PLUMEGRAPH_EVENTS_OPS_SCHEMA, name)
 
 
 def tempo_raw_tbl(name: str, *, scope: str = SCOPE_NO2) -> str:
@@ -88,6 +99,8 @@ def hour_revision_sequence(*, scope: str = SCOPE_NO2) -> str:
 __all__ = [
     "RIVERPULSE_EVENTS_OPS_SCHEMA",
     "RIVERPULSE_EVENTS_RAW_SCHEMA",
+    "PLUMEGRAPH_EVENTS_OPS_SCHEMA",
+    "PLUMEGRAPH_EVENTS_RAW_SCHEMA",
     "TEMPO_NO2_OPS_SCHEMA",
     "TEMPO_NO2_RAW_SCHEMA",
     "TEMPO_NO2_STD_OPS_SCHEMA",
@@ -96,6 +109,8 @@ __all__ = [
     "hour_revision_sequence",
     "riverpulse_ops_tbl",
     "riverpulse_raw_tbl",
+    "plumegraph_ops_tbl",
+    "plumegraph_raw_tbl",
     "tempo_ops_tbl",
     "tempo_q",
     "tempo_raw_tbl",

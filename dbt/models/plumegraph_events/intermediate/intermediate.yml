@@ -1,0 +1,17 @@
+version: 2
+
+models:
+  - name: int_plumegraph_events_current_pixels
+    columns:
+      - name: pixel_id
+        tests: [not_null, unique]
+  - name: int_plumegraph_events_current_emissions
+    columns:
+      - name: emission_id
+        tests: [not_null, unique]
+  - name: int_plumegraph_events_current_episodes
+    columns:
+      - name: episode_revision_id
+        tests: [not_null, unique]
+      - name: plume_id
+        tests: [not_null, unique]

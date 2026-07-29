@@ -1,0 +1,4 @@
+mirror_step,xtrack,time_gps_seconds,latitude,longitude,no2_vertical_column,no2_uncertainty,quality_flag,cloud_fraction,collection_version,source_url
+100,100,1405084236,36.0000,-96.0000,5000000000000000,100000000000000,0,0.02,V04,https://example.test/tempo/synthetic.nc
+100,101,1405084236,36.0000,-95.9700,5100000000000000,100000000000000,0,0.02,V04,https://example.test/tempo/synthetic.nc
+101,100,1405084236,36.0300,-96.0000,5200000000000000,100000000000000,0,0.02,V04,https://example.test/tempo/synthetic.nc

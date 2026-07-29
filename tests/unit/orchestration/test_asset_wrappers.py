@@ -8,6 +8,9 @@ pytest.importorskip("dagster")
 
 from titanskies_pipeline.ingestion.tempo.sync import DiscoveryMetrics, SyncMetrics
 from titanskies_pipeline.orchestration import (
+    assets_plumegraph_events as plumegraph_assets,
+)
+from titanskies_pipeline.orchestration import (
     assets_riverpulse_events as riverpulse_assets,
 )
 from titanskies_pipeline.orchestration import assets_tempo_no2 as assets_mod
@@ -24,6 +27,13 @@ from titanskies_pipeline.orchestration.assets_tempo_no2 import (
     tempo_no2_std_raw_granule_inventory,
     titanskies_dbt,
 )
+from titanskies_pipeline.plumegraph.analysis import AnalysisMetrics
+from titanskies_pipeline.plumegraph.connectors import ConnectorMetrics
+from titanskies_pipeline.plumegraph.release import ReleaseMetrics
+from titanskies_pipeline.plumegraph.sources import (
+    DiscoveryMetrics as PlumeGraphDiscoveryMetrics,
+)
+from titanskies_pipeline.plumegraph.validation import ValidationMetrics
 from titanskies_pipeline.riverpulse.collection import (
     DiscoveryMetrics as RiverPulseDiscoveryMetrics,
 )
@@ -263,3 +273,145 @@ def test_riverpulse_discovery_and_ingest_assets(monkeypatch, tmp_path):
     )
     assert ingest.metadata["observation_revisions_inserted"] == 3
     assert captured["max_requests"] == 1
+
+
+def test_plumegraph_asset_wrappers(monkeypatch, tmp_path):
+    context = MagicMock()
+    captured = {}
+    monkeypatch.setattr(
+        plumegraph_assets,
+        "get_plumegraph_settings",
+        lambda: MagicMock(cohort_manifest_path=tmp_path / "default-cohort.json"),
+    )
+    monkeypatch.setattr(
+        plumegraph_assets,
+        "persist_cohort",
+        lambda path, **kwargs: (
+            captured.update(path=path, **kwargs)
+            or {
+                "cohort_version": "v1",
+                "facilities": 75,
+                "cohort_facilities": 75,
+                "analysis_regions": 1,
+            }
+        ),
+    )
+    registry = plumegraph_assets.plumegraph_events_ops_facility_registry.op.compute_fn.decorated_fn(
+        context,
+        orch_config.PlumeGraphFacilityRegistryConfig(allow_synthetic=True),
+    )
+    assert registry.metadata["facilities"] == 75
+    assert captured["path"] == tmp_path / "default-cohort.json"
+    explicit = tmp_path / "explicit.json"
+    plumegraph_assets.plumegraph_events_ops_facility_registry.op.compute_fn.decorated_fn(
+        context,
+        orch_config.PlumeGraphFacilityRegistryConfig(
+            manifest_path=str(explicit),
+        ),
+    )
+    assert captured["path"] == explicit
+    assert captured["require_approved"] is True
+
+    monkeypatch.setattr(
+        plumegraph_assets,
+        "plan_source_requests",
+        lambda **kwargs: captured.update(kwargs) or PlumeGraphDiscoveryMetrics(1, 3, 0),
+    )
+    discovery = plumegraph_assets.plumegraph_events_raw_source_inventory.op.compute_fn.decorated_fn(
+        context,
+        orch_config.PlumeGraphDiscoveryConfig(
+            window_start_utc="2024-01-01T00:00:00Z",
+            window_end_utc="2024-01-02T00:00:00Z",
+            backfill=True,
+        ),
+    )
+    assert discovery.metadata["requests_planned"] == 3
+    assert captured["backfill"]
+
+    monkeypatch.setattr(
+        plumegraph_assets,
+        "sync_source_connector",
+        lambda connector, **kwargs: (
+            captured.update(connector=connector, **kwargs)
+            or ConnectorMetrics(connector, 1, 0, 1, 2)
+        ),
+    )
+    ingest = plumegraph_assets.plumegraph_events_raw_tempo_snapshots.op.compute_fn.decorated_fn(
+        context,
+        orch_config.PlumeGraphIngestConfig(
+            max_requests=1,
+            raw_data_dir=str(tmp_path / "raw"),
+        ),
+    )
+    assert ingest.metadata["rows_inserted"] == 2
+    assert captured["connector"] == "harmony"
+    assert captured["raw_data_dir"] == tmp_path / "raw"
+
+    monkeypatch.setattr(
+        plumegraph_assets,
+        "run_pending_analysis",
+        lambda **kwargs: captured.update(kwargs) or AnalysisMetrics(1, 0, 1, ("run",)),
+    )
+    analyzed = (
+        plumegraph_assets.plumegraph_events_analysis_results.op.compute_fn.decorated_fn(
+            context,
+            orch_config.PlumeGraphAnalysisConfig(partition_dates=["2024-01-01"]),
+        )
+    )
+    assert analyzed.metadata["generation_ids"] == ["run"]
+
+    monkeypatch.setattr(
+        plumegraph_assets,
+        "load_benchmark",
+        lambda path, **kwargs: captured.update(benchmark_path=path, **kwargs),
+    )
+    monkeypatch.setattr(
+        plumegraph_assets,
+        "run_validation",
+        lambda *_args, **_kwargs: ValidationMetrics(
+            "validation",
+            200,
+            1,
+            1,
+            1,
+            0,
+            1,
+            True,
+            True,
+        ),
+    )
+    validated = (
+        plumegraph_assets.plumegraph_events_validation.op.compute_fn.decorated_fn(
+            context,
+            orch_config.PlumeGraphValidationConfig(
+                benchmark_path=str(tmp_path / "benchmark.json"),
+                allow_incomplete=True,
+            ),
+        )
+    )
+    assert validated.metadata["passed"]
+    assert captured["benchmark_path"] == tmp_path / "benchmark.json"
+    captured.pop("benchmark_path")
+    plumegraph_assets.plumegraph_events_validation.op.compute_fn.decorated_fn(
+        context,
+        orch_config.PlumeGraphValidationConfig(allow_incomplete=True),
+    )
+    assert "benchmark_path" not in captured
+
+    monkeypatch.setattr(
+        plumegraph_assets,
+        "build_release",
+        lambda **kwargs: (
+            captured.update(kwargs)
+            or ReleaseMetrics("release", tmp_path / "release", "a" * 64, 1, 2)
+        ),
+    )
+    released = plumegraph_assets.plumegraph_events_release.op.compute_fn.decorated_fn(
+        context,
+        orch_config.PlumeGraphReleaseConfig(
+            release_version="v1",
+            output_dir=str(tmp_path / "releases"),
+        ),
+    )
+    assert released.metadata["release_id"] == "release"
+    assert released.metadata["release_path"] == str(tmp_path / "release")

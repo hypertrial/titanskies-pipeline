@@ -1,6 +1,15 @@
 from dagster import AssetSelection, define_asset_job, multiprocess_executor
 from dagster_dbt import build_dbt_asset_selection
 
+from titanskies_pipeline.orchestration.assets_plumegraph_events import (
+    PLUMEGRAPH_EVENTS_ANALYSIS_RESULTS,
+    PLUMEGRAPH_EVENTS_RAW_CAMD_EMISSIONS,
+    PLUMEGRAPH_EVENTS_RAW_HRRR_SNAPSHOTS,
+    PLUMEGRAPH_EVENTS_RAW_SOURCE_INVENTORY,
+    PLUMEGRAPH_EVENTS_RAW_TEMPO_SNAPSHOTS,
+    PLUMEGRAPH_EVENTS_RELEASE,
+    PLUMEGRAPH_EVENTS_VALIDATION,
+)
 from titanskies_pipeline.orchestration.assets_riverpulse_events import (
     RIVERPULSE_EVENTS_RAW_OBSERVATIONS,
     RIVERPULSE_EVENTS_RAW_SOURCE_INVENTORY,
@@ -8,6 +17,13 @@ from titanskies_pipeline.orchestration.assets_riverpulse_events import (
 from titanskies_pipeline.orchestration.assets_tempo_no2 import titanskies_dbt
 from titanskies_pipeline.orchestration.config import (
     full_pipeline_run_config,
+    plumegraph_events_analysis_run_config,
+    plumegraph_events_dbt_run_config,
+    plumegraph_events_discovery_run_config,
+    plumegraph_events_full_pipeline_run_config,
+    plumegraph_events_ingest_run_config,
+    plumegraph_events_release_run_config,
+    plumegraph_events_validation_run_config,
     riverpulse_events_dbt_run_config,
     riverpulse_events_discovery_run_config,
     riverpulse_events_full_pipeline_run_config,
@@ -73,6 +89,87 @@ riverpulse_events_full_pipeline = define_asset_job(
     executor_def=_ANALYTICS_BUILD_EXECUTOR,
     config=riverpulse_events_full_pipeline_run_config(),
     tags=_RIVERPULSE_TAGS,
+)
+
+_PLUMEGRAPH_TAGS = {
+    "duckdb_warehouse": "true",
+    "source": "plumegraph",
+    "scope": "events",
+}
+PLUMEGRAPH_EVENTS_DISCOVERY_SELECTION = AssetSelection.assets(
+    PLUMEGRAPH_EVENTS_RAW_SOURCE_INVENTORY
+)
+PLUMEGRAPH_EVENTS_INGEST_SELECTION = AssetSelection.assets(
+    PLUMEGRAPH_EVENTS_RAW_TEMPO_SNAPSHOTS,
+    PLUMEGRAPH_EVENTS_RAW_HRRR_SNAPSHOTS,
+    PLUMEGRAPH_EVENTS_RAW_CAMD_EMISSIONS,
+)
+PLUMEGRAPH_EVENTS_ANALYSIS_SELECTION = AssetSelection.assets(
+    PLUMEGRAPH_EVENTS_ANALYSIS_RESULTS
+)
+PLUMEGRAPH_EVENTS_DBT_SELECTION = build_dbt_asset_selection(
+    [titanskies_dbt],
+    dbt_select="tag:plumegraph,tag:events",
+)
+PLUMEGRAPH_EVENTS_VALIDATION_SELECTION = AssetSelection.assets(
+    PLUMEGRAPH_EVENTS_VALIDATION
+)
+PLUMEGRAPH_EVENTS_RELEASE_SELECTION = AssetSelection.assets(PLUMEGRAPH_EVENTS_RELEASE)
+PLUMEGRAPH_EVENTS_FULL_PIPELINE_SELECTION = (
+    PLUMEGRAPH_EVENTS_DISCOVERY_SELECTION
+    | PLUMEGRAPH_EVENTS_INGEST_SELECTION
+    | PLUMEGRAPH_EVENTS_ANALYSIS_SELECTION
+    | PLUMEGRAPH_EVENTS_DBT_SELECTION
+    | PLUMEGRAPH_EVENTS_VALIDATION_SELECTION
+)
+plumegraph_events_source_discovery = define_asset_job(
+    "plumegraph_events_source_discovery",
+    selection=PLUMEGRAPH_EVENTS_DISCOVERY_SELECTION,
+    executor_def=_ANALYTICS_BUILD_EXECUTOR,
+    config=plumegraph_events_discovery_run_config(),
+    tags=_PLUMEGRAPH_TAGS,
+)
+plumegraph_events_source_ingest = define_asset_job(
+    "plumegraph_events_source_ingest",
+    selection=PLUMEGRAPH_EVENTS_INGEST_SELECTION,
+    executor_def=_ANALYTICS_BUILD_EXECUTOR,
+    config=plumegraph_events_ingest_run_config(),
+    tags=_PLUMEGRAPH_TAGS,
+)
+plumegraph_events_analysis = define_asset_job(
+    "plumegraph_events_analysis",
+    selection=PLUMEGRAPH_EVENTS_ANALYSIS_SELECTION,
+    executor_def=_ANALYTICS_BUILD_EXECUTOR,
+    config=plumegraph_events_analysis_run_config(),
+    tags=_PLUMEGRAPH_TAGS,
+)
+plumegraph_events_dbt_build = define_asset_job(
+    "plumegraph_events_dbt_build",
+    selection=PLUMEGRAPH_EVENTS_DBT_SELECTION,
+    executor_def=_ANALYTICS_BUILD_EXECUTOR,
+    config=plumegraph_events_dbt_run_config(),
+    tags=_PLUMEGRAPH_TAGS,
+)
+plumegraph_events_validation = define_asset_job(
+    "plumegraph_events_validation",
+    selection=PLUMEGRAPH_EVENTS_VALIDATION_SELECTION,
+    executor_def=_ANALYTICS_BUILD_EXECUTOR,
+    config=plumegraph_events_validation_run_config(),
+    tags=_PLUMEGRAPH_TAGS,
+)
+plumegraph_events_release_build = define_asset_job(
+    "plumegraph_events_release_build",
+    selection=PLUMEGRAPH_EVENTS_RELEASE_SELECTION,
+    executor_def=_ANALYTICS_BUILD_EXECUTOR,
+    config=plumegraph_events_release_run_config(),
+    tags=_PLUMEGRAPH_TAGS,
+)
+plumegraph_events_full_pipeline = define_asset_job(
+    "plumegraph_events_full_pipeline",
+    selection=PLUMEGRAPH_EVENTS_FULL_PIPELINE_SELECTION,
+    executor_def=_ANALYTICS_BUILD_EXECUTOR,
+    config=plumegraph_events_full_pipeline_run_config(),
+    tags=_PLUMEGRAPH_TAGS,
 )
 
 
@@ -174,6 +271,13 @@ TEMPO_NO2_STD_FULL_PIPELINE_SELECTION = (
 )
 
 __all__ = [
+    "plumegraph_events_analysis",
+    "plumegraph_events_dbt_build",
+    "plumegraph_events_full_pipeline",
+    "plumegraph_events_release_build",
+    "plumegraph_events_source_discovery",
+    "plumegraph_events_source_ingest",
+    "plumegraph_events_validation",
     "riverpulse_events_dbt_build",
     "riverpulse_events_full_pipeline",
     "riverpulse_events_observation_ingest",

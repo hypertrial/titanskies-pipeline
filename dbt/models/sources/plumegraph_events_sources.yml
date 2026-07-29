@@ -1,0 +1,101 @@
+version: 2
+
+sources:
+  - name: plumegraph_events_raw
+    schema: plumegraph_events_raw
+    tables:
+      - name: facilities
+        meta:
+          dagster:
+            asset_key: [plumegraph, events, ops, facility_registry]
+      - name: analysis_regions
+        meta:
+          dagster:
+            asset_key: [plumegraph, events, ops, facility_registry]
+      - name: retrieval_pixel_revisions
+        meta:
+          dagster:
+            asset_key: [plumegraph, events, raw, tempo_snapshots]
+        loaded_at_field: collected_at
+      - name: meteorology_observations
+        meta:
+          dagster:
+            asset_key: [plumegraph, events, raw, hrrr_snapshots]
+        loaded_at_field: collected_at
+      - name: hourly_emission_revisions
+        meta:
+          dagster:
+            asset_key: [plumegraph, events, raw, camd_emissions]
+        loaded_at_field: collected_at
+      - name: episode_revisions
+        meta:
+          dagster:
+            asset_key: [plumegraph, events, intermediate, analysis_results]
+      - name: episode_geometries
+        meta:
+          dagster:
+            asset_key: [plumegraph, events, intermediate, analysis_results]
+      - name: episode_tracking_edges
+        meta:
+          dagster:
+            asset_key: [plumegraph, events, intermediate, analysis_results]
+      - name: episode_target_links
+        meta:
+          dagster:
+            asset_key: [plumegraph, events, intermediate, analysis_results]
+      - name: episode_lineage
+        meta:
+          dagster:
+            asset_key: [plumegraph, events, intermediate, analysis_results]
+      - name: candidate_source_revisions
+        meta:
+          dagster:
+            asset_key: [plumegraph, events, intermediate, analysis_results]
+      - name: emission_estimate_revisions
+        meta:
+          dagster:
+            asset_key: [plumegraph, events, intermediate, analysis_results]
+      - name: episode_pixel_links
+        meta:
+          dagster:
+            asset_key: [plumegraph, events, intermediate, analysis_results]
+      - name: provenance_links
+        meta:
+          dagster:
+            asset_key: [plumegraph, events, intermediate, analysis_results]
+      - name: benchmark_labels
+        meta:
+          dagster:
+            asset_key: [plumegraph, events, observability, validation]
+
+  - name: plumegraph_events_ops
+    schema: plumegraph_events_ops
+    tables:
+      - name: source_requests
+        meta:
+          dagster:
+            asset_key: [plumegraph, events, raw, source_inventory]
+      - name: source_snapshots
+        meta:
+          dagster:
+            asset_key: [plumegraph, events, raw, source_inventory]
+      - name: normalized_artifacts
+        meta:
+          dagster:
+            asset_key: [plumegraph, events, raw, source_inventory]
+      - name: analysis_runs
+        meta:
+          dagster:
+            asset_key: [plumegraph, events, intermediate, analysis_results]
+      - name: current_generations
+        meta:
+          dagster:
+            asset_key: [plumegraph, events, intermediate, analysis_results]
+      - name: validation_runs
+        meta:
+          dagster:
+            asset_key: [plumegraph, events, observability, validation]
+      - name: release_manifests
+        meta:
+          dagster:
+            asset_key: [plumegraph, events, releases, evidence_ledger]

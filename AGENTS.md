@@ -1,22 +1,25 @@
 # AGENTS.md
 
 TitanSkies Pipeline is an open-source, local-first NASA science warehouse.
-Version `0.5.x` ships two TEMPO scopes (`tempo:no2` and `tempo:no2_std`) plus
-the permanent `riverpulse:events` SWOT lane. TEMPO uses
+Version `0.6.x` ships two TEMPO scopes (`tempo:no2` and `tempo:no2_std`), the
+permanent `riverpulse:events` SWOT lane, and the explicit
+`plumegraph:events` evidence ledger. TEMPO uses
 `TEMPO_NO2_L3_NRT` and
 `tempo:no2_std` (`TEMPO_NO2_L3` V04, standard). Both publish administrative
 history and native-grid latest observations over Canada, the United States,
 and Mexico. RiverPulse publishes SWORD v17b reaches, Hydrocron Version D
 observation/discharge revisions, current revisions, and provenance.
+PlumeGraph combines TEMPO L2 V04, HRRR analysis, and EPA CAMD emissions for a
+review-gated 2024 US power-plant benchmark.
 `make demo` remains NRT-only; standard-scope raw/ops schemas bootstrap empty
 and std marts appear only after an explicit standard discovery/ingest (and
-dbt) run. `make riverpulse-demo` is a separate offline RiverPulse demo.
+dbt) run. Product demos remain separate; `make plumegraph-demo` is offline.
 Stack: **Dagster**, **earthaccess**, **xarray**, **dbt**, **DuckDB**, **uv**, **Ruff** + **sqlfluff**, **pytest**.
 
 ## Setup
 
 ```bash
-uv sync --locked --extra dev --extra geo
+uv sync --locked --extra dev --extra geo --extra plumegraph
 cp .env.example .env
 python scripts/build_region_artifacts.py --synthetic
 python scripts/build_riverpulse_network.py --synthetic
@@ -28,6 +31,7 @@ Default warehouse: `titanskies.duckdb` in the repo root. Keep schedules disabled
 TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED=false
 TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED=false
 RIVERPULSE_EVENTS_PIPELINE_SCHEDULE_ENABLED=false
+PLUMEGRAPH_EVENTS_PIPELINE_SCHEDULE_ENABLED=false
 ```
 
 ## Quality gate

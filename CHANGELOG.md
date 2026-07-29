@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Added
 
+- Added the explicit `plumegraph:events` lane for a review-gated 75-facility
+  2024 US power-plant cohort, TEMPO NO2 L2 V04 Harmony subsets, HRRR
+  forecast-hour-zero analysis, EPA CAMD hourly emissions, deterministic
+  region-day generations, calibrated abstention, and integrated-mass
+  sensitivity variants.
+- Added eight PlumeGraph marts, seven observability surfaces, seven explicit
+  Dagster jobs, a stopped daily schedule, `make plumegraph-demo`, live smoke,
+  and checksum-verified immutable local releases.
+- Added [Upgrade to v0.6](docs/getting-started/upgrade-v06.md), PlumeGraph
+  product notes, approval gates, recovery guidance, and source notices.
 - Added the permanent `riverpulse:events` lane for bounded Sacramento, Rhine,
   and Murray mainstem corridors. The lane verifies pinned SWORD v17b source
   bytes, selects at most 100 connected reaches per pilot, publishes immutable
@@ -53,6 +63,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Changed
 
+- Bumped package, dbt project, and warehouse schema version to `0.6.0`.
+  Populated v0.5 warehouses fail with clean-rebuild guidance.
 - Bumped the package, dbt project, and warehouse schema version to `0.5.0`.
   The shared stamp now lives in `titanskies_ops.warehouse_metadata`; populated
   v0.4 warehouses fail with clean-rebuild guidance instead of being mutated.

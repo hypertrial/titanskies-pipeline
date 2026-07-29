@@ -155,3 +155,35 @@ def test_riverpulse_asset_key_mapping_and_schemas():
         in dbt_schemas.DBT_MODELED_SCHEMAS
     )
     assert dbt_schemas._riverpulse_events_subject("unrelated") == "unrelated"
+
+
+def test_plumegraph_asset_key_mapping_and_schemas():
+    assert (
+        dbt_schemas.resolve_source_slug(
+            {
+                "name": "stg_plumegraph_events_pixel_revisions",
+                "fqn": [
+                    "titanskies",
+                    "plumegraph_events",
+                    "staging",
+                    "stg_plumegraph_events_pixel_revisions",
+                ],
+            }
+        )
+        == dbt_schemas.DBT_SOURCE_PLUMEGRAPH_EVENTS
+    )
+    assert dbt_schemas.dbt_model_asset_key(
+        {"name": "int_plumegraph_events_current_episodes"}
+    ) == AssetKey(["plumegraph", "events", "intermediate", "current_episodes"])
+    assert dbt_schemas.dbt_model_asset_key(
+        {"name": "plumegraph_events_request_health"}
+    ) == AssetKey(["plumegraph", "events", "observability", "request_health"])
+    assert dbt_schemas.dbt_model_asset_key(
+        {"name": "plumegraph_events_episodes"}
+    ) == AssetKey(["plumegraph", "events", "marts", "episodes"])
+    assert dbt_schemas.PLUMEGRAPH_EVENTS_MARTS_SCHEMA == "plumegraph_events_marts"
+    assert (
+        dbt_schemas.PLUMEGRAPH_EVENTS_OBSERVABILITY_SCHEMA
+        in dbt_schemas.DBT_MODELED_SCHEMAS
+    )
+    assert dbt_schemas._plumegraph_events_subject("unrelated") == "unrelated"

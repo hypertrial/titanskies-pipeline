@@ -12,6 +12,7 @@ ingest, and dbt look healthy for that scope.
    TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED=false
    TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED=false
    RIVERPULSE_EVENTS_PIPELINE_SCHEDULE_ENABLED=false
+   PLUMEGRAPH_EVENTS_PIPELINE_SCHEDULE_ENABLED=false
    ```
 
 2. Prefer **one writer** at a time against the configured DuckDB path
@@ -25,6 +26,9 @@ ingest, and dbt look healthy for that scope.
      and `tempo_no2_std_data_quality`
    - RiverPulse: `riverpulse_events_observability.riverpulse_events_request_health`
      and `riverpulse_events_scientific_quality_issues`
+   - PlumeGraph: `plumegraph_events_observability.plumegraph_events_request_health`,
+     `plumegraph_events_partition_completeness`, and
+     `plumegraph_events_calibration_state`
 
 4. Treat freshness (`stale` rows) as an operator signal. It does not change
    `is_analysis_ready`, and `*_region_latest` already filters analysis-ready
@@ -40,6 +44,7 @@ ledger remains durable:
 | NRT (`tempo:no2`) | `TEMPO_NO2_RAW_DATA_DIR` | `TEMPO_NO2_RAW_RETENTION_DAYS` (default `30`) |
 | Standard (`tempo:no2_std`) | `TEMPO_NO2_STD_RAW_DATA_DIR` | `TEMPO_NO2_STD_RAW_RETENTION_DAYS` (default `30`) |
 | RiverPulse (`riverpulse:events`) | `RIVERPULSE_RAW_DATA_DIR` | Indefinite for this milestone; snapshots are immutable |
+| PlumeGraph (`plumegraph:events`) | `PLUMEGRAPH_RAW_DATA_DIR` | Source subsets/revisions indefinite; disposable full-granule cache defaults to 30 days |
 
 Retention keys off `processed_at`. Paths outside the configured raw root are
 rejected rather than deleted.
@@ -70,6 +75,7 @@ that scope:
 | `TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED` | `tempo_no2_hourly_pipeline_schedule` | NRT discovery → ingest → dbt succeeded manually and observability looks healthy |
 | `TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED` | `tempo_no2_std_pipeline_schedule` | Standard discovery → ingest → dbt succeeded manually; opt in explicitly (ships disabled) |
 | `RIVERPULSE_EVENTS_PIPELINE_SCHEDULE_ENABLED` | `riverpulse_events_pipeline_schedule` | Production network, one-reach smoke, full backfill, idempotent rerun, and observability review passed |
+| `PLUMEGRAPH_EVENTS_PIPELINE_SCHEDULE_ENABLED` | `plumegraph_events_daily_pipeline_schedule` | Approved cohort/contract, one-facility smoke, 2024 backfill, idempotent rerun, held-out validation, and observability review passed |
 
 Restart Dagster after changing flags. See
 [Enable the schedule](enable-schedule.md) and

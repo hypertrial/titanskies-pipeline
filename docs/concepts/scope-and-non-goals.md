@@ -1,7 +1,7 @@
 # Scope and non-goals
 
-TitanSkies is MIT-licensed, local-first NASA TEMPO NO₂ and SWOT river warehouse
-software.
+TitanSkies is MIT-licensed, local-first NASA TEMPO NO₂, SWOT river, and
+power-plant plume-evidence warehouse software.
 This page is the short human summary. The authoritative licence and
 third-party boundary is
 [THIRD_PARTY_NOTICES.md](https://github.com/hypertrial/titanskies-pipeline/blob/main/THIRD_PARTY_NOTICES.md).
@@ -17,6 +17,9 @@ For the operator checklist, see
 - One explicit `riverpulse:events` lane for SWORD v17b reach topology and
   revision-safe Hydrocron Version D observations/discharges on bounded
   Sacramento, Rhine, and Murray corridors.
+- One explicit `plumegraph:events` lane for a reviewed 2024 US power-plant
+  cohort, TEMPO L2/HRRR/CAMD revisions, auditable plume episodes, validation,
+  and immutable local evidence releases.
 
 ## What It Does Not Ship Or Operate
 
@@ -25,17 +28,20 @@ For the operator checklist, see
 - No flood warning, navigation, water-allocation, or emergency-response advice.
 - No pixel-level history store; the public native-grid mart keeps latest cells
   only.
-- No gauges/crosswalks, event detection, immutable event releases, nodes,
-  direct RiverSP archives, GloFAS/ERA5, reservoir inventories, SDK/API,
+- No RiverPulse gauges/crosswalks, event detection/releases, or nodes;
+  no PlumeGraph HCHO, TROPOMI, STAC/COG, health-risk, or enforcement claims;
+  no direct RiverSP archives, GloFAS/ERA5, reservoir inventories, SDK/API,
   explorer, object storage, Iceberg/Delta, or PostGIS.
-- No bundled production NetCDF, Hydrocron response, SWORD, network-generation,
-  live geography, or DuckDB artifacts in the canonical repository.
+- No bundled production NetCDF, HRRR, EPA, benchmark-output, PlumeGraph
+  release, Hydrocron response, SWORD, network-generation, live geography, or
+  DuckDB artifacts in the canonical repository.
 
 ## Operator Ownership
 
 Every operator supplies Earthdata credentials when running live TEMPO
 ingestion, optional Hydrocron API credentials when required, builds production
-geography/network artifacts, and stores results in their own DuckDB file.
+geography/network artifacts, supplies an approved PlumeGraph cohort and expert
+benchmark, and stores results in their own DuckDB file.
 
 ## Related Pages
 
@@ -43,3 +49,4 @@ geography/network artifacts, and stores results in their own DuckDB file.
 - [Legal and privacy](../reference/legal.md)
 - [TEMPO product notes](tempo-product-notes.md)
 - [RiverPulse product notes](riverpulse-product-notes.md)
+- [PlumeGraph product notes](plumegraph-product-notes.md)

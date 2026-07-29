@@ -10,6 +10,7 @@ from titanskies_pipeline.naming import (
     SCOPE_EVENTS,
     SCOPE_NO2,
     SCOPE_NO2_STD,
+    SOURCE_PLUMEGRAPH,
     SOURCE_RIVERPULSE,
     SOURCE_TEMPO,
     asset_key,
@@ -19,6 +20,7 @@ from titanskies_pipeline.naming import (
 DBT_SOURCE_TEMPO_NO2: Final = "tempo_no2"
 DBT_SOURCE_TEMPO_NO2_STD: Final = "tempo_no2_std"
 DBT_SOURCE_RIVERPULSE_EVENTS: Final = "riverpulse_events"
+DBT_SOURCE_PLUMEGRAPH_EVENTS: Final = "plumegraph_events"
 
 TEMPO_NO2_STAGING_SCHEMA: Final = schema_name(SOURCE_TEMPO, SCOPE_NO2, "staging")
 TEMPO_NO2_INTERMEDIATE_SCHEMA: Final = schema_name(
@@ -51,6 +53,18 @@ RIVERPULSE_EVENTS_MARTS_SCHEMA: Final = schema_name(
 RIVERPULSE_EVENTS_OBSERVABILITY_SCHEMA: Final = schema_name(
     SOURCE_RIVERPULSE, SCOPE_EVENTS, "observability"
 )
+PLUMEGRAPH_EVENTS_STAGING_SCHEMA: Final = schema_name(
+    SOURCE_PLUMEGRAPH, SCOPE_EVENTS, "staging"
+)
+PLUMEGRAPH_EVENTS_INTERMEDIATE_SCHEMA: Final = schema_name(
+    SOURCE_PLUMEGRAPH, SCOPE_EVENTS, "intermediate"
+)
+PLUMEGRAPH_EVENTS_MARTS_SCHEMA: Final = schema_name(
+    SOURCE_PLUMEGRAPH, SCOPE_EVENTS, "marts"
+)
+PLUMEGRAPH_EVENTS_OBSERVABILITY_SCHEMA: Final = schema_name(
+    SOURCE_PLUMEGRAPH, SCOPE_EVENTS, "observability"
+)
 
 DBT_FALLBACK_SCHEMA: Final = "dbt"
 
@@ -67,6 +81,15 @@ RIVERPULSE_EVENTS_OBSERVABILITY_MODELS: Final[tuple[str, ...]] = (
     "riverpulse_events_request_health",
     "riverpulse_events_scientific_quality_issues",
 )
+PLUMEGRAPH_EVENTS_OBSERVABILITY_MODELS: Final[tuple[str, ...]] = (
+    "plumegraph_events_benchmark_metrics",
+    "plumegraph_events_calibration_state",
+    "plumegraph_events_data_quality_issues",
+    "plumegraph_events_partition_completeness",
+    "plumegraph_events_release_integrity",
+    "plumegraph_events_request_health",
+    "plumegraph_events_source_revisions",
+)
 
 DBT_MODELED_SCHEMAS: Final[tuple[str, ...]] = (
     TEMPO_NO2_STAGING_SCHEMA,
@@ -81,6 +104,10 @@ DBT_MODELED_SCHEMAS: Final[tuple[str, ...]] = (
     RIVERPULSE_EVENTS_INTERMEDIATE_SCHEMA,
     RIVERPULSE_EVENTS_MARTS_SCHEMA,
     RIVERPULSE_EVENTS_OBSERVABILITY_SCHEMA,
+    PLUMEGRAPH_EVENTS_STAGING_SCHEMA,
+    PLUMEGRAPH_EVENTS_INTERMEDIATE_SCHEMA,
+    PLUMEGRAPH_EVENTS_MARTS_SCHEMA,
+    PLUMEGRAPH_EVENTS_OBSERVABILITY_SCHEMA,
 )
 
 
@@ -90,6 +117,8 @@ def resolve_source_slug(
     fqn: Sequence[str] | None = None,
 ) -> str:
     path_fqn = list(fqn or props.get("fqn") or [])
+    if len(path_fqn) >= 2 and path_fqn[1] == DBT_SOURCE_PLUMEGRAPH_EVENTS:
+        return DBT_SOURCE_PLUMEGRAPH_EVENTS
     if len(path_fqn) >= 2 and path_fqn[1] == DBT_SOURCE_RIVERPULSE_EVENTS:
         return DBT_SOURCE_RIVERPULSE_EVENTS
     # Standard-scope folder is a longer, more specific prefix of the NRT folder
@@ -99,6 +128,14 @@ def resolve_source_slug(
     if len(path_fqn) >= 2 and path_fqn[1] == DBT_SOURCE_TEMPO_NO2:
         return DBT_SOURCE_TEMPO_NO2
     name = str(props.get("name") or "")
+    if name.startswith(
+        (
+            "stg_plumegraph_events_",
+            "int_plumegraph_events_",
+            "plumegraph_events_",
+        )
+    ):
+        return DBT_SOURCE_PLUMEGRAPH_EVENTS
     if name.startswith(
         (
             "stg_riverpulse_events_",
@@ -222,6 +259,33 @@ def _riverpulse_events_subject(model_name: str) -> str:
     return model_name
 
 
+def _plumegraph_events_layer(
+    model_name: str,
+    props: Mapping[str, object] | None = None,
+    *,
+    fqn: Sequence[str] | None = None,
+) -> str:
+    return _tempo_layer(
+        model_name,
+        props,
+        fqn=fqn,
+        observability_models=PLUMEGRAPH_EVENTS_OBSERVABILITY_MODELS,
+        staging_prefix="stg_plumegraph_events_",
+        intermediate_prefix="int_plumegraph_events_",
+    )
+
+
+def _plumegraph_events_subject(model_name: str) -> str:
+    for prefix in (
+        "stg_plumegraph_events_",
+        "int_plumegraph_events_",
+        "plumegraph_events_",
+    ):
+        if model_name.startswith(prefix):
+            return model_name[len(prefix) :]
+    return model_name
+
+
 def dbt_model_asset_key(
     props: Mapping[str, object],
     *,
@@ -229,6 +293,13 @@ def dbt_model_asset_key(
 ) -> AssetKey:
     source = resolve_source_slug(props, fqn=fqn)
     name = str(props.get("name") or "")
+    if source == DBT_SOURCE_PLUMEGRAPH_EVENTS:
+        return asset_key(
+            SOURCE_PLUMEGRAPH,
+            SCOPE_EVENTS,
+            _plumegraph_events_layer(name, props, fqn=fqn),
+            _plumegraph_events_subject(name),
+        )
     if source == DBT_SOURCE_RIVERPULSE_EVENTS:
         return asset_key(
             SOURCE_RIVERPULSE,
@@ -256,9 +327,14 @@ def dbt_model_asset_key(
 __all__ = [
     "DBT_FALLBACK_SCHEMA",
     "DBT_MODELED_SCHEMAS",
+    "DBT_SOURCE_PLUMEGRAPH_EVENTS",
     "DBT_SOURCE_TEMPO_NO2",
     "DBT_SOURCE_TEMPO_NO2_STD",
     "DBT_SOURCE_RIVERPULSE_EVENTS",
+    "PLUMEGRAPH_EVENTS_INTERMEDIATE_SCHEMA",
+    "PLUMEGRAPH_EVENTS_MARTS_SCHEMA",
+    "PLUMEGRAPH_EVENTS_OBSERVABILITY_SCHEMA",
+    "PLUMEGRAPH_EVENTS_STAGING_SCHEMA",
     "RIVERPULSE_EVENTS_INTERMEDIATE_SCHEMA",
     "RIVERPULSE_EVENTS_MARTS_SCHEMA",
     "RIVERPULSE_EVENTS_OBSERVABILITY_SCHEMA",

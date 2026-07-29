@@ -11,6 +11,9 @@ pytest.importorskip("dagster_dbt")
 
 import titanskies_pipeline.storage.duckdb.connection as connection
 from titanskies_pipeline.orchestration import (
+    assets_plumegraph_events as plumegraph_assets,
+)
+from titanskies_pipeline.orchestration import (
     assets_riverpulse_events as riverpulse_assets,
 )
 from titanskies_pipeline.orchestration import assets_tempo_no2 as assets_mod
@@ -29,6 +32,13 @@ def _expected_public_job_names() -> set[str]:
         "riverpulse_events_observation_ingest",
         "riverpulse_events_dbt_build",
         "riverpulse_events_full_pipeline",
+        "plumegraph_events_source_discovery",
+        "plumegraph_events_source_ingest",
+        "plumegraph_events_analysis",
+        "plumegraph_events_dbt_build",
+        "plumegraph_events_validation",
+        "plumegraph_events_release_build",
+        "plumegraph_events_full_pipeline",
     }
 
 
@@ -105,6 +115,65 @@ titanskies:
         riverpulse_assets,
         "sync_pending_requests",
         lambda **_kwargs: IngestMetrics(1, 0, 0, 1, 1, 14, 1),
+    )
+    from titanskies_pipeline.plumegraph.analysis import AnalysisMetrics
+    from titanskies_pipeline.plumegraph.connectors import ConnectorMetrics
+    from titanskies_pipeline.plumegraph.release import ReleaseMetrics
+    from titanskies_pipeline.plumegraph.sources import (
+        DiscoveryMetrics as PlumeGraphDiscoveryMetrics,
+    )
+    from titanskies_pipeline.plumegraph.validation import ValidationMetrics
+
+    monkeypatch.setattr(
+        plumegraph_assets,
+        "persist_cohort",
+        lambda *_args, **_kwargs: {
+            "cohort_version": "synthetic-v1",
+            "facilities": 75,
+            "cohort_facilities": 75,
+            "analysis_regions": 1,
+        },
+    )
+    monkeypatch.setattr(
+        plumegraph_assets,
+        "plan_source_requests",
+        lambda **_kwargs: PlumeGraphDiscoveryMetrics(1, 3, 0),
+    )
+    monkeypatch.setattr(
+        plumegraph_assets,
+        "sync_source_connector",
+        lambda connector, **_kwargs: ConnectorMetrics(connector, 1, 0, 1, 1),
+    )
+    monkeypatch.setattr(
+        plumegraph_assets,
+        "run_pending_analysis",
+        lambda **_kwargs: AnalysisMetrics(1, 0, 1, ("run",)),
+    )
+    monkeypatch.setattr(
+        plumegraph_assets,
+        "run_validation",
+        lambda *_args, **_kwargs: ValidationMetrics(
+            "validation",
+            200,
+            1.0,
+            1.0,
+            1.0,
+            0.01,
+            1.0,
+            True,
+            True,
+        ),
+    )
+    monkeypatch.setattr(
+        plumegraph_assets,
+        "build_release",
+        lambda **_kwargs: ReleaseMetrics(
+            "release",
+            tmp_path / "release",
+            "a" * 64,
+            1,
+            12,
+        ),
     )
     yield
 

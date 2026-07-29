@@ -1,0 +1,46 @@
+version: 2
+
+models:
+  - name: plumegraph_events_facilities
+    description: Frozen benchmark cohort and alternative facilities in its analysis regions.
+    columns:
+      - name: facility_id
+        tests: [not_null]
+  - name: plumegraph_events_episodes
+    description: Current complete revision for each promoted PlumeGraph analysis generation.
+    columns:
+      - name: episode_revision_id
+        tests: [not_null, unique]
+      - name: plume_id
+        tests: [not_null, unique]
+  - name: plumegraph_events_episode_revisions
+    description: Immutable history of every completed plume episode analysis revision, including retained scan-graph and lineage edges.
+    columns:
+      - name: episode_revision_id
+        tests: [not_null, unique]
+  - name: plumegraph_events_episode_geometries
+    description: Time-indexed EPSG:4326 WKB plume geometries and trajectory state.
+    tests:
+      - no_duplicate_grain:
+          arguments:
+            grain_columns: [episode_revision_id, observation_time]
+  - name: plumegraph_events_candidate_sources
+    description: Ranked attribution hypotheses with calibrated probabilities only when valid.
+    tests:
+      - no_duplicate_grain:
+          arguments:
+            grain_columns: [episode_revision_id, facility_id]
+  - name: plumegraph_events_emission_estimates
+    description: Direct NO2-equivalent and complete NOx sensitivity ensemble estimates.
+    tests:
+      - no_duplicate_grain:
+          arguments:
+            grain_columns: [episode_revision_id, variant_id]
+  - name: plumegraph_events_evidence_pixels
+    description: Episode-linked plume, background, and rejected evidence pixels.
+    tests:
+      - no_duplicate_grain:
+          arguments:
+            grain_columns: [episode_revision_id, pixel_revision_id, evidence_role]
+  - name: plumegraph_events_provenance
+    description: Raw snapshot, normalized artifact, source request/result, contract, code, and analysis-run lineage for every episode revision.

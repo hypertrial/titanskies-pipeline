@@ -87,3 +87,36 @@ The shared `titanskies_dbt` asset uses
 `tag:riverpulse,tag:events` for RiverPulse. The product-neutral TitanSkies dbt
 translator preserves all existing TEMPO asset keys and maps RiverPulse layers
 under `riverpulse/events`.
+
+## `plumegraph:events`
+
+PlumeGraph is explicit and is not added to the TEMPO `ScopeSpec` factory.
+
+Assets:
+
+- `plumegraph/events/ops/facility_registry`
+- `plumegraph/events/raw/source_inventory`
+- `plumegraph/events/raw/tempo_snapshots`
+- `plumegraph/events/raw/hrrr_snapshots`
+- `plumegraph/events/raw/camd_emissions`
+- `plumegraph/events/intermediate/analysis_results`
+- `plumegraph/events/observability/validation`
+- `plumegraph/events/releases/evidence_ledger`
+
+Jobs:
+
+- `plumegraph_events_source_discovery`
+- `plumegraph_events_source_ingest`
+- `plumegraph_events_analysis`
+- `plumegraph_events_dbt_build`
+- `plumegraph_events_validation`
+- `plumegraph_events_release_build`
+- `plumegraph_events_full_pipeline`
+
+`plumegraph_events_daily_pipeline_schedule` targets the full pipeline daily at
+06:00 UTC and ships stopped
+(`PLUMEGRAPH_EVENTS_PIPELINE_SCHEDULE_ENABLED=false`). The recurring selection
+uses a 14-day rediscovery window and excludes cohort bootstrap and immutable
+release publication. Successful region-day partitions commit independently;
+any failure blocks publication until a clean retry. PlumeGraph dbt uses
+`tag:plumegraph,tag:events`.

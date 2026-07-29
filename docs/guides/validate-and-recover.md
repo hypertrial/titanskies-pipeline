@@ -13,6 +13,11 @@
    `riverpulse_events_observability.riverpulse_events_request_health` and
    `riverpulse_events_scientific_quality_issues`, then verify every public
    observation has a snapshot checksum and artifact URI.
+6. For PlumeGraph, inspect `plumegraph_events_request_health`,
+   `plumegraph_events_partition_completeness`,
+   `plumegraph_events_calibration_state`, and
+   `plumegraph_events_release_integrity`; verify the release manifest before
+   distributing any evidence bundle.
 
 ## Recovery
 
@@ -36,5 +41,17 @@ revision rows to force a retry. Requests left `running` by an interrupted
 worker become retryable after one hour. A SWORD version change with
 observations, or any v0.4→v0.5 upgrade, requires a new warehouse; raw response
 snapshots and verified source caches may be retained.
+
+Failed PlumeGraph work is recorded in `plumegraph_events_ops.source_requests`
+or `analysis_runs`. Retry failed requests/partitions; do not delete successful
+siblings, source revisions, or an older release. A contract, algorithm, or
+source-manifest correction creates new deterministic partitions and revisions.
+HRRR current-revision selection uses authoritative source revision time before
+local collection time. Release generation refuses stale validation; rerun
+validation after any generation promotion instead of reusing an older passing
+run. A loaded benchmark version is immutable, so corrected annotations require
+a new benchmark version.
+Populated v0.5 warehouses require the v0.6 clean rebuild; verified immutable
+source caches may be retained.
 
 See [Troubleshooting](troubleshooting.md) for common failure modes.

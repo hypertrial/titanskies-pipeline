@@ -18,7 +18,7 @@ boundary data, or ODbL-derived geography is transferred by local file control.
 | Schema | Audience | Purpose |
 | --- | --- | --- |
 | `tempo_no2_raw` | Internal | Regional hourly aggregates and latest native-grid observations (NRT). |
-| `titanskies_ops` | Operators | Shared `warehouse_metadata` schema-version stamp (`0.5.0`). |
+| `titanskies_ops` | Operators | Shared `warehouse_metadata` schema-version stamp (`0.6.0`). |
 | `tempo_no2_ops` | Operators | Granule inventory, geography registry, and durable pipeline state (NRT). |
 | `tempo_no2_staging` | dbt internal | Typed source projections (NRT). |
 | `tempo_no2_intermediate` | dbt internal | Reusable hourly and anomaly calculations (NRT). |
@@ -36,6 +36,12 @@ boundary data, or ODbL-derived geography is transferred by local file control.
 | `riverpulse_events_intermediate` | dbt internal | Deterministic current observation/discharge revisions. |
 | `riverpulse_events_marts` | Analysts | Five stable reach, observation, revision, and discharge relations. |
 | `riverpulse_events_observability` | Operators and analysts | Request health and row-level scientific-quality issues. |
+| `plumegraph_events_ops` | Operators | Cohort, source request/snapshot, analysis generation, validation, and immutable-release ledgers. |
+| `plumegraph_events_raw` | Internal | Facility regions, source revisions, episode revisions, scan-graph/lineage edges, evidence links, and provenance. |
+| `plumegraph_events_staging` | dbt internal | Typed PlumeGraph source projections and science contract. |
+| `plumegraph_events_intermediate` | dbt internal | Current source and promoted episode revisions. |
+| `plumegraph_events_marts` | Analysts | Eight stable facility, episode, source-attribution, estimate, evidence, and provenance relations. |
+| `plumegraph_events_observability` | Operators and analysts | Request, partition, revision, quality, benchmark, calibration, and release-integrity status. |
 
 Query marts for analysis. Raw, ops, staging, and intermediate relations are
 debugging and implementation surfaces rather than public data contracts. The
@@ -57,6 +63,18 @@ RiverPulse response bodies are retained indefinitely below
 manifests point to immutable Parquet generations by artifact-root-relative
 path. No API key or signed URL is persisted.
 
+PlumeGraph source subsets and responses are retained below
+`PLUMEGRAPH_RAW_DATA_DIR`. Each response also has a checksum-addressed,
+region-and-date-partitioned normalized Parquet artifact registered in
+`plumegraph_events_ops.normalized_artifacts`; its registration, normalized
+DuckDB rows, source snapshot, and request success commit together. Verified
+releases are atomically published below
+`PLUMEGRAPH_RELEASE_DIR`; each release pins the current analysis generation,
+source snapshot checksums, science contract, algorithm, cohort, code version,
+validation run, normalized artifacts, and sanitized source request/result
+lineage. EPA API keys, signed URLs, and Earthdata credentials are never
+stored.
+
 DuckDB, WAL files, raw downloads, generated geography, dbt targets, and the
 built documentation site are local artifacts and must not be committed.
 
@@ -76,6 +94,13 @@ For RiverPulse, use
 retry, latency, and actionable failures, and
 `riverpulse_events_scientific_quality_issues` for preserved rows that fail a
 measurement readiness rule.
+
+For PlumeGraph, begin with
+`plumegraph_events_observability.plumegraph_events_request_health`,
+`plumegraph_events_partition_completeness`, and
+`plumegraph_events_data_quality_issues`. Treat attribution as an auditable
+hypothesis rather than proof or a regulatory conclusion; probability columns
+remain null when held-out calibration does not pass.
 
 TitanSkies is research and engineering software, not health, exposure,
 medical, safety, or regulatory advice. Measurements are area/time aggregates,

@@ -5,7 +5,9 @@
 in `dbt/seeds/tempo_no2_contract.csv` (NRT) and
 `dbt/seeds/tempo_no2_std_contract.csv` (standard) — not in environment
 variables. RiverPulse scientific versions and accepted quality classes live
-only in `dbt/seeds/riverpulse_events_contract.csv`.
+only in `dbt/seeds/riverpulse_events_contract.csv`. PlumeGraph scientific
+versions, detection thresholds, calibration gates, and emission variants live
+only in `dbt/seeds/plumegraph_events_contract.csv`.
 
 Unset variables use the defaults below. If a numeric or date variable is
 **set** but not parseable (integer, float, or ISO `YYYY-MM-DD`), settings load
@@ -38,6 +40,14 @@ settings once at process import, so env changes require a reload.
 | `RIVERPULSE_HYDROCRON_API_KEY` | unset | Optional `x-hydrocron-key` header; never stored in request state, snapshots, URLs, or errors |
 | `RIVERPULSE_REQUEST_INTERVAL_SECONDS` | `1.0` | Minimum serial request spacing; production must remain at least one second |
 | `RIVERPULSE_EVENTS_PIPELINE_SCHEDULE_ENABLED` | `false` | Opt-in Sunday 03:00 UTC discovery/ingest/dbt schedule; network bootstrap excluded |
+| `PLUMEGRAPH_COHORT_MANIFEST_PATH` | `artifacts/plumegraph/plumegraph_cohort.json` | Review-gated frozen facility cohort manifest |
+| `PLUMEGRAPH_RAW_DATA_DIR` | `data/raw/plumegraph_events` | Indefinite checksum-addressed source snapshot root |
+| `PLUMEGRAPH_RELEASE_DIR` | `data/releases/plumegraph_events` | Immutable local evidence release root |
+| `PLUMEGRAPH_DISCOVERY_LOOKBACK_DAYS` | `14` | Routine half-open rediscovery window in days |
+| `PLUMEGRAPH_RAW_CACHE_RETENTION_DAYS` | `30` | Prunable full-granule cache age; retained subsets are not pruned |
+| `PLUMEGRAPH_HRRR_STORE_URL` | `s3://hrrrzarr` | Public chunked HRRR archive root |
+| `PLUMEGRAPH_EPA_API_KEY` | unset | CAM API `x-api-key` header; never persisted or logged |
+| `PLUMEGRAPH_EVENTS_PIPELINE_SCHEDULE_ENABLED` | `false` | Opt-in daily 06:00 UTC pipeline schedule; bootstrap and release excluded |
 
 ## Scope notes
 
@@ -51,6 +61,7 @@ hourly/anomaly results independently. Change the reviewed contract for the
 affected scope rather than adding environment-specific quality policy.
 RiverPulse collection name, collection version, SWORD version, and quality
 classes cannot be overridden through environment variables.
+The same rule applies to every scientific value in the PlumeGraph contract.
 
 See [Enable the schedule](../guides/enable-schedule.md) and
 [Day-two operations](../guides/day-two-operations.md).

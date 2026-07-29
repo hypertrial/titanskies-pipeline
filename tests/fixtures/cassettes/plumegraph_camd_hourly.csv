@@ -1,0 +1,3 @@
+facility_id,unit_id,operating_date,operating_hour,nox_mass_lbs,operating_time_hours,heat_input_mmbtu,gross_load_mw,source_quality,source_url
+PG0001,U1,2024-07-15,12,500.0,1.0,1000.0,100.0,measured,https://example.test/camd/hourly
+PG0002,U1,2024-07-15,12,,0.0,,,missing,https://example.test/camd/hourly

@@ -1,5 +1,5 @@
 site_name: TitanSkies Pipeline
-site_description: Local NASA TEMPO NO2 and SWOT RiverPulse science warehouse.
+site_description: Local TEMPO, PlumeGraph, and SWOT RiverPulse science warehouse.
 site_url: https://hypertrial.github.io/titanskies-pipeline/
 repo_url: https://github.com/hypertrial/titanskies-pipeline
 repo_name: hypertrial/titanskies-pipeline
@@ -83,6 +83,7 @@ nav:
       - Choose a scope: getting-started/choose-a-scope.md
       - Build geography artifacts: getting-started/build-geography-artifacts.md
       - Build RiverPulse network: getting-started/build-riverpulse-network.md
+      - Upgrade to v0.6: getting-started/upgrade-v06.md
       - Upgrade to v0.5: getting-started/upgrade-v05.md
       - Upgrade to v0.2: getting-started/upgrade-v02.md
       - Upgrade to v0.3: getting-started/upgrade-v03.md
@@ -111,6 +112,7 @@ nav:
       - Architecture: concepts/architecture.md
       - TEMPO product notes: concepts/tempo-product-notes.md
       - RiverPulse product notes: concepts/riverpulse-product-notes.md
+      - PlumeGraph product notes: concepts/plumegraph-product-notes.md
       - Scope and non-goals: concepts/scope-and-non-goals.md
       - Operator responsibilities: concepts/operator-responsibilities.md
       - FAQ: concepts/faq.md

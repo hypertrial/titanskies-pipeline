@@ -19,7 +19,7 @@ from titanskies_pipeline.storage.duckdb.schemas.constants import (
     warehouse_ops_tbl,
 )
 
-WAREHOUSE_SCHEMA_VERSION = "0.5.0"
+WAREHOUSE_SCHEMA_VERSION = "0.6.0"
 
 _SCOPE_SCHEMAS: dict[str, tuple[str, str]] = {
     SCOPE_NO2: (TEMPO_NO2_RAW_SCHEMA, TEMPO_NO2_OPS_SCHEMA),
@@ -40,8 +40,8 @@ def _table_exists(conn: duckdb.DuckDBPyConnection, schema: str, table: str) -> b
     )
 
 
-def _prepare_v05_boundary(conn: duckdb.DuckDBPyConnection) -> None:
-    """Reject every stamped v0.4 warehouse; v0.5 intentionally has no migration."""
+def _prepare_v06_boundary(conn: duckdb.DuckDBPyConnection) -> None:
+    """Reject every older populated warehouse; v0.6 intentionally has no migration."""
     if _table_exists(conn, TITANSKIES_OPS_SCHEMA, "warehouse_metadata"):
         shared = conn.execute(
             f"""
@@ -54,7 +54,7 @@ def _prepare_v05_boundary(conn: duckdb.DuckDBPyConnection) -> None:
             return
         if shared:
             raise RuntimeError(
-                "TitanSkies warehouse schema 0.5.0 requires a clean rebuild; "
+                "TitanSkies warehouse schema 0.6.0 requires a clean rebuild; "
                 f"this database contains schema {shared[0]}. Back it up and "
                 "create a new warehouse."
             )
@@ -68,7 +68,7 @@ def _prepare_v05_boundary(conn: duckdb.DuckDBPyConnection) -> None:
         ).fetchone()
         if existing:
             raise RuntimeError(
-                "TitanSkies warehouse schema 0.5.0 requires a clean rebuild; "
+                "TitanSkies warehouse schema 0.6.0 requires a clean rebuild; "
                 f"this database contains schema {existing[0]}. Back it up and "
                 "create a new warehouse."
             )
@@ -85,8 +85,8 @@ def _prepare_v05_boundary(conn: duckdb.DuckDBPyConnection) -> None:
     )
     if populated:
         raise RuntimeError(
-            "TitanSkies warehouse schema 0.5.0 requires a clean rebuild; this "
-            "database contains pre-0.5 rows. Back it up and create a new warehouse."
+            "TitanSkies warehouse schema 0.6.0 requires a clean rebuild; this "
+            "database contains pre-0.6 rows. Back it up and create a new warehouse."
         )
 
 
@@ -110,7 +110,7 @@ def _check_and_stamp_schema_version(conn: duckdb.DuckDBPyConnection) -> None:
     ).fetchone()
     if existing_version and existing_version[0] != WAREHOUSE_SCHEMA_VERSION:
         raise RuntimeError(
-            "TitanSkies warehouse schema 0.5.0 requires a clean rebuild; this "
+            "TitanSkies warehouse schema 0.6.0 requires a clean rebuild; this "
             f"database contains schema {existing_version[0]}. Back it up and "
             "create a new warehouse."
         )
@@ -130,7 +130,7 @@ def bootstrap_tempo_tables(
     conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{raw_schema}"')
     conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{ops_schema}"')
     if scope == SCOPE_NO2:
-        _prepare_v05_boundary(conn)
+        _prepare_v06_boundary(conn)
     _check_and_stamp_schema_version(conn)
     conn.execute(
         f"CREATE SEQUENCE IF NOT EXISTS {hour_revision_sequence(scope=scope)} START 1"

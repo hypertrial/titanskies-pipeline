@@ -1,5 +1,6 @@
 """Barrel re-export of all settings."""
 
+from titanskies_pipeline.config.settings_plumegraph import *  # noqa: F403
 from titanskies_pipeline.config.settings_riverpulse import *  # noqa: F403
 from titanskies_pipeline.config.settings_tempo import *  # noqa: F403
 from titanskies_pipeline.config.settings_warehouse import *  # noqa: F403

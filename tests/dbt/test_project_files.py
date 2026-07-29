@@ -11,3 +11,6 @@ def test_dbt_project_has_tempo_no2_layers():
     assert "riverpulse_events_staging" in project
     assert "riverpulse_events_marts" in project
     assert "riverpulse_events_observability" in project
+    assert "plumegraph_events_staging" in project
+    assert "plumegraph_events_marts" in project
+    assert "plumegraph_events_observability" in project

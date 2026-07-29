@@ -1,5 +1,5 @@
 name: titanskies
-version: 0.5.0
+version: 0.6.0
 config-version: 2
 profile: titanskies
 flags:
@@ -97,6 +97,23 @@ models:
         +schema: riverpulse_events_observability
         +materialized: table
         +tags: ["mart", "observability", "riverpulse", "events"]
+    plumegraph_events:
+      +tags: ["plumegraph", "events"]
+      staging:
+        +schema: plumegraph_events_staging
+        +tags: ["staging", "plumegraph", "events"]
+      intermediate:
+        +schema: plumegraph_events_intermediate
+        +materialized: table
+        +tags: ["intermediate", "plumegraph", "events"]
+      marts:
+        +schema: plumegraph_events_marts
+        +materialized: table
+        +tags: ["mart", "core", "plumegraph", "events"]
+      observability:
+        +schema: plumegraph_events_observability
+        +materialized: table
+        +tags: ["mart", "observability", "plumegraph", "events"]
 seeds:
   titanskies:
     tempo_no2_contract:
@@ -110,4 +127,8 @@ seeds:
     riverpulse_events_contract:
       +schema: riverpulse_events_staging
       +tags: ["staging", "riverpulse", "events"]
+      +quote_columns: false
+    plumegraph_events_contract:
+      +schema: plumegraph_events_staging
+      +tags: ["staging", "plumegraph", "events"]
       +quote_columns: false

@@ -6,6 +6,7 @@ No credentials or GIS dependencies are needed for the demo:
 uv sync --locked --extra dev
 uv run make demo
 uv run make riverpulse-demo
+uv run make plumegraph-demo
 ```
 
 Open the printed `.cache/demo.duckdb` path in DuckDB to query administrative
@@ -37,9 +38,13 @@ Standard-scope mirrors use the `tempo_no2_std_*` job names
 RiverPulse jobs use `riverpulse_events_source_discovery`,
 `riverpulse_events_observation_ingest`, `riverpulse_events_dbt_build`, and
 `riverpulse_events_full_pipeline`.
+PlumeGraph jobs run discovery, three-source ingest, analysis, dbt, validation,
+and optional release publication through the documented
+`plumegraph_events_*` job family.
 
-Version 0.5 requires a new warehouse for populated v0.4 DuckDB files. See the
-[v0.5 upgrade guide](upgrade-v05.md) before enabling
+Version 0.6 requires a new warehouse for populated v0.5 DuckDB files. See the
+[v0.6 upgrade guide](upgrade-v06.md) before enabling
 schedules against an existing deployment. Older rebuild notes remain under
+[Upgrade to v0.5](upgrade-v05.md),
 [Upgrade to v0.4](upgrade-v04.md),
 [Upgrade to v0.3](upgrade-v03.md) and [Upgrade to v0.2](upgrade-v02.md).

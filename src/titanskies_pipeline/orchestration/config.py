@@ -126,6 +126,56 @@ class RiverPulseIngestConfig(Config):
     raw_data_dir: str | None = None
 
 
+class PlumeGraphFacilityRegistryConfig(Config):
+    manifest_path: str | None = None
+    allow_synthetic: bool = False
+
+
+class PlumeGraphDiscoveryConfig(Config):
+    window_start_utc: str | None = None
+    window_end_utc: str | None = None
+    backfill: bool = False
+
+    @model_validator(mode="after")
+    def _validate_window(self) -> "PlumeGraphDiscoveryConfig":
+        has_start = self.window_start_utc is not None
+        has_end = self.window_end_utc is not None
+        if has_start != has_end:
+            raise ValueError(
+                "window_start_utc and window_end_utc must both be set together"
+            )
+        if has_start and has_end:
+            start = parse_iso_utc(self.window_start_utc or "")
+            end = parse_iso_utc(self.window_end_utc or "")
+            if start >= end:
+                raise ValueError(
+                    "window_start_utc must be strictly before window_end_utc"
+                )
+        return self
+
+
+class PlumeGraphIngestConfig(Config):
+    max_requests: int | None = Field(default=None, ge=1)
+    raw_data_dir: str | None = None
+
+
+class PlumeGraphAnalysisConfig(Config):
+    partition_dates: list[str] | None = None
+
+
+class PlumeGraphValidationConfig(Config):
+    benchmark_path: str | None = None
+    benchmark_version: str = "plumegraph-benchmark-2024-v1"
+    allow_incomplete: bool = False
+
+
+class PlumeGraphReleaseConfig(Config):
+    release_version: str = "v0.6.0"
+    output_dir: str | None = None
+    validation_run_id: str | None = None
+    require_passed_validation: bool = True
+
+
 class DbtBuildConfig(GuardrailConfig):
     progress_log_interval_events: int = Field(default=20, ge=1)
     dbt_select: str | None = None
@@ -179,6 +229,67 @@ def riverpulse_events_full_pipeline_run_config() -> dict:
         riverpulse_events_discovery_run_config(),
         riverpulse_events_ingest_run_config(),
         riverpulse_events_dbt_run_config(),
+    )
+
+
+def plumegraph_events_discovery_run_config() -> dict:
+    return _op_config(
+        AssetKey(["plumegraph", "events", "raw", "source_inventory"]),
+        PlumeGraphDiscoveryConfig(),
+    )
+
+
+def plumegraph_events_ingest_run_config() -> dict:
+    return _merge_op_configs(
+        *[
+            _op_config(
+                AssetKey(["plumegraph", "events", "raw", asset_name]),
+                PlumeGraphIngestConfig(),
+            )
+            for asset_name in (
+                "tempo_snapshots",
+                "hrrr_snapshots",
+                "camd_emissions",
+            )
+        ]
+    )
+
+
+def plumegraph_events_analysis_run_config() -> dict:
+    return _op_config(
+        AssetKey(["plumegraph", "events", "intermediate", "analysis_results"]),
+        PlumeGraphAnalysisConfig(),
+    )
+
+
+def plumegraph_events_dbt_run_config() -> dict:
+    return _op_config(
+        AssetKey(["titanskies_dbt"]),
+        DbtBuildConfig(dbt_select="tag:plumegraph,tag:events"),
+    )
+
+
+def plumegraph_events_validation_run_config() -> dict:
+    return _op_config(
+        AssetKey(["plumegraph", "events", "observability", "validation"]),
+        PlumeGraphValidationConfig(),
+    )
+
+
+def plumegraph_events_release_run_config() -> dict:
+    return _op_config(
+        AssetKey(["plumegraph", "events", "releases", "evidence_ledger"]),
+        PlumeGraphReleaseConfig(),
+    )
+
+
+def plumegraph_events_full_pipeline_run_config() -> dict:
+    return _merge_op_configs(
+        plumegraph_events_discovery_run_config(),
+        plumegraph_events_ingest_run_config(),
+        plumegraph_events_analysis_run_config(),
+        plumegraph_events_dbt_run_config(),
+        plumegraph_events_validation_run_config(),
     )
 
 
@@ -261,6 +372,12 @@ __all__ = [
     "GranuleDiscoveryConfig",
     "GuardrailConfig",
     "HourlyIngestConfig",
+    "PlumeGraphAnalysisConfig",
+    "PlumeGraphDiscoveryConfig",
+    "PlumeGraphFacilityRegistryConfig",
+    "PlumeGraphIngestConfig",
+    "PlumeGraphReleaseConfig",
+    "PlumeGraphValidationConfig",
     "RegionRegistryConfig",
     "RiverPulseDiscoveryConfig",
     "RiverPulseIngestConfig",
@@ -272,6 +389,13 @@ __all__ = [
     "TEMPO_NO2_STD_RAW_GRANULE_INVENTORY",
     "TEMPO_NO2_STD_RAW_REGION_HOUR_AGGREGATES",
     "full_pipeline_run_config",
+    "plumegraph_events_analysis_run_config",
+    "plumegraph_events_dbt_run_config",
+    "plumegraph_events_discovery_run_config",
+    "plumegraph_events_full_pipeline_run_config",
+    "plumegraph_events_ingest_run_config",
+    "plumegraph_events_release_run_config",
+    "plumegraph_events_validation_run_config",
     "region_registry_run_config",
     "riverpulse_events_dbt_run_config",
     "riverpulse_events_discovery_run_config",

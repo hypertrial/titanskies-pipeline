@@ -1,0 +1,17 @@
+version: 2
+
+models:
+  - name: plumegraph_events_request_health
+    description: Request status, retry, and time-window health by source connector.
+  - name: plumegraph_events_partition_completeness
+    description: Analysis partition status and atomic current-generation state.
+  - name: plumegraph_events_source_revisions
+    description: Snapshot revision and schema-drift counts by source identity.
+  - name: plumegraph_events_data_quality_issues
+    description: Row-level scientific readiness failures retained for audit.
+  - name: plumegraph_events_benchmark_metrics
+    description: Held-out detection, attribution, and calibration validation results.
+  - name: plumegraph_events_calibration_state
+    description: Latest probability-readiness and held-out ECE state.
+  - name: plumegraph_events_release_integrity
+    description: Registered immutable evidence release manifests.

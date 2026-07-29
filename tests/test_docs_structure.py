@@ -27,6 +27,7 @@ STALE_PHRASES = (
 )
 
 SCHEDULE_ENV_VARS = (
+    "PLUMEGRAPH_EVENTS_PIPELINE_SCHEDULE_ENABLED",
     "RIVERPULSE_EVENTS_PIPELINE_SCHEDULE_ENABLED",
     "TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED",
     "TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED",
@@ -150,7 +151,12 @@ def test_security_supported_versions_include_project_line():
 
 def test_public_models_and_registered_jobs_are_documented():
     combined = _combined_docs()
-    model_families = ("tempo_no2", "tempo_no2_std", "riverpulse_events")
+    model_families = (
+        "tempo_no2",
+        "tempo_no2_std",
+        "riverpulse_events",
+        "plumegraph_events",
+    )
     marts = {
         path.stem
         for family in model_families
@@ -172,11 +178,18 @@ def test_public_models_and_registered_jobs_are_documented():
         "riverpulse_events_observation_ingest",
         "riverpulse_events_dbt_build",
         "riverpulse_events_full_pipeline",
+        "plumegraph_events_source_discovery",
+        "plumegraph_events_source_ingest",
+        "plumegraph_events_analysis",
+        "plumegraph_events_dbt_build",
+        "plumegraph_events_validation",
+        "plumegraph_events_release_build",
+        "plumegraph_events_full_pipeline",
     }
 
-    assert len(marts) == 17
-    assert len(observability) == 6
-    assert len(jobs) == 12
+    assert len(marts) == 25
+    assert len(observability) == 13
+    assert len(jobs) == 19
     for name in marts | observability | jobs:
         assert name in combined, name
     for variable in SCHEDULE_ENV_VARS:
