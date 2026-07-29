@@ -8,7 +8,7 @@ from titanskies_pipeline.orchestration.dbt_project import DBT_DAGSTER_GROUP_NAME
 from titanskies_pipeline.storage.duckdb.schemas.dbt_schemas import dbt_model_asset_key
 
 
-class TempoDagsterDbtTranslator(DagsterDbtTranslator):
+class TitanSkiesDagsterDbtTranslator(DagsterDbtTranslator):
     def __init__(self) -> None:
         super().__init__(
             settings=DagsterDbtTranslatorSettings(
@@ -27,4 +27,4 @@ class TempoDagsterDbtTranslator(DagsterDbtTranslator):
         return DBT_DAGSTER_GROUP_NAME
 
 
-__all__ = ["TempoDagsterDbtTranslator"]
+__all__ = ["TitanSkiesDagsterDbtTranslator"]

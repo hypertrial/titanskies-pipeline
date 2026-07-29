@@ -5,6 +5,11 @@ from unittest.mock import MagicMock
 import pytest
 
 from titanskies_pipeline.config._reload_settings import reload_all_settings_modules
+from titanskies_pipeline.config.settings_riverpulse import (
+    RIVERPULSE_COLLECTION_NAME,
+    get_riverpulse_settings,
+    load_riverpulse_contract,
+)
 from titanskies_pipeline.config.settings_tempo import (
     get_tempo_scope_settings,
     load_tempo_no2_contract,
@@ -207,3 +212,55 @@ def test_earthdata_lowercase_env_aliases(monkeypatch, isolated_env):
 
     assert os.environ["EARTHDATA_USERNAME"] == "lower-user"
     assert os.environ["EARTHDATA_PASSWORD"] == "lower-pass"
+
+
+def test_riverpulse_settings_are_operational_only(monkeypatch, isolated_env):
+    monkeypatch.setenv("RIVERPULSE_RAW_DATA_DIR", "data/raw/test-riverpulse")
+    monkeypatch.setenv("RIVERPULSE_REQUEST_INTERVAL_SECONDS", "0.25")
+    monkeypatch.setenv("RIVERPULSE_EVENTS_PIPELINE_SCHEDULE_ENABLED", "true")
+    monkeypatch.setenv("RIVERPULSE_HYDROCRON_API_KEY", "secret")
+    settings = get_riverpulse_settings()
+    assert settings.raw_data_dir.name == "test-riverpulse"
+    assert settings.request_interval_seconds == 0.25
+    assert settings.schedule_enabled is True
+    assert settings.hydrocron_api_key == "secret"
+    assert settings.contract["collection_name"] == RIVERPULSE_COLLECTION_NAME
+
+
+def test_riverpulse_settings_reject_negative_interval(monkeypatch, isolated_env):
+    monkeypatch.setenv("RIVERPULSE_REQUEST_INTERVAL_SECONDS", "-1")
+    with pytest.raises(ValueError, match="must be non-negative"):
+        get_riverpulse_settings()
+
+
+def test_riverpulse_contract_validation(tmp_path):
+    contract = tmp_path / "contract.csv"
+    header = (
+        "contract_key,contract_version,field_contract_version,collection_name,"
+        "collection_version,sword_version,accepted_reach_quality,"
+        "accepted_discharge_quality\n"
+    )
+    contract.write_text(
+        header + "default,0.5.0,v1,SWOT_L2_HR_RiverSP_reach_D,D,17b,0,0\n"
+    )
+    assert load_riverpulse_contract(contract)["accepted_reach_quality"] == 0
+
+    contract.write_text("contract_key,contract_version\ndefault,0.5.0\n")
+    with pytest.raises(ValueError, match="missing columns"):
+        load_riverpulse_contract(contract)
+    contract.write_text(
+        header + "default,0.5.0,v1,SWOT_L2_HR_RiverSP_reach_D,D,17b,bad,0\n"
+    )
+    with pytest.raises(ValueError, match="invalid quality"):
+        load_riverpulse_contract(contract)
+    contract.write_text(header + "default,0.5.0,v1,wrong,D,17b,0,0\n")
+    with pytest.raises(ValueError, match="not Version D"):
+        load_riverpulse_contract(contract)
+    contract.write_text(
+        header + "default,0.5.0,v1,SWOT_L2_HR_RiverSP_reach_D,D,18,0,0\n"
+    )
+    with pytest.raises(ValueError, match="must be 17b"):
+        load_riverpulse_contract(contract)
+    contract.write_text(header)
+    with pytest.raises(ValueError, match="exactly one"):
+        load_riverpulse_contract(contract)

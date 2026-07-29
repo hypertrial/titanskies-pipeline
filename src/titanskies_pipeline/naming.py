@@ -5,8 +5,10 @@ from __future__ import annotations
 from dagster import AssetKey
 
 SOURCE_TEMPO = "tempo"
+SOURCE_RIVERPULSE = "riverpulse"
 SCOPE_NO2 = "no2"
 SCOPE_NO2_STD = "no2_std"
+SCOPE_EVENTS = "events"
 
 
 def flat_name(source: str, scope: str, *parts: str) -> str:
@@ -23,10 +25,14 @@ def asset_key(source: str, scope: str, layer: str, *parts: str) -> AssetKey:
 
 TEMPO_NO2 = flat_name(SOURCE_TEMPO, SCOPE_NO2)
 TEMPO_NO2_STD = flat_name(SOURCE_TEMPO, SCOPE_NO2_STD)
+RIVERPULSE_EVENTS = flat_name(SOURCE_RIVERPULSE, SCOPE_EVENTS)
 
 __all__ = [
+    "RIVERPULSE_EVENTS",
+    "SCOPE_EVENTS",
     "SCOPE_NO2",
     "SCOPE_NO2_STD",
+    "SOURCE_RIVERPULSE",
     "SOURCE_TEMPO",
     "TEMPO_NO2",
     "TEMPO_NO2_STD",

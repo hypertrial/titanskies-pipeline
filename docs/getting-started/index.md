@@ -5,6 +5,7 @@ No credentials or GIS dependencies are needed for the demo:
 ```bash
 uv sync --locked --extra dev
 uv run make demo
+uv run make riverpulse-demo
 ```
 
 Open the printed `.cache/demo.duckdb` path in DuckDB to query administrative
@@ -19,6 +20,7 @@ For pipeline development:
 uv sync --locked --extra dev --extra geo
 cp .env.example .env
 python scripts/build_region_artifacts.py --synthetic
+python scripts/build_riverpulse_network.py --synthetic
 uv run make dbt-parse
 uv run make dagster-dev
 ```
@@ -32,8 +34,12 @@ NRT jobs:
 
 Standard-scope mirrors use the `tempo_no2_std_*` job names
 ([Orchestration](../reference/orchestration.md)).
+RiverPulse jobs use `riverpulse_events_source_discovery`,
+`riverpulse_events_observation_ingest`, `riverpulse_events_dbt_build`, and
+`riverpulse_events_full_pipeline`.
 
-Version 0.4 requires a new derived warehouse for populated pre-0.4 DuckDB
-files. See the [v0.3 to v0.4 upgrade guide](upgrade-v04.md) before enabling
+Version 0.5 requires a new warehouse for populated v0.4 DuckDB files. See the
+[v0.5 upgrade guide](upgrade-v05.md) before enabling
 schedules against an existing deployment. Older rebuild notes remain under
+[Upgrade to v0.4](upgrade-v04.md),
 [Upgrade to v0.3](upgrade-v03.md) and [Upgrade to v0.2](upgrade-v02.md).

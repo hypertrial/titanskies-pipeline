@@ -1,20 +1,24 @@
 # Architecture
 
-Stack: Dagster, earthaccess, xarray, DuckDB, dbt.
+Stack: Dagster, earthaccess, requests, xarray, PyArrow, DuckDB, dbt.
 
-TitanSkies runs **two independent TEMPO NO2 scopes** in one local warehouse:
+TitanSkies runs **two independent TEMPO NO2 scopes plus RiverPulse** in one local warehouse:
 `tempo:no2` (NRT) and `tempo:no2_std` (standard V04). Each scope has its own
 CMR concept ID, raw directory, ops ledger, hour-revision sequence, quality
 contract CSV, Dagster jobs/schedule flag, and published mart/observability
 schemas. They share pinned geography artifacts when both registries are
 materialized, but they never share raw epochs or incremental contract
 versions.
+The explicit `riverpulse:events` lane shares only the DuckDB path and v0.5
+schema stamp; it does not use the TEMPO `ScopeSpec` factory.
 
 ```mermaid
 flowchart TB
   subgraph shared["Shared local host"]
     geo["Pinned geography manifest + overlap weights"]
+    sword["Pinned SWORD v17b network generations"]
     duck["One DuckDB warehouse path"]
+    stamp["titanskies_ops.warehouse_metadata"]
   end
 
   subgraph nrt["tempo:no2 NRT lane"]
@@ -37,12 +41,26 @@ flowchart TB
     stdDisc --> stdLedger --> stdIngest --> stdRaw --> stdDbt --> stdMarts
   end
 
+  subgraph rivers["riverpulse:events lane"]
+    riverDisc["Hydrocron request planning"]
+    riverLedger["request + snapshot ledger"]
+    riverIngest["serial revision-safe CSV ingest"]
+    riverRaw["topology + observation/discharge revisions"]
+    riverDbt["dbt tag:riverpulse,tag:events"]
+    riverMarts["five marts + observability"]
+    riverDisc --> riverLedger --> riverIngest --> riverRaw --> riverDbt --> riverMarts
+  end
+
   geo --> nrtIngest
   geo --> stdIngest
+  sword --> riverDisc
   nrtRaw --> duck
   stdRaw --> duck
   nrtMarts --> duck
   stdMarts --> duck
+  riverRaw --> duck
+  riverMarts --> duck
+  stamp --> duck
 ```
 
 ## Per-granule ingest path
@@ -87,6 +105,24 @@ latest cell observation.
 
 `make demo` exercises the NRT lane only. Standard marts appear after an
 explicit standard discovery/ingest and dbt run.
+`make riverpulse-demo` separately exercises synthetic network registration,
+request/snapshot persistence, multiple revisions, discharge normalization,
+and RiverPulse-only dbt publication.
+
+## Per-request RiverPulse path
+
+The SWORD build verifies the pinned archive, selects at most 100 connected
+mainstem reaches per pilot, and atomically publishes immutable reach/edge
+Parquet generations. Hydrocron discovery creates deterministic reach ×
+half-open-window requests. The collector runs serially, retries transient
+responses, and treats only the documented no-data 400 as successful.
+
+For each successful body it writes a checksum-addressed snapshot, parses all
+rows, then transactionally appends snapshot metadata, observation/discharge
+revisions, provenance links, and request success. Successful siblings survive
+a partial batch; any failure keeps publication blocked. Current revision
+selection happens in dbt and cannot be reversed by an older rediscovery.
 
 See [Orchestration](../reference/orchestration.md) and
-[TEMPO product notes](tempo-product-notes.md).
+[TEMPO product notes](tempo-product-notes.md), plus
+[RiverPulse product notes](riverpulse-product-notes.md).

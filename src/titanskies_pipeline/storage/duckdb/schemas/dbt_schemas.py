@@ -7,8 +7,10 @@ from typing import Final, Mapping, Sequence
 from dagster import AssetKey
 
 from titanskies_pipeline.naming import (
+    SCOPE_EVENTS,
     SCOPE_NO2,
     SCOPE_NO2_STD,
+    SOURCE_RIVERPULSE,
     SOURCE_TEMPO,
     asset_key,
     schema_name,
@@ -16,6 +18,7 @@ from titanskies_pipeline.naming import (
 
 DBT_SOURCE_TEMPO_NO2: Final = "tempo_no2"
 DBT_SOURCE_TEMPO_NO2_STD: Final = "tempo_no2_std"
+DBT_SOURCE_RIVERPULSE_EVENTS: Final = "riverpulse_events"
 
 TEMPO_NO2_STAGING_SCHEMA: Final = schema_name(SOURCE_TEMPO, SCOPE_NO2, "staging")
 TEMPO_NO2_INTERMEDIATE_SCHEMA: Final = schema_name(
@@ -36,6 +39,18 @@ TEMPO_NO2_STD_MARTS_SCHEMA: Final = schema_name(SOURCE_TEMPO, SCOPE_NO2_STD, "ma
 TEMPO_NO2_STD_OBSERVABILITY_SCHEMA: Final = schema_name(
     SOURCE_TEMPO, SCOPE_NO2_STD, "observability"
 )
+RIVERPULSE_EVENTS_STAGING_SCHEMA: Final = schema_name(
+    SOURCE_RIVERPULSE, SCOPE_EVENTS, "staging"
+)
+RIVERPULSE_EVENTS_INTERMEDIATE_SCHEMA: Final = schema_name(
+    SOURCE_RIVERPULSE, SCOPE_EVENTS, "intermediate"
+)
+RIVERPULSE_EVENTS_MARTS_SCHEMA: Final = schema_name(
+    SOURCE_RIVERPULSE, SCOPE_EVENTS, "marts"
+)
+RIVERPULSE_EVENTS_OBSERVABILITY_SCHEMA: Final = schema_name(
+    SOURCE_RIVERPULSE, SCOPE_EVENTS, "observability"
+)
 
 DBT_FALLBACK_SCHEMA: Final = "dbt"
 
@@ -48,6 +63,10 @@ TEMPO_NO2_STD_OBSERVABILITY_MODELS: Final[tuple[str, ...]] = (
     "tempo_no2_std_data_quality",
     "tempo_no2_std_granule_observability",
 )
+RIVERPULSE_EVENTS_OBSERVABILITY_MODELS: Final[tuple[str, ...]] = (
+    "riverpulse_events_request_health",
+    "riverpulse_events_scientific_quality_issues",
+)
 
 DBT_MODELED_SCHEMAS: Final[tuple[str, ...]] = (
     TEMPO_NO2_STAGING_SCHEMA,
@@ -58,6 +77,10 @@ DBT_MODELED_SCHEMAS: Final[tuple[str, ...]] = (
     TEMPO_NO2_STD_INTERMEDIATE_SCHEMA,
     TEMPO_NO2_STD_MARTS_SCHEMA,
     TEMPO_NO2_STD_OBSERVABILITY_SCHEMA,
+    RIVERPULSE_EVENTS_STAGING_SCHEMA,
+    RIVERPULSE_EVENTS_INTERMEDIATE_SCHEMA,
+    RIVERPULSE_EVENTS_MARTS_SCHEMA,
+    RIVERPULSE_EVENTS_OBSERVABILITY_SCHEMA,
 )
 
 
@@ -67,6 +90,8 @@ def resolve_source_slug(
     fqn: Sequence[str] | None = None,
 ) -> str:
     path_fqn = list(fqn or props.get("fqn") or [])
+    if len(path_fqn) >= 2 and path_fqn[1] == DBT_SOURCE_RIVERPULSE_EVENTS:
+        return DBT_SOURCE_RIVERPULSE_EVENTS
     # Standard-scope folder is a longer, more specific prefix of the NRT folder
     # name, so it must be checked first to avoid the NRT branch shadowing it.
     if len(path_fqn) >= 2 and path_fqn[1] == DBT_SOURCE_TEMPO_NO2_STD:
@@ -74,6 +99,14 @@ def resolve_source_slug(
     if len(path_fqn) >= 2 and path_fqn[1] == DBT_SOURCE_TEMPO_NO2:
         return DBT_SOURCE_TEMPO_NO2
     name = str(props.get("name") or "")
+    if name.startswith(
+        (
+            "stg_riverpulse_events_",
+            "int_riverpulse_events_",
+            "riverpulse_events_",
+        )
+    ):
+        return DBT_SOURCE_RIVERPULSE_EVENTS
     if name.startswith(
         (
             "stg_tempo_no2_std_",
@@ -162,6 +195,33 @@ def _tempo_no2_std_subject(model_name: str) -> str:
     return model_name
 
 
+def _riverpulse_events_layer(
+    model_name: str,
+    props: Mapping[str, object] | None = None,
+    *,
+    fqn: Sequence[str] | None = None,
+) -> str:
+    return _tempo_layer(
+        model_name,
+        props,
+        fqn=fqn,
+        observability_models=RIVERPULSE_EVENTS_OBSERVABILITY_MODELS,
+        staging_prefix="stg_riverpulse_events_",
+        intermediate_prefix="int_riverpulse_events_",
+    )
+
+
+def _riverpulse_events_subject(model_name: str) -> str:
+    for prefix in (
+        "stg_riverpulse_events_",
+        "int_riverpulse_events_",
+        "riverpulse_events_",
+    ):
+        if model_name.startswith(prefix):
+            return model_name[len(prefix) :]
+    return model_name
+
+
 def dbt_model_asset_key(
     props: Mapping[str, object],
     *,
@@ -169,6 +229,13 @@ def dbt_model_asset_key(
 ) -> AssetKey:
     source = resolve_source_slug(props, fqn=fqn)
     name = str(props.get("name") or "")
+    if source == DBT_SOURCE_RIVERPULSE_EVENTS:
+        return asset_key(
+            SOURCE_RIVERPULSE,
+            SCOPE_EVENTS,
+            _riverpulse_events_layer(name, props, fqn=fqn),
+            _riverpulse_events_subject(name),
+        )
     if source == DBT_SOURCE_TEMPO_NO2_STD:
         return asset_key(
             SOURCE_TEMPO,
@@ -191,6 +258,11 @@ __all__ = [
     "DBT_MODELED_SCHEMAS",
     "DBT_SOURCE_TEMPO_NO2",
     "DBT_SOURCE_TEMPO_NO2_STD",
+    "DBT_SOURCE_RIVERPULSE_EVENTS",
+    "RIVERPULSE_EVENTS_INTERMEDIATE_SCHEMA",
+    "RIVERPULSE_EVENTS_MARTS_SCHEMA",
+    "RIVERPULSE_EVENTS_OBSERVABILITY_SCHEMA",
+    "RIVERPULSE_EVENTS_STAGING_SCHEMA",
     "TEMPO_NO2_INTERMEDIATE_SCHEMA",
     "TEMPO_NO2_MARTS_SCHEMA",
     "TEMPO_NO2_OBSERVABILITY_SCHEMA",

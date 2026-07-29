@@ -10,6 +10,13 @@ from titanskies_pipeline.orchestration.config import (
     GuardrailConfig,
     HourlyIngestConfig,
     RegionRegistryConfig,
+    RiverPulseDiscoveryConfig,
+    RiverPulseIngestConfig,
+    RiverPulseNetworkConfig,
+    riverpulse_events_dbt_run_config,
+    riverpulse_events_discovery_run_config,
+    riverpulse_events_full_pipeline_run_config,
+    riverpulse_events_ingest_run_config,
     scope_run_config,
     tempo_no2_dbt_build_run_config,
     tempo_no2_full_pipeline_run_config,
@@ -186,3 +193,42 @@ def test_tempo_no2_std_full_pipeline_run_config_merges_ops():
     assert "tempo__no2_std__raw__granule_inventory" in ops
     assert "tempo__no2_std__raw__region_hour_aggregates" in ops
     assert "titanskies_dbt" in ops
+
+
+def test_riverpulse_configs_and_run_configs():
+    network = RiverPulseNetworkConfig(
+        manifest_path="/tmp/network.json", allow_synthetic=True
+    )
+    assert network.allow_synthetic is True
+    discovery = RiverPulseDiscoveryConfig(
+        window_start_utc="2024-01-01T00:00:00Z",
+        window_end_utc="2025-01-01T00:00:00Z",
+        reach_ids=["1"],
+        backfill=True,
+    )
+    assert discovery.reach_ids == ["1"]
+    assert RiverPulseIngestConfig(max_requests=1).max_requests == 1
+    with pytest.raises(Exception, match="must both be set"):
+        RiverPulseDiscoveryConfig(window_start_utc="2024-01-01T00:00:00Z")
+    with pytest.raises(Exception, match="strictly before"):
+        RiverPulseDiscoveryConfig(
+            window_start_utc="2025-01-01T00:00:00Z",
+            window_end_utc="2024-01-01T00:00:00Z",
+        )
+
+    assert (
+        "riverpulse__events__raw__source_inventory"
+        in riverpulse_events_discovery_run_config()["ops"]
+    )
+    assert (
+        "riverpulse__events__raw__observations"
+        in riverpulse_events_ingest_run_config()["ops"]
+    )
+    dbt = riverpulse_events_dbt_run_config()["ops"]["titanskies_dbt"]["config"]
+    assert dbt["dbt_select"] == "tag:riverpulse,tag:events"
+    full = riverpulse_events_full_pipeline_run_config()["ops"]
+    assert set(full) == {
+        "riverpulse__events__raw__source_inventory",
+        "riverpulse__events__raw__observations",
+        "titanskies_dbt",
+    }

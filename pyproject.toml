@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "titanskies-pipeline"
-version = "0.4.0"
-description = "Local NASA TEMPO NO2 warehouse with administrative and native-grid marts."
+version = "0.5.0"
+description = "Local NASA TEMPO NO2 and SWOT RiverPulse science warehouse."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"

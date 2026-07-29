@@ -9,13 +9,15 @@ from typing import Optional
 import duckdb
 
 from titanskies_pipeline.config import settings as _settings
+from titanskies_pipeline.storage.duckdb.schemas.bootstrap import bootstrap_all_tables
 from titanskies_pipeline.storage.duckdb.schemas.constants import (
+    RIVERPULSE_EVENTS_OPS_SCHEMA,
+    RIVERPULSE_EVENTS_RAW_SCHEMA,
     TEMPO_NO2_OPS_SCHEMA,
     TEMPO_NO2_RAW_SCHEMA,
     TEMPO_NO2_STD_OPS_SCHEMA,
     TEMPO_NO2_STD_RAW_SCHEMA,
 )
-from titanskies_pipeline.storage.duckdb.schemas.tempo import bootstrap_all_tempo_tables
 
 logger = logging.getLogger(__name__)
 
@@ -130,15 +132,17 @@ def init_duck_db() -> None:
     conn = open_writable_duckdb_connection(path)
     if not _SCHEMA_LOGGED:
         logger.info(
-            "Ensuring DuckDB schemas (%s, %s, %s, %s)",
+            "Ensuring DuckDB schemas (%s, %s, %s, %s, %s, %s)",
             TEMPO_NO2_RAW_SCHEMA,
             TEMPO_NO2_OPS_SCHEMA,
             TEMPO_NO2_STD_RAW_SCHEMA,
             TEMPO_NO2_STD_OPS_SCHEMA,
+            RIVERPULSE_EVENTS_RAW_SCHEMA,
+            RIVERPULSE_EVENTS_OPS_SCHEMA,
         )
         _SCHEMA_LOGGED = True
     try:
-        bootstrap_all_tempo_tables(conn)
+        bootstrap_all_tables(conn)
         _SCHEMA_INITIALIZED = True
     finally:
         conn.close()

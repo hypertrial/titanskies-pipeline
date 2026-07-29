@@ -41,6 +41,11 @@ def isolated_env(monkeypatch, tmp_path):
         "TEMPO_NO2_DISCOVERY_LOOKBACK_HOURS",
         "TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED",
         "TEMPO_GEOGRAPHY_MANIFEST_PATH",
+        "RIVERPULSE_HYDROCRON_API_KEY",
+        "RIVERPULSE_NETWORK_MANIFEST_PATH",
+        "RIVERPULSE_RAW_DATA_DIR",
+        "RIVERPULSE_REQUEST_INTERVAL_SECONDS",
+        "RIVERPULSE_EVENTS_PIPELINE_SCHEDULE_ENABLED",
     ):
         monkeypatch.delenv(key, raising=False)
     db = tmp_path / "test.duckdb"

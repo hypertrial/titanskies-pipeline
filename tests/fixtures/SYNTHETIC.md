@@ -9,6 +9,11 @@ not downloaded NASA observations or boundary data.
   weights from declared test rows without downloading geography.
 - `cassettes/tempo_cmr_granules.json` is a hand-authored CMR-shaped record with
   an `example.test` URL and invented granule identifier.
+- `cassettes/riverpulse_hydrocron.csv` is a hand-authored Hydrocron-shaped
+  response with invented reach/granule IDs, two revisions of one observation,
+  and an `example.test` provenance value.
+- `scripts/build_riverpulse_network.py --synthetic` creates invented
+  Sacramento/Rhine/Murray mini-corridors without downloading SWORD.
 
 Fixtures exist only to exercise schema and parser behavior. They contain no
 credentials, signed URLs, complete catalogs, production geography, or live

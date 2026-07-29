@@ -15,6 +15,30 @@ and schemas. Column guidance below applies to both families unless noted.
 Quality thresholds differ by scope contract CSV; do not mix NRT and std rows
 in one analysis without an explicit cross-scope design.
 
+## RiverPulse public relations
+
+RiverPulse is a separate science family under `riverpulse_events_marts`.
+
+| Relation | Grain | Key analyst fields |
+| --- | --- | --- |
+| `riverpulse_events_reaches` | SWORD reach | `reach_id`, `basin_key`, EPSG:4326 `geometry_wkb`, centroid, topology, `network_version` |
+| `riverpulse_events_observations` | stable SWOT observation, current revision | WSE/width/slope values and uncertainties, decoded reach-quality flags, discharge summary bits, provenance, per-measurement and overall readiness |
+| `riverpulse_events_observation_revisions` | immutable observation revision | CRID, granule, source ingest/collection time, response checksum, snapshot IDs/URIs |
+| `riverpulse_events_discharges` | current observation × algorithm × variant | normalized value/uncertainty/unit, quality, scale factor, variant, readiness |
+| `riverpulse_events_discharge_revisions` | observation revision × algorithm × variant | complete discharge correction history |
+
+`riverpulse_events_observability.riverpulse_events_request_health` is one row
+per deterministic Hydrocron request.
+`riverpulse_events_observability.riverpulse_events_scientific_quality_issues`
+is one row per current observation × failed readiness reason. Issue rows do
+not imply ingestion loss: source rows remain in revision history.
+
+Observation marts preserve `reach_quality_bits`,
+`unconstrained_discharge_quality_bits`, and
+`constrained_discharge_quality_bits`. The twelve `has_*` columns decode the
+official `reach_q_b` masks into named booleans without replacing the source
+integer.
+
 ## Core semantics
 
 - Prefer `is_analysis_ready` on hourly, country, anomaly, and grid marts when

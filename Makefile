@@ -1,4 +1,4 @@
-.PHONY: demo dagster-dev dagster-jobs-smoke dagster-jobs-smoke-cov dagster-refresh-cov duckdb-ui dbt-build dbt-build-ci dbt-parse dbt-test dbt-unit dbt-source-freshness-ci golden-dbt gx-data-quality data-quality contract-http costguard costguard-scan docs-serve docs-build docs-structure docs-render docs-test docs-recipe-smoke docs-check live-smoke clean-local-artifacts format lint test test-cov coverage coverage-erase coverage-report unit-core unit-ingest unit-orchestration integration-dbt integration-dbt-cov integration-dagster integration-dagster-cov check-secrets compact-warehouse
+.PHONY: demo riverpulse-demo riverpulse-live-smoke dagster-dev dagster-jobs-smoke dagster-jobs-smoke-cov dagster-refresh-cov duckdb-ui dbt-build dbt-build-ci dbt-parse dbt-test dbt-unit dbt-source-freshness-ci golden-dbt gx-data-quality data-quality contract-http costguard costguard-scan docs-serve docs-build docs-structure docs-render docs-test docs-recipe-smoke docs-check live-smoke clean-local-artifacts format lint test test-cov coverage coverage-erase coverage-report unit-core unit-ingest unit-orchestration integration-dbt integration-dbt-cov integration-dagster integration-dagster-cov check-secrets compact-warehouse
 
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 override PYTHON := $(shell if test -x "$(REPO_ROOT)/.venv/bin/python"; then printf '%s' "$(REPO_ROOT)/.venv/bin/python"; else printf 'python3'; fi)
@@ -22,6 +22,13 @@ duckdb-ui:
 
 demo:
 	$(RUN_IN_REPO) "$(PYTHON)" scripts/build_demo.py
+
+riverpulse-demo:
+	$(RUN_IN_REPO) "$(PYTHON)" scripts/build_riverpulse_demo.py
+
+riverpulse-live-smoke:
+	@test -n "$(RIVERPULSE_NETWORK_MANIFEST)" || (echo "Set RIVERPULSE_NETWORK_MANIFEST to a production network manifest" && exit 2)
+	$(RUN_IN_REPO) "$(PYTHON)" scripts/run_riverpulse_live_smoke.py --manifest "$(RIVERPULSE_NETWORK_MANIFEST)"
 
 dagster-dev:
 	mkdir -p "$(REPO_ROOT)/.dagster_home"

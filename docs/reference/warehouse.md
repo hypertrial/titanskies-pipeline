@@ -18,7 +18,8 @@ boundary data, or ODbL-derived geography is transferred by local file control.
 | Schema | Audience | Purpose |
 | --- | --- | --- |
 | `tempo_no2_raw` | Internal | Regional hourly aggregates and latest native-grid observations (NRT). |
-| `tempo_no2_ops` | Operators | Granule inventory, geography registry, and durable pipeline state (NRT). Also holds the shared `warehouse_metadata` schema-version stamp. |
+| `titanskies_ops` | Operators | Shared `warehouse_metadata` schema-version stamp (`0.5.0`). |
+| `tempo_no2_ops` | Operators | Granule inventory, geography registry, and durable pipeline state (NRT). |
 | `tempo_no2_staging` | dbt internal | Typed source projections (NRT). |
 | `tempo_no2_intermediate` | dbt internal | Reusable hourly and anomaly calculations (NRT). |
 | `tempo_no2_marts` | Analysts | Six stable public relations documented in the data dictionary (NRT). |
@@ -29,12 +30,18 @@ boundary data, or ODbL-derived geography is transferred by local file control.
 | `tempo_no2_std_intermediate` | dbt internal | Reusable hourly and anomaly calculations (standard V04). |
 | `tempo_no2_std_marts` | Analysts | Standard-scope counterparts to the six NRT marts. |
 | `tempo_no2_std_observability` | Operators and analysts | Granule health and explicit data-quality findings (standard V04). |
+| `riverpulse_events_ops` | Operators | Network manifest, deterministic Hydrocron requests, and immutable snapshot ledger. |
+| `riverpulse_events_raw` | Internal | SWORD reaches/edges, observation/discharge revisions, and snapshot links. |
+| `riverpulse_events_staging` | dbt internal | Source-conformed RiverPulse projections and science contract. |
+| `riverpulse_events_intermediate` | dbt internal | Deterministic current observation/discharge revisions. |
+| `riverpulse_events_marts` | Analysts | Five stable reach, observation, revision, and discharge relations. |
+| `riverpulse_events_observability` | Operators and analysts | Request health and row-level scientific-quality issues. |
 
 Query marts for analysis. Raw, ops, staging, and intermediate relations are
 debugging and implementation surfaces rather than public data contracts. The
 NRT and standard schemas are fully independent: no rows, sequences, or
-watermarks are shared between them except the single `warehouse_metadata`
-schema-version row in `tempo_no2_ops`.
+watermarks are shared between them. All product lanes share only the schema
+stamp in `titanskies_ops`.
 
 ## Storage and retention
 
@@ -44,6 +51,11 @@ NetCDF files live outside DuckDB under `TEMPO_NO2_RAW_DATA_DIR` (NRT) or
 `TEMPO_NO2_STD_RAW_DATA_DIR` (standard) and are pruned only after successful
 processing and each scope's configured retention interval. The granule
 ledger remains available after file pruning.
+
+RiverPulse response bodies are retained indefinitely below
+`RIVERPULSE_RAW_DATA_DIR`; database paths are relative to that root. Network
+manifests point to immutable Parquet generations by artifact-root-relative
+path. No API key or signed URL is persisted.
 
 DuckDB, WAL files, raw downloads, generated geography, dbt targets, and the
 built documentation site are local artifacts and must not be committed.
@@ -58,6 +70,12 @@ without blocking publication; integrity failures still fail the dbt build.
 
 See the [Data dictionary](data-dictionary.md) for relation grains and
 [Data contracts](data-contracts.md) for formal guarantees.
+
+For RiverPulse, use
+`riverpulse_events_observability.riverpulse_events_request_health` for HTTP,
+retry, latency, and actionable failures, and
+`riverpulse_events_scientific_quality_issues` for preserved rows that fail a
+measurement readiness rule.
 
 TitanSkies is research and engineering software, not health, exposure,
 medical, safety, or regulatory advice. Measurements are area/time aggregates,

@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: riverpulse_events_request_health
+    description: Request-level Hydrocron status, retry, latency, and operator-action signals.
+    columns:
+      - name: request_id
+        tests: [not_null, unique]
+  - name: riverpulse_events_scientific_quality_issues
+    description: Row-level reasons current observations are not scientifically ready.
+    columns:
+      - name: observation_id
+        tests: [not_null]
+      - name: issue_type
+        tests: [not_null]

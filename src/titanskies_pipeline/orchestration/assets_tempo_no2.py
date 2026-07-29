@@ -22,7 +22,9 @@ from titanskies_pipeline.orchestration.scope_registry import (
     TEMPO_NO2_STD_RAW_REGION_HOUR_AGGREGATES,
 )
 from titanskies_pipeline.orchestration.timestamps import parse_iso_utc
-from titanskies_pipeline.orchestration.translators import TempoDagsterDbtTranslator
+from titanskies_pipeline.orchestration.translators import (
+    TitanSkiesDagsterDbtTranslator,
+)
 
 
 def _build_region_registry_asset(*, scope: str, key: AssetKey):
@@ -132,7 +134,7 @@ tempo_no2_std_raw_region_hour_aggregates = _build_region_hour_aggregates_asset(
 
 @dbt_assets(
     manifest=DBT_PROJECT.manifest_path,
-    dagster_dbt_translator=TempoDagsterDbtTranslator(),
+    dagster_dbt_translator=TitanSkiesDagsterDbtTranslator(),
     name="titanskies_dbt",
 )
 def titanskies_dbt(

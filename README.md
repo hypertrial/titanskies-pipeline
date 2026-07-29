@@ -5,13 +5,13 @@
 [![Docs: MkDocs](https://img.shields.io/badge/docs-MkDocs-blue)](https://hypertrial.github.io/titanskies-pipeline/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-TitanSkies Pipeline is an open-source, local-first NASA TEMPO NO₂ warehouse.
-Version `0.4.0` publishes administrative history and native-grid latest
-observations for Canada, the United States, and Mexico, across two parallel
-scopes: `tempo:no2` (near-real-time) and `tempo:no2_std` (standard, V04).
+TitanSkies Pipeline is an open-source, local-first NASA science warehouse.
+Version `0.5.0` publishes TEMPO NO₂ administrative/native-grid data and a
+permanent `riverpulse:events` lane for SWORD v17b reaches plus revision-safe
+SWOT Version D Hydrocron observations and discharge estimates.
 
-Dagster coordinates Earthdata discovery, NetCDF processing, DuckDB storage,
-and dbt publication. Every operator controls the resulting local DuckDB file;
+Dagster coordinates discovery, NetCDF/CSV processing, DuckDB storage, and dbt
+publication. Every operator controls the resulting local DuckDB file;
 source and derived-data rights remain governed by their source terms. This
 repository does not host a dataset or API.
 
@@ -45,6 +45,13 @@ uv sync --locked --extra dev
 uv run make demo
 ```
 
+Build the separate credential-free RiverPulse network, revision, discharge,
+provenance, and observability demo with:
+
+```bash
+uv run make riverpulse-demo
+```
+
 The demo prints its `.cache/demo.duckdb` path, relation counts, sample queries,
 and verified CSV/Parquet export paths. Synthetic geography is demo/test-only.
 Serve the complete documentation locally with:
@@ -63,6 +70,7 @@ For development:
 uv sync --locked --extra dev --extra geo
 cp .env.example .env
 python scripts/build_region_artifacts.py --synthetic
+python scripts/build_riverpulse_network.py --synthetic
 uv run make dbt-parse
 uv run make dagster-dev
 ```
@@ -91,6 +99,9 @@ The pipeline is intentionally local and inspectable:
 - Dagster runs discovery, ingestion, dbt publication, and the full pipeline
   independently per scope (`tempo_no2_*` and `tempo_no2_std_*` jobs).
 - dbt publishes six analyst marts and two observability models per scope.
+- RiverPulse pins SWORD v17b, collects `SWOT_L2_HR_RiverSP_reach_D` through
+  bounded Hydrocron requests, and publishes five marts plus two observability
+  models without filtering source-quality rows.
 
 Query `tempo_no2_marts` first and use `tempo_no2_observability` to investigate
 freshness and quality. The main historical relation is
@@ -98,6 +109,8 @@ freshness and quality. The main historical relation is
 the latest supported-country observation for each native 0.02° grid cell. The
 standard scope publishes the identical shapes under `tempo_no2_std_marts`
 and `tempo_no2_std_observability`.
+RiverPulse relations live under `riverpulse_events_marts` and
+`riverpulse_events_observability`.
 
 ```sql
 select *
@@ -107,11 +120,12 @@ where is_analysis_ready;
 
 See the [Architecture](docs/concepts/architecture.md), [Data contracts](docs/reference/data-contracts.md),
 and [Data dictionary](docs/reference/data-dictionary.md) for the complete model.
-TitanSkies v0.4 requires a clean derived-warehouse rebuild; older raw NetCDF
-files and geography source caches remain reusable. `make demo` only builds
+TitanSkies v0.5 requires a clean derived-warehouse rebuild; older raw NetCDF,
+verified geography, and verified SWORD source caches remain reusable.
+`make demo` only builds
 the `tempo:no2` (NRT) scope; see
-[Upgrade to v0.4](docs/getting-started/upgrade-v04.md) for enabling the
-standard scope.
+[Upgrade to v0.5](docs/getting-started/upgrade-v05.md) for the rebuild and
+RiverPulse rollout.
 
 ## Community
 

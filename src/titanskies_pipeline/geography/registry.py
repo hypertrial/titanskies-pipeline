@@ -216,7 +216,7 @@ def persist_geo_artifacts(
             ).fetchone()
         ):
             raise RuntimeError(
-                "Geography version changes require a v0.4 warehouse rebuild"
+                "Geography version changes require a clean warehouse rebuild"
             )
         connection.register("_tempo_region_registry", loaded)
         connection.execute("BEGIN TRANSACTION")

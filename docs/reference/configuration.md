@@ -4,7 +4,8 @@
 `.env` for operator overrides. Quality thresholds and accepted flags live only
 in `dbt/seeds/tempo_no2_contract.csv` (NRT) and
 `dbt/seeds/tempo_no2_std_contract.csv` (standard) — not in environment
-variables.
+variables. RiverPulse scientific versions and accepted quality classes live
+only in `dbt/seeds/riverpulse_events_contract.csv`.
 
 Unset variables use the defaults below. If a numeric or date variable is
 **set** but not parseable (integer, float, or ISO `YYYY-MM-DD`), settings load
@@ -32,6 +33,11 @@ settings once at process import, so env changes require a reload.
 | `TEMPO_NO2_STD_RAW_DATA_DIR` | `data/raw/tempo_no2_std` | Standard raw NetCDF storage root |
 | `TEMPO_NO2_STD_RAW_RETENTION_DAYS` | `30` | Prune processed standard NetCDF files older than this many days (`processed_at`) |
 | `TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED` | `false` | Opt-in standard pipeline schedule; ships disabled and must be enabled explicitly |
+| `RIVERPULSE_NETWORK_MANIFEST_PATH` | `artifacts/riverpulse/riverpulse_network_artifacts.json` | Atomic, checksum-verified SWORD network manifest |
+| `RIVERPULSE_RAW_DATA_DIR` | `data/raw/riverpulse_events` | Indefinite immutable Hydrocron response snapshot root |
+| `RIVERPULSE_HYDROCRON_API_KEY` | unset | Optional `x-hydrocron-key` header; never stored in request state, snapshots, URLs, or errors |
+| `RIVERPULSE_REQUEST_INTERVAL_SECONDS` | `1.0` | Minimum serial request spacing; production must remain at least one second |
+| `RIVERPULSE_EVENTS_PIPELINE_SCHEDULE_ENABLED` | `false` | Opt-in Sunday 03:00 UTC discovery/ingest/dbt schedule; network bootstrap excluded |
 
 ## Scope notes
 
@@ -43,6 +49,8 @@ explicit standard discovery/ingest and dbt run.
 Each contract's `contract_version` invalidates that scope's incremental
 hourly/anomaly results independently. Change the reviewed contract for the
 affected scope rather than adding environment-specific quality policy.
+RiverPulse collection name, collection version, SWORD version, and quality
+classes cannot be overridden through environment variables.
 
 See [Enable the schedule](../guides/enable-schedule.md) and
 [Day-two operations](../guides/day-two-operations.md).

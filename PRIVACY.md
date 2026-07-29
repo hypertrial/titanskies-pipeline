@@ -11,13 +11,14 @@ as its baseline. It is an operational notice, not legal advice.
 
 TitanSkies is local-first software. It has no telemetry and sends no user,
 credential, warehouse, measurement, geography, or usage data to Hypertrial.
-The software makes requests from the operator's environment to NASA Earthdata
-and geography providers. Those providers may independently log IP addresses,
-account activity, request metadata, or other information under their own
-policies.
+The software makes requests from the operator's environment to NASA Earthdata,
+PO.DAAC Hydrocron, SWORD artifact hosting, and geography providers. Those
+providers may independently log IP addresses, account activity, reach/time
+request metadata, or other information under their own policies.
 
-Do not put personal information, Earthdata credentials, signed URLs, live
-NetCDF files, downloaded boundaries, or warehouse content in issues, pull
+Do not put personal information, Earthdata credentials, Hydrocron API keys,
+signed URLs, live NetCDF or Hydrocron response files, downloaded boundaries or
+SWORD archives, generated networks, or warehouse content in issues, pull
 requests, discussions, logs, or security reports.
 
 ## Information Hypertrial may handle

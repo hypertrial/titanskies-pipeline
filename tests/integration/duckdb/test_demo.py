@@ -63,3 +63,30 @@ def test_demo_populates_admin_grid_and_exports(tmp_path):
         .fetchone()[0]
         == grid_count
     )
+
+
+def test_riverpulse_demo_is_offline_idempotent_and_revision_aware():
+    result = subprocess.run(
+        [sys.executable, "scripts/build_riverpulse_demo.py"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "idempotent_rerun=(3, 0, 0, 0)" in result.stdout
+    assert "riverpulse_events_marts.riverpulse_events_observations" in result.stdout
+    assert "current_vs_revision=" in result.stdout
+    warehouse = REPO_ROOT / ".cache" / "riverpulse-demo" / "riverpulse-demo.duckdb"
+    conn = duckdb.connect(str(warehouse), read_only=True)
+    try:
+        counts = conn.execute(
+            """
+            select
+                (select count(*) from riverpulse_events_marts.riverpulse_events_observations),
+                (select count(*) from riverpulse_events_marts.riverpulse_events_observation_revisions),
+                (select count(*) from riverpulse_events_marts.riverpulse_events_discharges)
+            """
+        ).fetchone()
+    finally:
+        conn.close()
+    assert counts == (2, 3, 28)

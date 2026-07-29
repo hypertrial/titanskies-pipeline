@@ -95,7 +95,11 @@ def test_repository_ownership_and_templates_are_actionable():
 
 def test_generated_and_live_artifacts_are_not_tracked():
     tracked = subprocess.run(
-        ["git", "ls-files"], cwd=ROOT, capture_output=True, text=True, check=True
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
     ).stdout.splitlines()
     violations = []
     synthetic_binary_fixtures = {
@@ -111,7 +115,11 @@ def test_generated_and_live_artifacts_are_not_tracked():
         if (
             path.parts[:1] == ("site",)
             or path.parts[:2] in {("dbt", "target"), ("dbt", "logs"), ("data", "raw")}
-            or path.parts[:2] == ("artifacts", "geo")
+            or path.parts[:2]
+            in {
+                ("artifacts", "geo"),
+                ("artifacts", "riverpulse"),
+            }
             or ".duckdb" in name
             or name.startswith(".coverage")
             or path.suffix
@@ -146,19 +154,37 @@ def test_generated_and_live_artifacts_are_not_tracked():
     assert not violations, violations
 
 
-def test_source_matrix_matches_geography_manifest():
-    manifest = json.loads((ROOT / "config/geography_sources.json").read_text())
+def test_source_matrix_matches_tracked_source_manifests():
+    geography_manifest = json.loads(
+        (ROOT / "config/geography_sources.json").read_text()
+    )
+    riverpulse_manifest = json.loads(
+        (ROOT / "config/riverpulse_sources.json").read_text()
+    )
     notices = (ROOT / "THIRD_PARTY_NOTICES.md").read_text()
 
-    assert manifest["sources"]
-    for source in manifest["sources"]:
+    assert geography_manifest["sources"]
+    for source in geography_manifest["sources"]:
         for field in ("id", "url", "sha256", "attribution", "license"):
+            assert source[field] in notices, f"{source['id']}.{field}"
+    assert riverpulse_manifest["sources"]
+    for source in riverpulse_manifest["sources"]:
+        for field in (
+            "id",
+            "version",
+            "url",
+            "filename",
+            "checksum_algorithm",
+            "checksum",
+            "attribution",
+            "license",
+        ):
             assert source[field] in notices, f"{source['id']}.{field}"
 
 
 def test_tracked_data_files_are_inventory_scoped_and_synthetic():
     tracked = subprocess.run(
-        ["git", "ls-files"],
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
         cwd=ROOT,
         capture_output=True,
         text=True,
@@ -167,8 +193,12 @@ def test_tracked_data_files_are_inventory_scoped_and_synthetic():
     data_suffixes = {".csv", ".json", ".nc", ".parquet"}
     expected = {
         "config/geography_sources.json",
+        "config/riverpulse_pilots.json",
+        "config/riverpulse_sources.json",
+        "dbt/seeds/riverpulse_events_contract.csv",
         "dbt/seeds/tempo_no2_contract.csv",
         "dbt/seeds/tempo_no2_std_contract.csv",
+        "tests/fixtures/cassettes/riverpulse_hydrocron.csv",
         "tests/fixtures/cassettes/tempo_cmr_granules.json",
         "tests/fixtures/geo/tempo_grid_region_weights.parquet",
         "tests/fixtures/geo/tempo_region_registry.parquet",

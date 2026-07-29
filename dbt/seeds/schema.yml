@@ -17,3 +17,15 @@ seeds:
         tests: [not_null]
       - name: accepted_quality_flags
         data_type: varchar
+  - name: riverpulse_events_contract
+    columns:
+      - name: contract_key
+        tests: [not_null, unique]
+      - name: contract_version
+        tests: [not_null]
+      - name: field_contract_version
+        tests: [not_null]
+      - name: collection_name
+        tests: [not_null]
+      - name: sword_version
+        tests: [not_null]

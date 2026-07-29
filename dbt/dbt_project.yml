@@ -1,5 +1,5 @@
 name: titanskies
-version: 0.4.0
+version: 0.5.0
 config-version: 2
 profile: titanskies
 flags:
@@ -80,6 +80,23 @@ models:
         +schema: tempo_no2_std_observability
         +materialized: table
         +tags: ["mart", "observability", "tempo", "no2_std"]
+    riverpulse_events:
+      +tags: ["riverpulse", "events"]
+      staging:
+        +schema: riverpulse_events_staging
+        +tags: ["staging", "riverpulse", "events"]
+      intermediate:
+        +schema: riverpulse_events_intermediate
+        +materialized: table
+        +tags: ["intermediate", "riverpulse", "events"]
+      marts:
+        +schema: riverpulse_events_marts
+        +materialized: table
+        +tags: ["mart", "core", "riverpulse", "events"]
+      observability:
+        +schema: riverpulse_events_observability
+        +materialized: table
+        +tags: ["mart", "observability", "riverpulse", "events"]
 seeds:
   titanskies:
     tempo_no2_contract:
@@ -89,4 +106,8 @@ seeds:
     tempo_no2_std_contract:
       +schema: tempo_no2_std_staging
       +tags: ["staging", "tempo", "no2_std"]
+      +quote_columns: false
+    riverpulse_events_contract:
+      +schema: riverpulse_events_staging
+      +tags: ["staging", "riverpulse", "events"]
       +quote_columns: false

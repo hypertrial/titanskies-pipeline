@@ -8,12 +8,12 @@ hide:
 
 <div class="ts-hero__copy" markdown>
 
-<span class="ts-eyebrow">Local-first TEMPO NO₂ warehouse</span>
+<span class="ts-eyebrow">Local-first NASA Earth observation warehouse</span>
 
 # TitanSkies Pipeline
 
-Build inspectable NASA TEMPO NO₂ warehouses for Canada, the United States, and
-Mexico with Dagster, DuckDB, and dbt.
+Build inspectable NASA TEMPO NO₂ and SWOT river warehouses with Dagster,
+DuckDB, and dbt.
 
 Hypertrial-owned MIT software. No hosted service or health advice.
 [Licence scope](concepts/scope-and-non-goals.md) ·
@@ -91,8 +91,9 @@ Consume public marts without treating pipeline output as health advice.
 
 ## Supported local scopes
 
-Version `0.4.x` ships `tempo:no2` (near-real-time) and `tempo:no2_std`
-(standard V04). This site is software documentation and does not host datasets.
+Version `0.5.x` ships `tempo:no2` (near-real-time), `tempo:no2_std` (standard
+V04), and `riverpulse:events` (SWOT RiverSP Version D). This site is software
+documentation and does not host datasets.
 
 [Choose a scope](getting-started/choose-a-scope.md), read the
 [FAQ](concepts/faq.md), or review the

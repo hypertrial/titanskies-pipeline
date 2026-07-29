@@ -4,13 +4,19 @@ import pytest
 
 from titanskies_pipeline.naming import SCOPE_NO2, SCOPE_NO2_STD
 from titanskies_pipeline.storage.duckdb.schemas.constants import (
+    RIVERPULSE_EVENTS_OPS_SCHEMA,
+    RIVERPULSE_EVENTS_RAW_SCHEMA,
     TEMPO_NO2_OPS_SCHEMA,
     TEMPO_NO2_RAW_SCHEMA,
     TEMPO_NO2_STD_OPS_SCHEMA,
     TEMPO_NO2_STD_RAW_SCHEMA,
+    TITANSKIES_OPS_SCHEMA,
     hour_revision_sequence,
+    riverpulse_ops_tbl,
+    riverpulse_raw_tbl,
     tempo_ops_tbl,
     tempo_raw_tbl,
+    warehouse_ops_tbl,
 )
 
 
@@ -54,3 +60,16 @@ def test_hour_revision_sequence_by_scope():
 def test_hour_revision_sequence_rejects_unknown_scope():
     with pytest.raises(ValueError, match="Unknown TEMPO scope"):
         hour_revision_sequence(scope="bogus")
+
+
+def test_shared_and_riverpulse_schema_helpers():
+    assert TITANSKIES_OPS_SCHEMA == "titanskies_ops"
+    assert RIVERPULSE_EVENTS_RAW_SCHEMA == "riverpulse_events_raw"
+    assert RIVERPULSE_EVENTS_OPS_SCHEMA == "riverpulse_events_ops"
+    assert riverpulse_raw_tbl("reaches") == '"riverpulse_events_raw"."reaches"'
+    assert riverpulse_ops_tbl("source_requests") == (
+        '"riverpulse_events_ops"."source_requests"'
+    )
+    assert warehouse_ops_tbl("warehouse_metadata") == (
+        '"titanskies_ops"."warehouse_metadata"'
+    )

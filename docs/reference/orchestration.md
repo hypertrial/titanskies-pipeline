@@ -56,3 +56,34 @@ backfills; see the [backfill guide](../guides/backfill-30-days.md).
 Both scopes publish through the single `titanskies_dbt` dbt asset selection,
 scoped per job via `dbt_select` (`+tag:tempo,tag:no2` or
 `+tag:tempo,tag:no2_std`).
+
+## `riverpulse:events`
+
+RiverPulse is explicit and separate from the TEMPO `ScopeSpec` registry.
+
+Assets:
+
+- `riverpulse/events/ops/network_registry`
+- `riverpulse/events/raw/source_inventory`
+- `riverpulse/events/raw/observations`
+
+Jobs:
+
+- `riverpulse_events_source_discovery`
+- `riverpulse_events_observation_ingest`
+- `riverpulse_events_dbt_build`
+- `riverpulse_events_full_pipeline`
+
+`riverpulse_events_pipeline_schedule` targets the full pipeline Sundays at
+03:00 UTC and ships stopped
+(`RIVERPULSE_EVENTS_PIPELINE_SCHEDULE_ENABLED=false`). It excludes network
+bootstrap. Discovery defaults to a rolling 90-day window; explicit backfill
+starts at `2023-08-01T00:00:00Z` and is split into calendar-year half-open
+requests. Ingest processes all planned requests serially. A failed sibling is
+recorded and fails the asset after successful siblings commit, so the dbt
+asset cannot run until a clean retry.
+
+The shared `titanskies_dbt` asset uses
+`tag:riverpulse,tag:events` for RiverPulse. The product-neutral TitanSkies dbt
+translator preserves all existing TEMPO asset keys and maps RiverPulse layers
+under `riverpulse/events`.

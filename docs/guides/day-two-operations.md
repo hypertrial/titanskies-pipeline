@@ -11,6 +11,7 @@ ingest, and dbt look healthy for that scope.
    ```dotenv
    TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED=false
    TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED=false
+   RIVERPULSE_EVENTS_PIPELINE_SCHEDULE_ENABLED=false
    ```
 
 2. Prefer **one writer** at a time against the configured DuckDB path
@@ -22,6 +23,8 @@ ingest, and dbt look healthy for that scope.
      `tempo_no2_data_quality`
    - Standard: `tempo_no2_std_observability.tempo_no2_std_granule_observability`
      and `tempo_no2_std_data_quality`
+   - RiverPulse: `riverpulse_events_observability.riverpulse_events_request_health`
+     and `riverpulse_events_scientific_quality_issues`
 
 4. Treat freshness (`stale` rows) as an operator signal. It does not change
    `is_analysis_ready`, and `*_region_latest` already filters analysis-ready
@@ -36,6 +39,7 @@ ledger remains durable:
 | --- | --- | --- |
 | NRT (`tempo:no2`) | `TEMPO_NO2_RAW_DATA_DIR` | `TEMPO_NO2_RAW_RETENTION_DAYS` (default `30`) |
 | Standard (`tempo:no2_std`) | `TEMPO_NO2_STD_RAW_DATA_DIR` | `TEMPO_NO2_STD_RAW_RETENTION_DAYS` (default `30`) |
+| RiverPulse (`riverpulse:events`) | `RIVERPULSE_RAW_DATA_DIR` | Indefinite for this milestone; snapshots are immutable |
 
 Retention keys off `processed_at`. Paths outside the configured raw root are
 rejected rather than deleted.
@@ -51,6 +55,11 @@ checksum, or source pins change. Use
 mix files from different generations. A geometry-version change is a clean
 warehouse boundary.
 
+SWORD generations follow the same immutable/checksummed pattern. Rebuild only
+from the pinned source manifest, register the new generation explicitly, and
+never mix Parquet files. Once observations exist, changing the registered
+SWORD generation is a clean warehouse boundary.
+
 ## When to enable each schedule
 
 Enable a schedule only after a validated **manual** full-pipeline run for
@@ -60,6 +69,7 @@ that scope:
 | --- | --- | --- |
 | `TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED` | `tempo_no2_hourly_pipeline_schedule` | NRT discovery → ingest → dbt succeeded manually and observability looks healthy |
 | `TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED` | `tempo_no2_std_pipeline_schedule` | Standard discovery → ingest → dbt succeeded manually; opt in explicitly (ships disabled) |
+| `RIVERPULSE_EVENTS_PIPELINE_SCHEDULE_ENABLED` | `riverpulse_events_pipeline_schedule` | Production network, one-reach smoke, full backfill, idempotent rerun, and observability review passed |
 
 Restart Dagster after changing flags. See
 [Enable the schedule](enable-schedule.md) and

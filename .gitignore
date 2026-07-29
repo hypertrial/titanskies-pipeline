@@ -40,6 +40,7 @@ dbt/logs/
 .coverage.*
 data/raw/
 artifacts/geo/
+artifacts/riverpulse/
 !tests/fixtures/geo/
 !tests/fixtures/geo/**
 !tests/fixtures/netcdf/

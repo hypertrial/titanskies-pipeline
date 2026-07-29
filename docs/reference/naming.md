@@ -1,8 +1,10 @@
 # Naming
 
-Source: `tempo`
+Sources: `tempo`, `riverpulse`
 
 Scopes: `no2` (NRT) and `no2_std` (standard V04)
+
+RiverPulse scope: `events`
 
 NRT schemas (`tempo_no2_*`):
 
@@ -25,3 +27,10 @@ Standard schemas (`tempo_no2_std_*`):
 Asset keys follow `tempo/no2/<layer>/<entity>` and
 `tempo/no2_std/<layer>/<entity>`. The NRT geography registry relation remains
 `tempo_region_registry`; the standard mirror is `tempo_no2_std_region_registry`.
+
+RiverPulse schemas use `riverpulse_events_{ops,raw,staging,intermediate,marts,observability}`.
+Its explicit ingestion keys are
+`riverpulse/events/ops/network_registry`,
+`riverpulse/events/raw/source_inventory`, and
+`riverpulse/events/raw/observations`. Shared warehouse metadata lives in
+`titanskies_ops.warehouse_metadata`.

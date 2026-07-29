@@ -1,0 +1,16 @@
+{
+  "manifest_version": "1",
+  "network_version": "17b",
+  "sources": [
+    {
+      "id": "sword_v17b_gpkg",
+      "version": "SWORD v17b",
+      "url": "https://zenodo.org/records/15299138/files/SWORD_v17b_gpkg.zip?download=1",
+      "filename": "SWORD_v17b_gpkg.zip",
+      "checksum_algorithm": "md5",
+      "checksum": "fdaaad6f6b0b58f4212b99d2ad98188c",
+      "attribution": "Altenau et al., SWOT River Database (SWORD) v17b, Zenodo record 15299138",
+      "license": "Creative Commons Attribution 4.0 International (CC BY 4.0): https://creativecommons.org/licenses/by/4.0/"
+    }
+  ]
+}

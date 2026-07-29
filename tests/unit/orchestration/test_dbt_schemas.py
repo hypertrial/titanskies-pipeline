@@ -123,3 +123,35 @@ def test_std_modeled_schema_constants():
     assert dbt_schemas.TEMPO_NO2_STD_MARTS_SCHEMA == "tempo_no2_std_marts"
     assert dbt_schemas.TEMPO_NO2_STD_STAGING_SCHEMA in dbt_schemas.DBT_MODELED_SCHEMAS
     assert dbt_schemas.TEMPO_NO2_STD_MARTS_SCHEMA in dbt_schemas.DBT_MODELED_SCHEMAS
+
+
+def test_riverpulse_asset_key_mapping_and_schemas():
+    assert (
+        dbt_schemas.resolve_source_slug(
+            {
+                "name": "stg_riverpulse_events_observation_revisions",
+                "fqn": [
+                    "titanskies",
+                    "riverpulse_events",
+                    "staging",
+                    "stg_riverpulse_events_observation_revisions",
+                ],
+            }
+        )
+        == dbt_schemas.DBT_SOURCE_RIVERPULSE_EVENTS
+    )
+    assert dbt_schemas.dbt_model_asset_key(
+        {"name": "int_riverpulse_events_current_observations"}
+    ) == AssetKey(["riverpulse", "events", "intermediate", "current_observations"])
+    assert dbt_schemas.dbt_model_asset_key(
+        {"name": "riverpulse_events_request_health"}
+    ) == AssetKey(["riverpulse", "events", "observability", "request_health"])
+    assert dbt_schemas.dbt_model_asset_key(
+        {"name": "riverpulse_events_observations"}
+    ) == AssetKey(["riverpulse", "events", "marts", "observations"])
+    assert dbt_schemas.RIVERPULSE_EVENTS_MARTS_SCHEMA == "riverpulse_events_marts"
+    assert (
+        dbt_schemas.RIVERPULSE_EVENTS_OBSERVABILITY_SCHEMA
+        in dbt_schemas.DBT_MODELED_SCHEMAS
+    )
+    assert dbt_schemas._riverpulse_events_subject("unrelated") == "unrelated"

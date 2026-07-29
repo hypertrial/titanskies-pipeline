@@ -77,3 +77,39 @@ Prefer the flag in analyst queries on hourly, country, anomaly, and grid
 marts. `*_region_latest` marts already filter to analysis-ready non-country
 regions and **do not expose** `is_analysis_ready` — do not select or filter
 that column on a latest mart.
+
+## RiverPulse science contract
+
+`dbt/seeds/riverpulse_events_contract.csv` is the sole policy source for
+`riverpulse:events`.
+
+| Field | Meaning |
+| --- | --- |
+| `contract_version` | Incremental-model invalidation version |
+| `field_contract_version` | Deterministic Hydrocron request field-set version |
+| `collection_name` / `collection_version` | Pinned `SWOT_L2_HR_RiverSP_reach_D` / `D` |
+| `sword_version` | Pinned network version `17b` |
+| `accepted_reach_quality` | Official good reach classification (`0`) |
+| `accepted_discharge_quality` | Official good discharge classification (`0`) |
+
+Every parseable source row is retained. `is_wse_ready`, `is_width_ready`, and
+`is_slope_ready` each require matching collection/network versions, good reach
+quality, and finite value plus uncertainty. `is_analysis_ready` requires all
+three. `is_discharge_ready` applies the version, official discharge quality,
+and finite value/uncertainty rule independently for each algorithm/variant.
+The raw and mart contracts also preserve `dschg_q_b` and `dschg_gq_b` as
+unconstrained/constrained summary bit fields and publish the named
+`reach_q_b` masks as `has_*` booleans.
+
+Stable observation identity is SHA-256 of collection family, reach ID,
+observation time, cycle, and pass. Revision identity adds CRID, granule
+identity, and canonical record content. Current selection orders by source
+`ingest_time`, local snapshot collection time, then deterministic revision ID.
+
+| Relation | Grain |
+| --- | --- |
+| `riverpulse_events_reaches` | registered SWORD reach |
+| `riverpulse_events_observations` | stable observation (current revision) |
+| `riverpulse_events_observation_revisions` | observation revision |
+| `riverpulse_events_discharges` | current observation × algorithm × variant |
+| `riverpulse_events_discharge_revisions` | observation revision × algorithm × variant |

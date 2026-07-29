@@ -27,6 +27,7 @@ STALE_PHRASES = (
 )
 
 SCHEDULE_ENV_VARS = (
+    "RIVERPULSE_EVENTS_PIPELINE_SCHEDULE_ENABLED",
     "TEMPO_NO2_HOURLY_PIPELINE_SCHEDULE_ENABLED",
     "TEMPO_NO2_STD_PIPELINE_SCHEDULE_ENABLED",
 )
@@ -149,15 +150,15 @@ def test_security_supported_versions_include_project_line():
 
 def test_public_models_and_registered_jobs_are_documented():
     combined = _combined_docs()
-    tempo_families = ("tempo_no2", "tempo_no2_std")
+    model_families = ("tempo_no2", "tempo_no2_std", "riverpulse_events")
     marts = {
         path.stem
-        for family in tempo_families
+        for family in model_families
         for path in (REPO_ROOT / f"dbt/models/{family}/marts").glob("*.sql")
     }
     observability = {
         path.stem
-        for family in tempo_families
+        for family in model_families
         for path in (REPO_ROOT / f"dbt/models/{family}/observability").glob("*.sql")
     }
     scope_registry = (
@@ -166,10 +167,16 @@ def test_public_models_and_registered_jobs_are_documented():
     jobs = set(
         re.findall(r'(?:discovery|ingest|dbt|full)_job_name="([^"]+)"', scope_registry)
     )
+    jobs |= {
+        "riverpulse_events_source_discovery",
+        "riverpulse_events_observation_ingest",
+        "riverpulse_events_dbt_build",
+        "riverpulse_events_full_pipeline",
+    }
 
-    assert len(marts) == 12
-    assert len(observability) == 4
-    assert len(jobs) == 8
+    assert len(marts) == 17
+    assert len(observability) == 6
+    assert len(jobs) == 12
     for name in marts | observability | jobs:
         assert name in combined, name
     for variable in SCHEDULE_ENV_VARS:

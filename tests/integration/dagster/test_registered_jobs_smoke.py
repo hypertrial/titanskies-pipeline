@@ -10,6 +10,9 @@ pytest.importorskip("dagster_dbt")
 
 
 import titanskies_pipeline.storage.duckdb.connection as connection
+from titanskies_pipeline.orchestration import (
+    assets_riverpulse_events as riverpulse_assets,
+)
 from titanskies_pipeline.orchestration import assets_tempo_no2 as assets_mod
 from titanskies_pipeline.orchestration.definitions import defs
 from titanskies_pipeline.orchestration.scope_registry import (
@@ -21,6 +24,11 @@ from titanskies_pipeline.orchestration.scope_registry import (
 def _expected_public_job_names() -> set[str]:
     return {
         spec.job_for_step(step) for spec in iter_scope_specs() for step in SCOPE_STEPS
+    } | {
+        "riverpulse_events_source_discovery",
+        "riverpulse_events_observation_ingest",
+        "riverpulse_events_dbt_build",
+        "riverpulse_events_full_pipeline",
     }
 
 
@@ -79,6 +87,24 @@ titanskies:
         assets_mod.ops,
         "process_pending_granules",
         lambda **_kwargs: SyncMetrics(0, 0, 0, 0),
+    )
+    from titanskies_pipeline.riverpulse.collection import (
+        DiscoveryMetrics as RiverPulseDiscoveryMetrics,
+    )
+    from titanskies_pipeline.riverpulse.collection import IngestMetrics
+
+    monkeypatch.setattr(
+        riverpulse_assets, "_require_registered_network", lambda **_kwargs: None
+    )
+    monkeypatch.setattr(
+        riverpulse_assets,
+        "plan_source_requests",
+        lambda **_kwargs: RiverPulseDiscoveryMetrics(1, 1, 1, 0),
+    )
+    monkeypatch.setattr(
+        riverpulse_assets,
+        "sync_pending_requests",
+        lambda **_kwargs: IngestMetrics(1, 0, 0, 1, 1, 14, 1),
     )
     yield
 

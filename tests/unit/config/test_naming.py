@@ -1,5 +1,8 @@
 from titanskies_pipeline.naming import (
+    RIVERPULSE_EVENTS,
+    SCOPE_EVENTS,
     SCOPE_NO2,
+    SOURCE_RIVERPULSE,
     SOURCE_TEMPO,
     TEMPO_NO2,
     asset_key,
@@ -29,3 +32,5 @@ def test_asset_key():
 
 def test_constants():
     assert TEMPO_NO2 == "tempo_no2"
+    assert RIVERPULSE_EVENTS == "riverpulse_events"
+    assert flat_name(SOURCE_RIVERPULSE, SCOPE_EVENTS) == "riverpulse_events"

@@ -1,4 +1,4 @@
-"""TEMPO NO2 v0.4 DuckDB raw and ops table bootstrap (NRT + standard scopes)."""
+"""TEMPO NO2 DuckDB raw and ops table bootstrap (NRT + standard scopes)."""
 
 from __future__ import annotations
 
@@ -12,12 +12,14 @@ from titanskies_pipeline.storage.duckdb.schemas.constants import (
     TEMPO_NO2_RAW_SCHEMA,
     TEMPO_NO2_STD_OPS_SCHEMA,
     TEMPO_NO2_STD_RAW_SCHEMA,
+    TITANSKIES_OPS_SCHEMA,
     hour_revision_sequence,
     tempo_ops_tbl,
     tempo_raw_tbl,
+    warehouse_ops_tbl,
 )
 
-WAREHOUSE_SCHEMA_VERSION = "0.4"
+WAREHOUSE_SCHEMA_VERSION = "0.5.0"
 
 _SCOPE_SCHEMAS: dict[str, tuple[str, str]] = {
     SCOPE_NO2: (TEMPO_NO2_RAW_SCHEMA, TEMPO_NO2_OPS_SCHEMA),
@@ -38,37 +40,62 @@ def _table_exists(conn: duckdb.DuckDBPyConnection, schema: str, table: str) -> b
     )
 
 
-def _prepare_v04_boundary(conn: duckdb.DuckDBPyConnection) -> None:
-    """Reject populated pre-v0.4 warehouses and remove empty bootstrap tables."""
-    old_tables = (
+def _prepare_v05_boundary(conn: duckdb.DuckDBPyConnection) -> None:
+    """Reject every stamped v0.4 warehouse; v0.5 intentionally has no migration."""
+    if _table_exists(conn, TITANSKIES_OPS_SCHEMA, "warehouse_metadata"):
+        shared = conn.execute(
+            f"""
+            SELECT metadata_value
+            FROM {warehouse_ops_tbl("warehouse_metadata")}
+            WHERE metadata_key = 'schema_version'
+            """
+        ).fetchone()
+        if shared and str(shared[0]) == WAREHOUSE_SCHEMA_VERSION:
+            return
+        if shared:
+            raise RuntimeError(
+                "TitanSkies warehouse schema 0.5.0 requires a clean rebuild; "
+                f"this database contains schema {shared[0]}. Back it up and "
+                "create a new warehouse."
+            )
+    if _table_exists(conn, TEMPO_NO2_OPS_SCHEMA, "warehouse_metadata"):
+        existing = conn.execute(
+            f"""
+            SELECT metadata_value
+            FROM {tempo_ops_tbl("warehouse_metadata")}
+            WHERE metadata_key = 'schema_version'
+            """
+        ).fetchone()
+        if existing:
+            raise RuntimeError(
+                "TitanSkies warehouse schema 0.5.0 requires a clean rebuild; "
+                f"this database contains schema {existing[0]}. Back it up and "
+                "create a new warehouse."
+            )
+    legacy_tables = (
         (TEMPO_NO2_RAW_SCHEMA, "region_granule_aggregates"),
+        (TEMPO_NO2_RAW_SCHEMA, "region_hour_aggregates"),
         (TEMPO_NO2_OPS_SCHEMA, "granule_inventory"),
         (TEMPO_NO2_OPS_SCHEMA, "region_registry"),
-        (TEMPO_NO2_OPS_SCHEMA, "pipeline_run_events"),
     )
-    old_present = [
-        (schema, table)
-        for schema, table in old_tables
-        if _table_exists(conn, schema, table)
-    ]
     populated = any(
-        conn.execute(f'SELECT 1 FROM "{schema}"."{table}" LIMIT 1').fetchone()
-        for schema, table in old_present
+        _table_exists(conn, schema, table)
+        and conn.execute(f'SELECT 1 FROM "{schema}"."{table}" LIMIT 1').fetchone()
+        for schema, table in legacy_tables
     )
     if populated:
         raise RuntimeError(
-            "TitanSkies warehouse schema 0.4 requires a rebuild; this database "
-            "contains pre-0.4 TEMPO rows. Back it up and create a new warehouse."
+            "TitanSkies warehouse schema 0.5.0 requires a clean rebuild; this "
+            "database contains pre-0.5 rows. Back it up and create a new warehouse."
         )
-    for schema, table in old_present:
-        conn.execute(f'DROP TABLE "{schema}"."{table}"')
 
 
 def _check_and_stamp_schema_version(conn: duckdb.DuckDBPyConnection) -> None:
-    """Validate/record the single shared warehouse schema version (tempo_no2_ops)."""
+    """Validate and record the shared warehouse schema version."""
+    conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{TITANSKIES_OPS_SCHEMA}"')
     conn.execute(
         f"""
-        CREATE TABLE IF NOT EXISTS {tempo_ops_tbl("warehouse_metadata")} (
+        CREATE TABLE IF NOT EXISTS {warehouse_ops_tbl("warehouse_metadata")} (
             metadata_key VARCHAR NOT NULL PRIMARY KEY,
             metadata_value VARCHAR NOT NULL,
             updated_at TIMESTAMP NOT NULL
@@ -77,18 +104,19 @@ def _check_and_stamp_schema_version(conn: duckdb.DuckDBPyConnection) -> None:
     )
     existing_version = conn.execute(
         f"""
-        SELECT metadata_value FROM {tempo_ops_tbl("warehouse_metadata")}
+        SELECT metadata_value FROM {warehouse_ops_tbl("warehouse_metadata")}
         WHERE metadata_key = 'schema_version'
         """
     ).fetchone()
     if existing_version and existing_version[0] != WAREHOUSE_SCHEMA_VERSION:
         raise RuntimeError(
-            "TitanSkies warehouse schema 0.4 requires a rebuild; this database "
-            f"contains schema {existing_version[0]}. Back it up and create a new warehouse."
+            "TitanSkies warehouse schema 0.5.0 requires a clean rebuild; this "
+            f"database contains schema {existing_version[0]}. Back it up and "
+            "create a new warehouse."
         )
     conn.execute(
         f"""
-        INSERT OR REPLACE INTO {tempo_ops_tbl("warehouse_metadata")}
+        INSERT OR REPLACE INTO {warehouse_ops_tbl("warehouse_metadata")}
         VALUES ('schema_version', ?, current_timestamp)
         """,
         [WAREHOUSE_SCHEMA_VERSION],
@@ -101,10 +129,8 @@ def bootstrap_tempo_tables(
     raw_schema, ops_schema = _SCOPE_SCHEMAS[scope]
     conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{raw_schema}"')
     conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{ops_schema}"')
-    if scope == SCOPE_NO2 and not _table_exists(
-        conn, raw_schema, "region_hour_aggregates"
-    ):
-        _prepare_v04_boundary(conn)
+    if scope == SCOPE_NO2:
+        _prepare_v05_boundary(conn)
     _check_and_stamp_schema_version(conn)
     conn.execute(
         f"CREATE SEQUENCE IF NOT EXISTS {hour_revision_sequence(scope=scope)} START 1"

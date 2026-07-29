@@ -6,6 +6,11 @@ from titanskies_pipeline.config.settings import (
     DBT_PROJECT_DIR,
     resolve_dbt_executable,
 )
+from titanskies_pipeline.orchestration.assets_riverpulse_events import (
+    riverpulse_events_ops_network_registry,
+    riverpulse_events_raw_observations,
+    riverpulse_events_raw_source_inventory,
+)
 from titanskies_pipeline.orchestration.assets_tempo_no2 import (
     tempo_no2_ops_region_registry,
     tempo_no2_raw_granule_inventory,
@@ -16,6 +21,10 @@ from titanskies_pipeline.orchestration.assets_tempo_no2 import (
     titanskies_dbt,
 )
 from titanskies_pipeline.orchestration.jobs import (
+    riverpulse_events_dbt_build,
+    riverpulse_events_full_pipeline,
+    riverpulse_events_observation_ingest,
+    riverpulse_events_source_discovery,
     tempo_no2_dbt_build,
     tempo_no2_full_pipeline,
     tempo_no2_granule_discovery,
@@ -26,6 +35,7 @@ from titanskies_pipeline.orchestration.jobs import (
     tempo_no2_std_hourly_ingest,
 )
 from titanskies_pipeline.orchestration.schedules import (
+    riverpulse_events_pipeline_schedule,
     tempo_no2_hourly_pipeline_schedule,
     tempo_no2_std_pipeline_schedule,
 )
@@ -39,6 +49,9 @@ defs = Definitions(
         tempo_no2_std_raw_granule_inventory,
         tempo_no2_std_raw_region_hour_aggregates,
         titanskies_dbt,
+        riverpulse_events_ops_network_registry,
+        riverpulse_events_raw_source_inventory,
+        riverpulse_events_raw_observations,
     ],
     jobs=[
         tempo_no2_granule_discovery,
@@ -49,8 +62,16 @@ defs = Definitions(
         tempo_no2_std_hourly_ingest,
         tempo_no2_std_dbt_build,
         tempo_no2_std_full_pipeline,
+        riverpulse_events_source_discovery,
+        riverpulse_events_observation_ingest,
+        riverpulse_events_dbt_build,
+        riverpulse_events_full_pipeline,
     ],
-    schedules=[tempo_no2_hourly_pipeline_schedule, tempo_no2_std_pipeline_schedule],
+    schedules=[
+        tempo_no2_hourly_pipeline_schedule,
+        tempo_no2_std_pipeline_schedule,
+        riverpulse_events_pipeline_schedule,
+    ],
     resources={
         "dbt": DbtCliResource(
             project_dir=str(DBT_PROJECT_DIR),

@@ -1,6 +1,6 @@
 # Third-party and source notices
 
-Last reviewed: 2026-07-17.
+Last reviewed: 2026-07-29.
 
 The MIT licence in this repository covers Hypertrial's original software only.
 It does not relicense NASA observations, boundary data, OpenStreetMap-derived
@@ -9,9 +9,9 @@ no downloaded NASA granules, signed download URLs, production boundary
 archives, or generated production geography/DuckDB databases. Tracked NetCDF
 and Parquet fixtures are small Hypertrial-generated synthetic files.
 
-TitanSkies and Hypertrial are not affiliated with or endorsed by NASA, the
-U.S. Census Bureau, Statistics Canada, INEGI, OpenStreetMap, or
-timezone-boundary-builder.
+TitanSkies and Hypertrial are not affiliated with or endorsed by NASA,
+PO.DAAC, the SWORD project, the U.S. Census Bureau, Statistics Canada, INEGI,
+OpenStreetMap, or timezone-boundary-builder.
 
 ## NASA TEMPO source
 
@@ -53,6 +53,51 @@ TitanSkies downloads granules locally, validates the operational grid and
 quality flags, calculates area-weighted administrative aggregates, and retains
 the latest supported-country native-grid observations. Those transformations
 are Hypertrial's, not NASA's.
+
+## NASA SWOT RiverSP and Hydrocron
+
+RiverPulse pins the reach-only Version D collection:
+
+| Field | Authoritative value |
+| --- | --- |
+| Short name/version | `SWOT_L2_HR_RiverSP_reach_D`, Version D |
+| CMR concept ID | `C3233942283-POCLOUD` |
+| Title | SWOT Level 2 River Single-Pass Vector Reach Data Product, Version D |
+| DOI | [10.5067/SWOT-RIVERSP-D](https://doi.org/10.5067/SWOT-RIVERSP-D) |
+| Collection page | [PO.DAAC RiverSP reach D](https://podaac.jpl.nasa.gov/dataset/SWOT_L2_HR_RiverSP_reach_D) |
+| Timeseries service | [PO.DAAC Hydrocron](https://podaac.github.io/hydrocron/timeseries/) |
+| Attribution | Surface Water Ocean Topography (SWOT). 2025. SWOT Level 2 River Single-Pass Vector Reach Data Product, Version D. PO.DAAC, CA, USA. |
+| Metadata access date | 2026-07-29 |
+
+Hydrocron returns a subset and representation of the underlying RiverSP
+collection; it does not change the dataset's source identity. RiverPulse
+retains raw response snapshots, normalizes reach observations and discharge
+variants, and derives current-revision/readiness relations. Those
+transformations are Hypertrial's, not NASA's or PO.DAAC's. Cite the Version D
+dataset DOI, identify Hydrocron as the access service, state the access date,
+and do not imply NASA or PO.DAAC endorsement.
+
+## SWORD v17b network source
+
+Every value below mirrors `config/riverpulse_sources.json`. The checksum pins
+the downloaded archive bytes; it is not a licence grant.
+
+### `sword_v17b_gpkg`
+
+- Version: `SWORD v17b`
+- URL: `https://zenodo.org/records/15299138/files/SWORD_v17b_gpkg.zip?download=1`
+- Filename: `SWORD_v17b_gpkg.zip`
+- Checksum algorithm: `md5`
+- Checksum: `fdaaad6f6b0b58f4212b99d2ad98188c`
+- Attribution: `Altenau et al., SWOT River Database (SWORD) v17b, Zenodo record 15299138`
+- Licence field: `Creative Commons Attribution 4.0 International (CC BY 4.0): https://creativecommons.org/licenses/by/4.0/`
+- Record: [Zenodo 15299138](https://zenodo.org/records/15299138), accessed 2026-07-29
+
+The production RiverPulse network is a bounded, transformed subset of SWORD:
+TitanSkies selects mainstem corridors, preserves boundary references, and
+publishes immutable reach/edge Parquet generations. Operators redistributing a
+network generation must retain the SWORD attribution and confirm the source
+record's CC BY 4.0 attribution requirements for their intended use.
 
 ## Production geography source matrix
 
@@ -147,7 +192,9 @@ warehouses, exports, maps, or analyses must:
 - preserve source-specific attribution and transformation notices;
 - comply with the Statistics Canada and INEGI terms;
 - satisfy ODbL notice/share-alike/access duties where applicable;
-- cite the NASA collection and DOI for NASA-derived measurements;
+- cite the applicable NASA TEMPO or SWOT collection and DOI for NASA-derived
+  measurements;
+- preserve SWORD attribution for RiverPulse network derivatives;
 - exclude credentials, signed URLs, or material not covered by the source
   terms; and
 - avoid implying provider or government endorsement.

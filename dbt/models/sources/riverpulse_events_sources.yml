@@ -1,0 +1,57 @@
+version: 2
+
+sources:
+  - name: riverpulse_events_raw
+    schema: riverpulse_events_raw
+    tables:
+      - name: reaches
+        meta:
+          dagster:
+            asset_key: [riverpulse, events, ops, network_registry]
+        columns:
+          - name: reach_id
+            tests: [not_null]
+        tests:
+          - no_duplicate_grain:
+              arguments:
+                grain_columns: [network_version, reach_id]
+      - name: reach_edges
+        meta:
+          dagster:
+            asset_key: [riverpulse, events, ops, network_registry]
+      - name: observation_revisions
+        meta:
+          dagster:
+            asset_key: [riverpulse, events, raw, observations]
+        loaded_at_field: collected_at
+        columns:
+          - name: observation_revision_id
+            tests: [not_null, unique]
+          - name: observation_id
+            tests: [not_null]
+      - name: discharge_revisions
+        meta:
+          dagster:
+            asset_key: [riverpulse, events, raw, observations]
+      - name: observation_snapshot_links
+        meta:
+          dagster:
+            asset_key: [riverpulse, events, raw, observations]
+
+  - name: riverpulse_events_ops
+    schema: riverpulse_events_ops
+    tables:
+      - name: source_requests
+        meta:
+          dagster:
+            asset_key: [riverpulse, events, raw, source_inventory]
+        columns:
+          - name: request_id
+            tests: [not_null, unique]
+      - name: source_snapshots
+        meta:
+          dagster:
+            asset_key: [riverpulse, events, raw, observations]
+        columns:
+          - name: snapshot_id
+            tests: [not_null, unique]

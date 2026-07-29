@@ -7,8 +7,16 @@ import pytest
 pytest.importorskip("dagster")
 
 from titanskies_pipeline.ingestion.tempo.sync import DiscoveryMetrics, SyncMetrics
+from titanskies_pipeline.orchestration import (
+    assets_riverpulse_events as riverpulse_assets,
+)
 from titanskies_pipeline.orchestration import assets_tempo_no2 as assets_mod
 from titanskies_pipeline.orchestration import config as orch_config
+from titanskies_pipeline.orchestration.assets_riverpulse_events import (
+    riverpulse_events_ops_network_registry,
+    riverpulse_events_raw_observations,
+    riverpulse_events_raw_source_inventory,
+)
 from titanskies_pipeline.orchestration.assets_tempo_no2 import (
     tempo_no2_ops_region_registry,
     tempo_no2_raw_granule_inventory,
@@ -16,6 +24,10 @@ from titanskies_pipeline.orchestration.assets_tempo_no2 import (
     tempo_no2_std_raw_granule_inventory,
     titanskies_dbt,
 )
+from titanskies_pipeline.riverpulse.collection import (
+    DiscoveryMetrics as RiverPulseDiscoveryMetrics,
+)
+from titanskies_pipeline.riverpulse.collection import IngestMetrics
 
 
 def test_region_registry_asset(monkeypatch):
@@ -161,3 +173,93 @@ def test_titanskies_dbt_asset_streams(monkeypatch):
         )
     )
     assert events == ["event"]
+
+
+def test_riverpulse_network_asset(monkeypatch, tmp_path):
+    artifacts = MagicMock(
+        network_version="17b",
+        artifact_mode="synthetic",
+        build_id="build",
+    )
+    monkeypatch.setattr(
+        riverpulse_assets, "load_network_artifacts", lambda *_a, **_k: artifacts
+    )
+    monkeypatch.setattr(
+        riverpulse_assets,
+        "persist_network_artifacts",
+        lambda _artifacts: {"reaches_loaded": 9, "edges_loaded": 15},
+    )
+    result = riverpulse_events_ops_network_registry.op.compute_fn.decorated_fn(
+        MagicMock(),
+        orch_config.RiverPulseNetworkConfig(
+            manifest_path=str(tmp_path / "network.json"),
+            allow_synthetic=True,
+        ),
+    )
+    assert result.metadata["network_version"] == "17b"
+    assert result.metadata["reaches_loaded"] == 9
+
+
+@pytest.mark.parametrize(
+    ("registered", "allow_synthetic", "error"),
+    [
+        (None, False, "registry is empty"),
+        (("synthetic",), False, "cannot use a synthetic"),
+        (("synthetic",), True, None),
+        (("production",), False, None),
+    ],
+)
+def test_riverpulse_registered_network_guard(
+    monkeypatch, registered, allow_synthetic, error
+):
+    manager = MagicMock()
+    connection = manager.__enter__.return_value
+    connection.execute.return_value.fetchone.return_value = registered
+    monkeypatch.setattr(riverpulse_assets, "get_connection", lambda: manager)
+
+    if error:
+        with pytest.raises(RuntimeError, match=error):
+            riverpulse_assets._require_registered_network(
+                allow_synthetic=allow_synthetic
+            )
+    else:
+        riverpulse_assets._require_registered_network(allow_synthetic=allow_synthetic)
+
+
+def test_riverpulse_discovery_and_ingest_assets(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        riverpulse_assets, "_require_registered_network", lambda **_kwargs: None
+    )
+    captured = {}
+    monkeypatch.setattr(
+        riverpulse_assets,
+        "plan_source_requests",
+        lambda **kwargs: (
+            captured.update(kwargs) or RiverPulseDiscoveryMetrics(1, 1, 1, 0)
+        ),
+    )
+    discovery = riverpulse_events_raw_source_inventory.op.compute_fn.decorated_fn(
+        MagicMock(),
+        orch_config.RiverPulseDiscoveryConfig(
+            window_start_utc="2024-01-01T00:00:00Z",
+            window_end_utc="2025-01-01T00:00:00Z",
+            reach_ids=["RP1001"],
+            allow_synthetic=True,
+        ),
+    )
+    assert discovery.metadata["requests_planned"] == 1
+    assert captured["reach_ids"] == ["RP1001"]
+
+    monkeypatch.setattr(
+        riverpulse_assets,
+        "sync_pending_requests",
+        lambda **kwargs: captured.update(kwargs) or IngestMetrics(1, 0, 0, 3, 3, 42, 3),
+    )
+    ingest = riverpulse_events_raw_observations.op.compute_fn.decorated_fn(
+        MagicMock(),
+        orch_config.RiverPulseIngestConfig(
+            max_requests=1, raw_data_dir=str(tmp_path / "raw")
+        ),
+    )
+    assert ingest.metadata["observation_revisions_inserted"] == 3
+    assert captured["max_requests"] == 1

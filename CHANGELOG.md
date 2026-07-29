@@ -8,6 +8,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Added
 
+- Added the permanent `riverpulse:events` lane for bounded Sacramento, Rhine,
+  and Murray mainstem corridors. The lane verifies pinned SWORD v17b source
+  bytes, selects at most 100 connected reaches per pilot, publishes immutable
+  reach/edge Parquet generations, and registers topology and provenance in the
+  shared DuckDB warehouse.
+- Added revision-safe, version-pinned
+  `SWOT_L2_HR_RiverSP_reach_D` collection through Hydrocron. Deterministic
+  reach/window requests, checksum-addressed response snapshots, stable
+  observation identities, content/CRID-aware revisions, normalized discharge
+  variants, partial-batch recovery, transient retry policy, and secret-safe
+  request logging are retained in RiverPulse raw/ops schemas.
+- Added explicit RiverPulse Dagster assets and jobs
+  (`riverpulse_events_source_discovery`,
+  `riverpulse_events_observation_ingest`, `riverpulse_events_dbt_build`, and
+  `riverpulse_events_full_pipeline`) with a stopped-by-default Sunday 03:00 UTC
+  schedule. The full job intentionally excludes the independently reviewed
+  network bootstrap.
+- Added five RiverPulse public marts, deterministic current-revision
+  intermediate models, complete observation/discharge revision history,
+  request-health and scientific-quality observability, and a sole
+  `riverpulse_events_contract.csv` scientific policy seed.
+- Added the offline `make riverpulse-demo` synthetic vertical slice and an
+  opt-in, disposable one-reach `make riverpulse-live-smoke`. Production
+  SWORD/Hydrocron files remain untracked.
+- Added [Upgrade to v0.5](docs/getting-started/upgrade-v05.md), production
+  network-build guidance, RiverPulse product notes, and corresponding
+  architecture, configuration, orchestration, warehouse, recovery, security,
+  privacy, and source notices.
 - Added a second, independent TEMPO NO2 scope, `tempo:no2_std` (standard,
   V04, CMR `C3685896708-LARC_CLOUD`, DOI `10.5067/IS-40E/TEMPO/NO2_L3.004`),
   alongside the existing `tempo:no2` (NRT) scope. The standard scope ships
@@ -25,6 +53,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Changed
 
+- Bumped the package, dbt project, and warehouse schema version to `0.5.0`.
+  The shared stamp now lives in `titanskies_ops.warehouse_metadata`; populated
+  v0.4 warehouses fail with clean-rebuild guidance instead of being mutated.
+- Replaced the TEMPO-only bootstrap entry point with
+  `bootstrap_all_tables()`, which explicitly invokes TEMPO and RiverPulse
+  table bootstraps without introducing a connector framework.
+- Renamed the TEMPO-specific dbt translator to the product-neutral
+  `TitanSkiesDagsterDbtTranslator` while preserving existing TEMPO asset keys
+  and adding explicit RiverPulse source/model mappings.
 - Reorganized and thickened documentation to the Hypertrial pipeline IA
   (audience hubs, concept sextet, query recipes, day-two / validate-recover
   guides, Material site chrome, and `site_url` for GitHub Pages).

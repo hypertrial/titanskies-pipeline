@@ -10,6 +10,11 @@ Canonical repository notices:
 - [Privacy notice](https://github.com/hypertrial/titanskies-pipeline/blob/main/PRIVACY.md)
 - [MIT licence](https://github.com/hypertrial/titanskies-pipeline/blob/main/LICENSE)
 
-MIT covers Hypertrial's original code only. Downloaded source data, reference
-geography, and generated outputs retain their applicable source terms.
-TitanSkies is research and engineering software, not health or exposure advice.
+MIT covers Hypertrial's original code only. NASA TEMPO and SWOT RiverSP
+observations, the SWORD network, reference geography, and generated outputs
+retain their applicable source terms. Cite the specific NASA collection and
+SWORD version used, preserve transformation notices, and do not imply NASA,
+PO.DAAC, SWORD, or geography-provider endorsement.
+
+TitanSkies is research and engineering software, not health, exposure,
+flood-warning, navigation, water-allocation, or emergency-response advice.

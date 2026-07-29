@@ -91,6 +91,41 @@ class HourlyIngestConfig(Config):
     allow_synthetic: bool = False
 
 
+class RiverPulseNetworkConfig(Config):
+    manifest_path: str | None = None
+    allow_synthetic: bool = False
+
+
+class RiverPulseDiscoveryConfig(Config):
+    window_start_utc: str | None = None
+    window_end_utc: str | None = None
+    backfill: bool = False
+    reach_ids: list[str] | None = None
+    allow_synthetic: bool = False
+
+    @model_validator(mode="after")
+    def _validate_window(self) -> "RiverPulseDiscoveryConfig":
+        has_start = self.window_start_utc is not None
+        has_end = self.window_end_utc is not None
+        if has_start != has_end:
+            raise ValueError(
+                "window_start_utc and window_end_utc must both be set together"
+            )
+        if has_start and has_end:
+            start = parse_iso_utc(self.window_start_utc or "")
+            end = parse_iso_utc(self.window_end_utc or "")
+            if start >= end:
+                raise ValueError(
+                    "window_start_utc must be strictly before window_end_utc"
+                )
+        return self
+
+
+class RiverPulseIngestConfig(Config):
+    max_requests: int | None = Field(default=None, ge=1)
+    raw_data_dir: str | None = None
+
+
 class DbtBuildConfig(GuardrailConfig):
     progress_log_interval_events: int = Field(default=20, ge=1)
     dbt_select: str | None = None
@@ -116,6 +151,35 @@ def _merge_op_configs(*configs: dict) -> dict:
     for config in configs:
         merged["ops"].update(config.get("ops", {}))
     return merged
+
+
+def riverpulse_events_discovery_run_config() -> dict:
+    return _op_config(
+        AssetKey(["riverpulse", "events", "raw", "source_inventory"]),
+        RiverPulseDiscoveryConfig(),
+    )
+
+
+def riverpulse_events_ingest_run_config() -> dict:
+    return _op_config(
+        AssetKey(["riverpulse", "events", "raw", "observations"]),
+        RiverPulseIngestConfig(),
+    )
+
+
+def riverpulse_events_dbt_run_config() -> dict:
+    return _op_config(
+        AssetKey(["titanskies_dbt"]),
+        DbtBuildConfig(dbt_select="tag:riverpulse,tag:events"),
+    )
+
+
+def riverpulse_events_full_pipeline_run_config() -> dict:
+    return _merge_op_configs(
+        riverpulse_events_discovery_run_config(),
+        riverpulse_events_ingest_run_config(),
+        riverpulse_events_dbt_run_config(),
+    )
 
 
 def region_registry_run_config(spec: ScopeSpec) -> dict:
@@ -198,6 +262,9 @@ __all__ = [
     "GuardrailConfig",
     "HourlyIngestConfig",
     "RegionRegistryConfig",
+    "RiverPulseDiscoveryConfig",
+    "RiverPulseIngestConfig",
+    "RiverPulseNetworkConfig",
     "TEMPO_NO2_OPS_REGION_REGISTRY",
     "TEMPO_NO2_RAW_GRANULE_INVENTORY",
     "TEMPO_NO2_RAW_REGION_HOUR_AGGREGATES",
@@ -206,6 +273,10 @@ __all__ = [
     "TEMPO_NO2_STD_RAW_REGION_HOUR_AGGREGATES",
     "full_pipeline_run_config",
     "region_registry_run_config",
+    "riverpulse_events_dbt_run_config",
+    "riverpulse_events_discovery_run_config",
+    "riverpulse_events_full_pipeline_run_config",
+    "riverpulse_events_ingest_run_config",
     "scope_run_config",
     "tempo_no2_dbt_build_run_config",
     "tempo_no2_full_pipeline_run_config",

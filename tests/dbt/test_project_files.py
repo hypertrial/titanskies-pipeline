@@ -8,3 +8,6 @@ def test_dbt_project_has_tempo_no2_layers():
     assert "tempo_no2_staging" in project
     assert "tempo_no2_marts" in project
     assert "tempo_no2_observability" in project
+    assert "riverpulse_events_staging" in project
+    assert "riverpulse_events_marts" in project
+    assert "riverpulse_events_observability" in project

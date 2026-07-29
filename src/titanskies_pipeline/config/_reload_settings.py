@@ -8,6 +8,7 @@ from types import ModuleType
 _SETTINGS_CHAIN: tuple[str, ...] = (
     "titanskies_pipeline.config.settings_warehouse",
     "titanskies_pipeline.config.settings_tempo",
+    "titanskies_pipeline.config.settings_riverpulse",
     "titanskies_pipeline.config.settings",
 )
 

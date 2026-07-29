@@ -173,22 +173,40 @@ std marts. Keep NRT and std queries on their own schemas and registry FQNs
 (`tempo_region_registry` vs `tempo_no2_std_region_registry`). Do not expect
 demo SQL that targets std relations to populate without that work.
 
-## Corrupt or pre-0.4 warehouse
+## Hydrocron request or RiverPulse quality failure
+
+**Symptom.** `riverpulse_events_observation_ingest` fails, request health shows
+`failed`, or current observations are not analysis-ready.
+
+**Diagnostic.** Inspect status, attempts, HTTP status, and sanitized error in
+`riverpulse_events_observability.riverpulse_events_request_health`. HTTP 429,
+timeouts, and 5xx responses retry three times; a documented no-data 400 is a
+successful zero-row request. Other 400/413 responses need operator action.
+Use `riverpulse_events_scientific_quality_issues` to distinguish pipeline
+failure from preserved source-quality rows.
+
+**Fix.** Correct the network, request-field, or throttling issue and rerun.
+Do not delete successful siblings or snapshots. Checksum, path containment,
+topology, and collection/SWORD mismatches are integrity failures rather than
+quality filters.
+
+## Corrupt or pre-0.5 warehouse
 
 **Symptom.** Startup refuses the warehouse, schema version errors mention a
-0.4 rebuild, or derived tables look partially upgraded.
+0.5 rebuild, or derived tables look partially upgraded.
 
-**Diagnostic.** Confirm whether the DuckDB file predates schema `0.4` or is
-corrupt (failed compact, killed writer, mixed generations). Populated
-pre-0.4 warehouses intentionally fail at startup.
+**Diagnostic.** Confirm whether the DuckDB file predates schema `0.5.0` or is
+corrupt (failed compact, killed writer, mixed generations). Populated v0.4
+warehouses intentionally fail at startup.
 
 **Fix.** Stop Dagster and any DuckDB clients. Preserve the raw download
 directories and reviewed geography source cache. Move the corrupt/old
 database and its WAL/SHM files out of the working path. Point `DUCKDB_PATH`
 at a new file, initialize a clean warehouse, register geography, and rerun
 ingestion/dbt per scope. Follow the
-[v0.3 to v0.4 upgrade guide](../getting-started/upgrade-v04.md) (earlier
-rebuild notes: [v0.3](../getting-started/upgrade-v03.md),
+[v0.5 upgrade guide](../getting-started/upgrade-v05.md) (earlier rebuild
+notes: [v0.4](../getting-started/upgrade-v04.md),
+[v0.3](../getting-started/upgrade-v03.md),
 [v0.2](../getting-started/upgrade-v02.md)). Never copy partially derived
 tables into the replacement.
 

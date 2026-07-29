@@ -7,9 +7,13 @@ pytest.importorskip("dagster")
 from dagster import AssetKey, DefaultScheduleStatus, build_schedule_context
 
 from titanskies_pipeline.orchestration import tempo_ops as ops
-from titanskies_pipeline.orchestration.config import tempo_no2_full_pipeline_run_config
+from titanskies_pipeline.orchestration.config import (
+    riverpulse_events_full_pipeline_run_config,
+    tempo_no2_full_pipeline_run_config,
+)
 from titanskies_pipeline.orchestration.definitions import defs
 from titanskies_pipeline.orchestration.schedules import (
+    riverpulse_events_pipeline_schedule,
     tempo_no2_hourly_pipeline_schedule,
     tempo_no2_std_pipeline_schedule,
 )
@@ -27,7 +31,7 @@ def _reload_schedules_module(monkeypatch, *, hourly: bool = False):
     return importlib.reload(schedules_mod)
 
 
-def test_definitions_expose_tempo_jobs_only():
+def test_definitions_expose_shipped_product_jobs():
     expected = {
         "tempo_no2_granule_discovery",
         "tempo_no2_hourly_ingest",
@@ -37,6 +41,10 @@ def test_definitions_expose_tempo_jobs_only():
         "tempo_no2_std_hourly_ingest",
         "tempo_no2_std_dbt_build",
         "tempo_no2_std_full_pipeline",
+        "riverpulse_events_source_discovery",
+        "riverpulse_events_observation_ingest",
+        "riverpulse_events_dbt_build",
+        "riverpulse_events_full_pipeline",
     }
     assert {
         job.name for job in defs.resolve_all_job_defs() if job.name != "__ASSET_JOB"
@@ -56,6 +64,11 @@ def test_definitions_expose_tempo_asset_keys():
     assert expected <= asset_keys
     known_tempo_scopes = {("tempo", "no2"), ("tempo", "no2_std")}
     assert all(key[:2] in known_tempo_scopes for key in asset_keys if key[0] == "tempo")
+    assert {
+        ("riverpulse", "events", "ops", "network_registry"),
+        ("riverpulse", "events", "raw", "source_inventory"),
+        ("riverpulse", "events", "raw", "observations"),
+    } <= asset_keys
 
 
 def test_hourly_schedule_targets_full_pipeline_and_config():
@@ -131,3 +144,32 @@ def test_dbt_sources_preserve_ingestion_order_in_asset_graph():
     raw_regions = AssetKey(["tempo", "no2", "raw", "region_hour_aggregates"])
     staging_regions = AssetKey(["tempo", "no2", "staging", "region_hour_aggregates"])
     assert raw_regions in graph.get(staging_regions).parent_keys
+
+
+def test_riverpulse_schedule_and_full_pipeline_exclude_network_bootstrap():
+    assert riverpulse_events_pipeline_schedule.default_status == (
+        DefaultScheduleStatus.STOPPED
+    )
+    assert (
+        riverpulse_events_pipeline_schedule.job_name
+        == "riverpulse_events_full_pipeline"
+    )
+    run_config = (
+        riverpulse_events_pipeline_schedule.evaluate_tick(build_schedule_context())
+        .run_requests[0]
+        .run_config
+    )
+    assert run_config == riverpulse_events_full_pipeline_run_config()
+    job = defs.resolve_job_def("riverpulse_events_full_pipeline")
+    selected = {tuple(key.path) for key in job.asset_layer.selected_asset_keys}
+    assert ("riverpulse", "events", "ops", "network_registry") not in selected
+    assert ("riverpulse", "events", "raw", "source_inventory") in selected
+    assert ("riverpulse", "events", "raw", "observations") in selected
+    assert any(key[:3] == ("riverpulse", "events", "marts") for key in selected)
+
+
+def test_riverpulse_dbt_dependency_follows_observation_ingest():
+    graph = defs.resolve_asset_graph()
+    raw = AssetKey(["riverpulse", "events", "raw", "observations"])
+    staging = AssetKey(["riverpulse", "events", "staging", "observation_revisions"])
+    assert raw in graph.get(staging).parent_keys

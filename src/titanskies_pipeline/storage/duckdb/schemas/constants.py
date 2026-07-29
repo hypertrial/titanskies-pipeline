@@ -3,16 +3,21 @@
 from __future__ import annotations
 
 from titanskies_pipeline.naming import (
+    SCOPE_EVENTS,
     SCOPE_NO2,
     SCOPE_NO2_STD,
+    SOURCE_RIVERPULSE,
     SOURCE_TEMPO,
     schema_name,
 )
 
+TITANSKIES_OPS_SCHEMA = "titanskies_ops"
 TEMPO_NO2_RAW_SCHEMA = schema_name(SOURCE_TEMPO, SCOPE_NO2, "raw")
 TEMPO_NO2_OPS_SCHEMA = schema_name(SOURCE_TEMPO, SCOPE_NO2, "ops")
 TEMPO_NO2_STD_RAW_SCHEMA = schema_name(SOURCE_TEMPO, SCOPE_NO2_STD, "raw")
 TEMPO_NO2_STD_OPS_SCHEMA = schema_name(SOURCE_TEMPO, SCOPE_NO2_STD, "ops")
+RIVERPULSE_EVENTS_RAW_SCHEMA = schema_name(SOURCE_RIVERPULSE, SCOPE_EVENTS, "raw")
+RIVERPULSE_EVENTS_OPS_SCHEMA = schema_name(SOURCE_RIVERPULSE, SCOPE_EVENTS, "ops")
 
 _RAW_SCHEMAS_BY_SCOPE = {
     SCOPE_NO2: TEMPO_NO2_RAW_SCHEMA,
@@ -34,6 +39,18 @@ def _known_scopes(mapping: dict[str, str]) -> str:
 
 def tempo_q(schema: str, table: str) -> str:
     return f'"{schema}"."{table}"'
+
+
+def warehouse_ops_tbl(name: str) -> str:
+    return tempo_q(TITANSKIES_OPS_SCHEMA, name)
+
+
+def riverpulse_raw_tbl(name: str) -> str:
+    return tempo_q(RIVERPULSE_EVENTS_RAW_SCHEMA, name)
+
+
+def riverpulse_ops_tbl(name: str) -> str:
+    return tempo_q(RIVERPULSE_EVENTS_OPS_SCHEMA, name)
 
 
 def tempo_raw_tbl(name: str, *, scope: str = SCOPE_NO2) -> str:
@@ -69,12 +86,18 @@ def hour_revision_sequence(*, scope: str = SCOPE_NO2) -> str:
 
 
 __all__ = [
+    "RIVERPULSE_EVENTS_OPS_SCHEMA",
+    "RIVERPULSE_EVENTS_RAW_SCHEMA",
     "TEMPO_NO2_OPS_SCHEMA",
     "TEMPO_NO2_RAW_SCHEMA",
     "TEMPO_NO2_STD_OPS_SCHEMA",
     "TEMPO_NO2_STD_RAW_SCHEMA",
+    "TITANSKIES_OPS_SCHEMA",
     "hour_revision_sequence",
+    "riverpulse_ops_tbl",
+    "riverpulse_raw_tbl",
     "tempo_ops_tbl",
     "tempo_q",
     "tempo_raw_tbl",
+    "warehouse_ops_tbl",
 ]

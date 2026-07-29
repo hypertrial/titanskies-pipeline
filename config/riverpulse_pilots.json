@@ -1,0 +1,21 @@
+{
+  "selection_version": "1",
+  "max_reaches_per_system": 100,
+  "systems": [
+    {
+      "basin_key": "sacramento",
+      "continent": "na",
+      "river_name_aliases": ["Sacramento River", "Sacramento"]
+    },
+    {
+      "basin_key": "rhine",
+      "continent": "eu",
+      "river_name_aliases": ["Rhine", "Rhein"]
+    },
+    {
+      "basin_key": "murray",
+      "continent": "oc",
+      "river_name_aliases": ["Murray River", "Murray"]
+    }
+  ]
+}

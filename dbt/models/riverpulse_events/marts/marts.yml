@@ -1,0 +1,34 @@
+version: 2
+
+models:
+  - name: riverpulse_events_reaches
+    description: Registered SWORD v17b pilot reaches with WKB geometry and bounded topology.
+    columns:
+      - name: reach_id
+        tests: [not_null, unique]
+      - name: geometry_wkb
+        tests: [not_null]
+  - name: riverpulse_events_observations
+    description: Current Version D Hydrocron revision for each stable SWOT observation.
+    columns:
+      - name: observation_id
+        tests: [not_null, unique]
+      - name: is_analysis_ready
+        tests: [not_null]
+  - name: riverpulse_events_observation_revisions
+    description: Complete immutable revision history for SWOT reach observations.
+    columns:
+      - name: observation_revision_id
+        tests: [not_null, unique]
+  - name: riverpulse_events_discharges
+    description: Current normalized discharge estimates by algorithm and constraint variant.
+    columns:
+      - name: discharge_revision_id
+        tests: [not_null, unique]
+      - name: is_discharge_ready
+        tests: [not_null]
+  - name: riverpulse_events_discharge_revisions
+    description: Complete normalized discharge revision history.
+    columns:
+      - name: discharge_revision_id
+        tests: [not_null, unique]

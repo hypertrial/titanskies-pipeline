@@ -1,0 +1,16 @@
+version: 2
+
+models:
+  - name: int_riverpulse_events_current_observations
+    description: Deterministic current Hydrocron revision for each stable SWOT observation.
+    columns:
+      - name: observation_id
+        tests: [not_null, unique]
+      - name: observation_revision_id
+        tests: [not_null, unique]
+
+  - name: int_riverpulse_events_current_discharges
+    description: Algorithm and constrained/unconstrained discharge rows for current observations.
+    columns:
+      - name: discharge_id
+        tests: [not_null, unique]
