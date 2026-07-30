@@ -34,6 +34,8 @@ from titanskies_pipeline.storage.duckdb.schemas.constants import (
     plumegraph_raw_tbl,
 )
 
+_ANALYSIS_REGION_GRID_SIZE_DEGREES = 1e-9
+
 
 @dataclass(frozen=True)
 class Facility:
@@ -239,9 +241,14 @@ def build_analysis_regions(
 ) -> list[dict[str, object]]:
     if aoi_radius_km <= 0:
         raise ValueError("PlumeGraph AOI radius must be positive")
-    cohort = [facility for facility in facilities if facility.is_cohort]
+    cohort = sorted(
+        (facility for facility in facilities if facility.is_cohort),
+        key=lambda facility: facility.facility_id,
+    )
     if not cohort:
         raise ValueError("PlumeGraph analysis regions require cohort facilities")
+    from shapely import set_precision
+
     Transformer, Point, mapping, transform, unary_union, dumps = _geometry_modules()
     to_equal_area = Transformer.from_crs(
         "EPSG:4326", "EPSG:5070", always_xy=True
@@ -279,10 +286,13 @@ def build_analysis_regions(
     regions: list[dict[str, object]] = []
     for group in groups:
         facility_ids = sorted(projected[index][0].facility_id for index in group)
-        geometry = transform(
-            to_wgs84,
-            unary_union([projected[index][1] for index in group]),
-        )
+        geometry = set_precision(
+            transform(
+                to_wgs84,
+                unary_union([projected[index][1] for index in group]),
+            ),
+            grid_size=_ANALYSIS_REGION_GRID_SIZE_DEGREES,
+        ).normalize()
         canonical_geometry = canonical_json(mapping(geometry))
         region_id = sha256_identity(
             canonical_json(facility_ids),
@@ -298,7 +308,7 @@ def build_analysis_regions(
                 "geometry_geojson": json.loads(canonical_geometry),
             }
         )
-    return sorted(regions, key=lambda item: str(item["analysis_region_id"]))
+    return sorted(regions, key=lambda item: tuple(item["facility_ids"]))
 
 
 def persist_cohort(

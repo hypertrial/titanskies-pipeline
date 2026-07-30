@@ -78,7 +78,6 @@ markers = [
 [tool.coverage.run]
 branch = true
 source = ["src/titanskies_pipeline"]
-omit = ["src/titanskies_pipeline/storage/duckdb/profile/*"]
 
 [tool.coverage.report]
 precision = 2

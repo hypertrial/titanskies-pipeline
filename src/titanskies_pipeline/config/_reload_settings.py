@@ -20,8 +20,3 @@ def reload_all_settings_modules() -> ModuleType:
         out = importlib.reload(importlib.import_module(name))
     assert out is not None
     return out
-
-
-reload_settings = reload_all_settings_modules
-
-__all__ = ["reload_all_settings_modules", "reload_settings"]

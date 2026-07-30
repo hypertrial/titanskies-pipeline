@@ -123,7 +123,17 @@ def test_regions_merge_overlaps_and_keep_separate_groups():
         cohort_version="v1",
         aoi_radius_km=10,
     )
+    reordered = sources.build_analysis_regions(
+        list(reversed(facilities)),
+        cohort_version="v1",
+        aoi_radius_km=10,
+    )
     assert [region["facility_ids"] for region in regions] == [["a", "b"], ["c"]]
+    assert [region["analysis_region_id"] for region in regions] == [
+        "741667aa03c41c1bdf40a78c65a9a553e378808a92c1dbc00d51ff36bcf5142a",
+        "dd0319b746a9749c24f65c3631e5c1790a121d990c843be85b9ce85890e0a9a6",
+    ]
+    assert regions == reordered
     assert all(region["geometry_wkb"] for region in regions)
     with pytest.raises(ValueError, match="radius"):
         sources.build_analysis_regions(
