@@ -38,6 +38,7 @@ from titanskies_pipeline.plumegraph.sources import (
 )
 from titanskies_pipeline.plumegraph.validation import ValidationMetrics
 from titanskies_pipeline.reproductions.preflight import PreflightMetrics
+from titanskies_pipeline.reproductions.readiness import ResolutionMetrics
 from titanskies_pipeline.riverpulse.collection import (
     DiscoveryMetrics as RiverPulseDiscoveryMetrics,
 )
@@ -204,7 +205,9 @@ def test_reproduction_preflight_assets(monkeypatch, tmp_path):
             required_source_count=1,
             object_count=1,
             total_bytes=10,
+            planned_max_bytes=10,
             unknown_size_count=0,
+            unbounded_size_count=0,
             blocking_sources=(),
             manifest_sha256="a" * 64,
             scientific_contract_sha256="b" * 64,
@@ -231,6 +234,52 @@ def test_reproduction_preflight_assets(monkeypatch, tmp_path):
     assert result.metadata["profile_id"] == "andreadis2025"
     assert captured[1][1]["manifest_path"] is None
     assert captured[1][1]["inventory_path"] is None
+
+
+def test_reproduction_inventory_assets(monkeypatch, tmp_path):
+    captured = []
+
+    def fake_resolver(profile_id, **kwargs):
+        captured.append((profile_id, kwargs))
+        return ResolutionMetrics(
+            profile_id=profile_id,
+            status="complete",
+            inventory_path=str(kwargs["output_path"]),
+            inventory_sha256="a" * 64,
+            resolution_bundle_sha256="b" * 64,
+            source_count=1,
+            object_count=1,
+            resolved_source_count=1,
+            operator_input_required_count=0,
+            transient_error_count=0,
+            definitively_unavailable_count=0,
+        )
+
+    monkeypatch.setattr(
+        reproduction_assets, "resolve_reproduction_sources", fake_resolver
+    )
+    config = orch_config.ReproductionDiscoveryConfig(
+        manifest_path=str(tmp_path / "manifest.json"),
+        evidence_path=str(tmp_path / "evidence.json"),
+        import_directory=str(tmp_path / "imports"),
+        output_inventory_path=str(tmp_path / "inventory.json"),
+        timeout_seconds=12,
+    )
+    result = reproduction_assets.sun2025_repro_source_inventory_asset.op.compute_fn.decorated_fn(
+        MagicMock(), config
+    )
+    assert result.metadata["profile_id"] == "sun2025"
+    assert captured[0][1]["timeout_seconds"] == 12
+    assert captured[0][1]["evidence_path"].is_absolute()
+
+    result = reproduction_assets.andreadis2025_repro_source_inventory_asset.op.compute_fn.decorated_fn(
+        MagicMock(), orch_config.ReproductionDiscoveryConfig()
+    )
+    assert result.metadata["profile_id"] == "andreadis2025"
+    assert captured[1][1]["manifest_path"] is None
+    assert ".cache/reproduction_readiness/andreadis2025" in str(
+        captured[1][1]["output_path"]
+    )
 
 
 def test_riverpulse_network_asset(monkeypatch, tmp_path):

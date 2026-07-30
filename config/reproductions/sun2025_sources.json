@@ -1,6 +1,9 @@
 {
   "profile_id": "sun2025",
-  "profile_version": "1.0.0",
+  "profile_version": "1.1.0",
+  "inventory_format": "reproduction-source-inventory-v2",
+  "resolution_format": "reproduction-resolution-v1",
+  "resolution_evidence": "sun2025_resolution.json",
   "paper_doi": "10.1029/2025JD044565",
   "temporal_window": {
     "start": "2023-08-02T00:00:00Z",
@@ -35,12 +38,17 @@
       "required": true,
       "required_exactness": "exact",
       "allowed_fallbacks": [],
-      "url": "https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2025JD044565",
+      "url": "https://agupubs.onlinelibrary.wiley.com/doi/suppl/10.1029/2025JD044565/supinfo/2025JD044565-sup-0001-Supporting%20Information%20SI-S01.pdf",
       "attribution": "Paper authors and supplementary information",
-      "license": "Publisher supplementary-material terms",
+      "license": "Creative Commons Attribution 4.0 International",
       "request": {
         "expected_facility_count": 14,
-        "review_required": true
+        "review_required": true,
+        "normalized_cohort": "sun2025_facilities.csv",
+        "normalized_cohort_sha256": "3070e3b6d0cd7fcfdb738da73344a7c40a3914232ecba10afe837dabaf829c7a",
+        "analysis_window_km": 30,
+        "analysis_half_width_km": 15,
+        "analysis_extent_evidence": "Paper method: 30 km by 30 km source-centered wind-rotation window"
       }
     },
     {
@@ -59,6 +67,7 @@
       "license": "Copernicus data licence",
       "request": {
         "dataset": "reanalysis-era5-single-levels",
+        "facility_cohort": "sun2025_facilities.csv",
         "variables": [
           "10m_u_component_of_wind",
           "10m_v_component_of_wind",
@@ -85,6 +94,7 @@
       "license": "Copernicus data licence",
       "request": {
         "dataset": "reanalysis-era5-pressure-levels",
+        "facility_cohort": "sun2025_facilities.csv",
         "variables": [
           "u_component_of_wind",
           "v_component_of_wind",
@@ -155,6 +165,11 @@
       "license": "NASA data and information policy",
       "request": {
         "year": 2024,
+        "dataset_family": "GEOS-CF v1",
+        "required_revision": "paper-time analysis/replay revision",
+        "variables": [
+          "nitrogen_dioxide"
+        ],
         "purpose": "chemical-field comparison and sensitivity"
       }
     },

@@ -1,0 +1,97 @@
+{
+  "format": "reproduction-resolution-v1",
+  "profile_id": "sun2025",
+  "sources": [
+    {
+      "source_id": "tempo_no2_l2_v03",
+      "outcome": "resolved",
+      "evidence": [
+        {
+          "url": "https://cmr.earthdata.nasa.gov/search/collections.umm_json?concept_id=C2930725014-LARC_CLOUD",
+          "retrieved_at": "2026-07-30T10:50:30Z",
+          "sha256": "436e431f5dd56d69ed21ee33cfb49459349d06b8b8fcaa9e1f9b24b6bca9f056"
+        }
+      ]
+    },
+    {
+      "source_id": "facility_cohort_14",
+      "outcome": "resolved",
+      "import_filename": "sun2025_facilities.csv",
+      "import_sha256": "3070e3b6d0cd7fcfdb738da73344a7c40a3914232ecba10afe837dabaf829c7a",
+      "canonical_url": "https://agupubs.onlinelibrary.wiley.com/doi/suppl/10.1029/2025JD044565/supinfo/2025JD044565-sup-0001-Supporting%20Information%20SI-S01.pdf",
+      "source_revision": "paper-supplement-table-s1-normalized-v1",
+      "evidence": [
+        {
+          "url": "https://agupubs.onlinelibrary.wiley.com/doi/suppl/10.1029/2025JD044565/supinfo/2025JD044565-sup-0001-Supporting%20Information%20SI-S01.pdf",
+          "retrieved_at": "2026-07-30T10:17:14Z",
+          "sha256": "fad1caf956a85b7434c74dba21b6daa9df566140027ced77e194acedd4d59826"
+        },
+        {
+          "url": "https://campd.epa.gov/tools/facility-map/",
+          "retrieved_at": "2026-07-30T10:50:49Z",
+          "sha256": "59aef76e6d9cbd041f2b2cd0e91f3a2377d22d0c2aa53b63e8ae7de480a7f284"
+        }
+      ]
+    },
+    {
+      "source_id": "era5_single_levels",
+      "outcome": "operator_input_required",
+      "reason": "A CDS request/result export matching the canonical monthly facility requests is required.",
+      "evidence": [
+        {
+          "url": "https://cds.climate.copernicus.eu/how-to-api",
+          "retrieved_at": "2026-07-30T10:50:28Z",
+          "sha256": "8c1414388e4d7f64106d2c7e8c11c22fd49fb180f887be19dbc3a720b9a46a4a"
+        }
+      ]
+    },
+    {
+      "source_id": "era5_pressure_levels",
+      "outcome": "operator_input_required",
+      "reason": "A CDS request/result export matching the canonical monthly facility requests is required.",
+      "evidence": [
+        {
+          "url": "https://cds.climate.copernicus.eu/how-to-api",
+          "retrieved_at": "2026-07-30T10:50:28Z",
+          "sha256": "8c1414388e4d7f64106d2c7e8c11c22fd49fb180f887be19dbc3a720b9a46a4a"
+        }
+      ]
+    },
+    {
+      "source_id": "epa_camd_hourly",
+      "outcome": "resolved",
+      "catalog_url": "https://api.epa.gov/easey/camd-services/bulk-files",
+      "evidence": [
+        {
+          "url": "https://www.epa.gov/power-sector/power-sector-data",
+          "retrieved_at": "2026-07-30T10:50:29Z",
+          "sha256": "283bfc116ab858f46324c30dd6e8dfcc020ed10295c75b255e322043a08dac8a"
+        }
+      ]
+    },
+    {
+      "source_id": "geos_cf_2024",
+      "outcome": "definitively_unavailable",
+      "reason": "The paper and supplement do not identify an immutable GEOS-CF v1 analysis/replay object revision used for the 2024 comparison; the current v2 service cannot establish that paper-time identity.",
+      "evidence": [
+        {
+          "url": "https://gmao.gsfc.nasa.gov/gmao-products/geos-cf/data-access_geos-cf/",
+          "retrieved_at": "2026-07-30T10:50:29Z",
+          "sha256": "89bc0ff024a78e35148d2b89029d77a39a800105bc0b31a3b568bbed615901be"
+        }
+      ]
+    },
+    {
+      "source_id": "sun2025_code",
+      "outcome": "resolved",
+      "zenodo_record_id": "15001466",
+      "evidence": [
+        {
+          "url": "https://zenodo.org/api/records/15001466",
+          "retrieved_at": "2026-07-30T10:50:30Z",
+          "sha256": "f4df9b26f4156e7a789339e014518283a7ab4e211436eb8a6cb3fe081c083ee5"
+        }
+      ]
+    }
+  ]
+}

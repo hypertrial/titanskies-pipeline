@@ -1,6 +1,6 @@
 # Third-party and source notices
 
-Last reviewed: 2026-07-29.
+Last reviewed: 2026-07-30.
 
 The MIT licence in this repository covers Hypertrial's original software only.
 It does not relicense NASA observations, boundary data, OpenStreetMap-derived
@@ -31,9 +31,14 @@ grant and not proof that the production object is available.
 #### `facility_cohort_14`
 
 - Version: `paper-reviewed-14`
-- URL: `https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2025JD044565`
+- URL: `https://agupubs.onlinelibrary.wiley.com/doi/suppl/10.1029/2025JD044565/supinfo/2025JD044565-sup-0001-Supporting%20Information%20SI-S01.pdf`
 - Attribution: `Paper authors and supplementary information`
-- Licence field: `Publisher supplementary-material terms`
+- Licence field: `Creative Commons Attribution 4.0 International`
+
+The tracked 14-row cohort is normalized from Supporting Information Table S1
+and crosswalked to public EPA CAMD facility IDs. The Wiley article and
+supplement are CC BY 4.0; the tracked CSV records the paper locator and EPA
+crosswalk source and contains no emissions payload.
 
 #### `era5_single_levels`
 
@@ -117,6 +122,11 @@ grant and not proof that the production object is available.
 GRDC observations must not be committed or redistributed. Current SWOT L4
 Version 3, a later Confluence revision, or provider-reprocessed ERA5/GEOS-CF
 content must retain its non-exact status through every downstream artifact.
+The tracked resolution bundles contain technical metadata and evidence hashes,
+not provider payloads or a licence grant. Current public evidence does not
+establish the paper-time GEOS-CF v1 object revision, SWOT L4 SoS Version 1
+generation, or complete Confluence repository/commit set; they remain exact
+acquisition blockers.
 
 ## PlumeGraph source matrix
 

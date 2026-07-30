@@ -12,7 +12,9 @@ from titanskies_pipeline.orchestration.assets_plumegraph_events import (
     PLUMEGRAPH_EVENTS_VALIDATION,
 )
 from titanskies_pipeline.orchestration.assets_reproductions import (
+    ANDREADIS2025_REPRO_SOURCE_INVENTORY,
     ANDREADIS2025_REPRO_SOURCE_PREFLIGHT,
+    SUN2025_REPRO_SOURCE_INVENTORY,
     SUN2025_REPRO_SOURCE_PREFLIGHT,
 )
 from titanskies_pipeline.orchestration.assets_riverpulse_events import (
@@ -30,6 +32,7 @@ from titanskies_pipeline.orchestration.config import (
     plumegraph_events_release_run_config,
     plumegraph_events_validation_run_config,
     reproduction_preflight_run_config,
+    reproduction_readiness_run_config,
     riverpulse_events_dbt_run_config,
     riverpulse_events_discovery_run_config,
     riverpulse_events_full_pipeline_run_config,
@@ -64,6 +67,25 @@ andreadis2025_repro_source_preflight = define_asset_job(
     selection=AssetSelection.assets(ANDREADIS2025_REPRO_SOURCE_PREFLIGHT),
     executor_def=_ANALYTICS_BUILD_EXECUTOR,
     config=reproduction_preflight_run_config(SOURCE_ANDREADIS2025),
+    tags={**_REPRODUCTION_TAGS, "source": SOURCE_ANDREADIS2025},
+)
+sun2025_repro_source_readiness = define_asset_job(
+    "sun2025_repro_source_readiness",
+    selection=AssetSelection.assets(
+        SUN2025_REPRO_SOURCE_INVENTORY, SUN2025_REPRO_SOURCE_PREFLIGHT
+    ),
+    executor_def=_ANALYTICS_BUILD_EXECUTOR,
+    config=reproduction_readiness_run_config(SOURCE_SUN2025),
+    tags={**_REPRODUCTION_TAGS, "source": SOURCE_SUN2025},
+)
+andreadis2025_repro_source_readiness = define_asset_job(
+    "andreadis2025_repro_source_readiness",
+    selection=AssetSelection.assets(
+        ANDREADIS2025_REPRO_SOURCE_INVENTORY,
+        ANDREADIS2025_REPRO_SOURCE_PREFLIGHT,
+    ),
+    executor_def=_ANALYTICS_BUILD_EXECUTOR,
+    config=reproduction_readiness_run_config(SOURCE_ANDREADIS2025),
     tags={**_REPRODUCTION_TAGS, "source": SOURCE_ANDREADIS2025},
 )
 
@@ -297,6 +319,7 @@ TEMPO_NO2_STD_FULL_PIPELINE_SELECTION = (
 
 __all__ = [
     "andreadis2025_repro_source_preflight",
+    "andreadis2025_repro_source_readiness",
     "plumegraph_events_analysis",
     "plumegraph_events_dbt_build",
     "plumegraph_events_full_pipeline",
@@ -309,6 +332,7 @@ __all__ = [
     "riverpulse_events_observation_ingest",
     "riverpulse_events_source_discovery",
     "sun2025_repro_source_preflight",
+    "sun2025_repro_source_readiness",
     "tempo_no2_dbt_build",
     "tempo_no2_full_pipeline",
     "tempo_no2_granule_discovery",

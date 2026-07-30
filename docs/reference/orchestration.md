@@ -128,16 +128,22 @@ TEMPO `ScopeSpec` factory and have no schedules.
 
 Assets:
 
+- `sun2025/repro/ops/source_inventory`
 - `sun2025/repro/ops/source_preflight`
+- `andreadis2025/repro/ops/source_inventory`
 - `andreadis2025/repro/ops/source_preflight`
 
 Jobs:
 
 - `sun2025_repro_source_preflight`
 - `andreadis2025_repro_source_preflight`
+- `sun2025_repro_source_readiness`
+- `andreadis2025_repro_source_readiness`
 
-Each job validates a metadata-only discovery inventory, persists contracts,
-requests, source objects, completeness, and the preflight report, and creates
-a `planned` production generation or `synthetic` fixture generation only when
-ready. `exact_mode=true` and `fail_on_blocked=true` are the defaults. The jobs
-never download production payloads and are intentionally unscheduled.
+The standalone preflight jobs retain their existing behavior and accept a
+prepared inventory. Each readiness job selects source inventory followed by
+preflight, resolves metadata only, and permanently uses exact mode. Both
+families persist contracts, requests, source objects, completeness, and the
+preflight report, and create a `planned` production generation or `synthetic`
+fixture generation only when ready. The jobs never download production
+payloads and are intentionally unscheduled.

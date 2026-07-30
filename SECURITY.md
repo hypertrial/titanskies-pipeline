@@ -38,3 +38,8 @@ be committed to the repository. Never include credentials, signed URLs, live
 NetCDF or Hydrocron response content, downloaded boundary/SWORD archives,
 network generations, or warehouse contents in a report. TitanSkies has no
 telemetry.
+
+Paper-source readiness also rejects embedded credentials, signed URLs, import
+path escapes, external symlinks, and secret-bearing evidence fields. Never
+attach `.cdsapirc`, provider exports containing private URLs, EPA keys,
+high-cardinality live inventories, or licensed GRDC payloads to an issue.

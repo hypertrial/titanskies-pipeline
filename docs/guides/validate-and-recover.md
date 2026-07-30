@@ -18,6 +18,9 @@
    `plumegraph_events_calibration_state`, and
    `plumegraph_events_release_integrity`; verify the release manifest before
    distributing any evidence bundle.
+7. For paper readiness, inspect the resolver exit status and every source
+   `resolution_outcome`. A `definitively_unavailable` result documents a
+   completed investigation but must not create a `planned` generation.
 
 ## Recovery
 
@@ -53,5 +56,15 @@ run. A loaded benchmark version is immutable, so corrected annotations require
 a new benchmark version.
 Populated v0.6 warehouses require the v0.7 clean rebuild; verified immutable
 source caches may be retained.
+
+Readiness inventories are atomically replaced, so an interrupted writer leaves
+the previous complete inventory intact. On `transient_error`, retain successful
+sibling evidence, correct provider access, and rerun the readiness job. On
+`operator_input_required`, place the checksum-matching export under the
+configured import directory; never copy credentials, `.cdsapirc`, signed URLs,
+or payloads into that directory. Do not edit a definitive-unavailable outcome
+to `resolved`; replace it only with new immutable provider evidence. Repeated
+identical resolution/preflight input reuses the same object revisions, run,
+and acquisition-generation identities.
 
 See [Troubleshooting](troubleshooting.md) for common failure modes.

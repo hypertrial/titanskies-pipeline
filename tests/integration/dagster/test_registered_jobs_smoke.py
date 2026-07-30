@@ -44,6 +44,8 @@ def _expected_public_job_names() -> set[str]:
         "plumegraph_events_full_pipeline",
         "sun2025_repro_source_preflight",
         "andreadis2025_repro_source_preflight",
+        "sun2025_repro_source_readiness",
+        "andreadis2025_repro_source_readiness",
     }
 
 
@@ -181,6 +183,25 @@ titanskies:
         ),
     )
     from titanskies_pipeline.reproductions.preflight import PreflightMetrics
+    from titanskies_pipeline.reproductions.readiness import ResolutionMetrics
+
+    monkeypatch.setattr(
+        reproduction_assets,
+        "resolve_reproduction_sources",
+        lambda profile_id, **_kwargs: ResolutionMetrics(
+            profile_id,
+            "complete",
+            str(tmp_path / f"{profile_id}.json"),
+            "a" * 64,
+            "b" * 64,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+        ),
+    )
 
     monkeypatch.setattr(
         reproduction_assets,
@@ -195,6 +216,8 @@ titanskies:
             1,
             1,
             10,
+            10,
+            0,
             0,
             (),
             "a" * 64,

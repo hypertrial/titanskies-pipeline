@@ -1,0 +1,89 @@
+{
+  "format": "reproduction-resolution-v1",
+  "profile_id": "andreadis2025",
+  "sources": [
+    {
+      "source_id": "swot_riversp_reach_v2",
+      "outcome": "resolved",
+      "evidence": [
+        {
+          "url": "https://cmr.earthdata.nasa.gov/search/collections.umm_json?concept_id=C2799438303-POCLOUD",
+          "retrieved_at": "2026-07-30T10:50:31Z",
+          "sha256": "a52479158ab77f9bb4a73eaacd33fb037590647178d8796db4204b75734fc5bf"
+        }
+      ]
+    },
+    {
+      "source_id": "swot_riversp_node_v2",
+      "outcome": "resolved",
+      "evidence": [
+        {
+          "url": "https://cmr.earthdata.nasa.gov/search/collections.umm_json?concept_id=C2799438301-POCLOUD",
+          "retrieved_at": "2026-07-30T10:50:31Z",
+          "sha256": "1a54c44c8111e20935e6fc1fa997397b273cbf3872d0fce34c53156d6171616b"
+        }
+      ]
+    },
+    {
+      "source_id": "sword_v16",
+      "outcome": "resolved",
+      "size_upper_bound_bytes": 2147483648,
+      "evidence": [
+        {
+          "url": "https://zenodo.org/records/10013982",
+          "retrieved_at": "2026-07-30T10:50:32Z",
+          "sha256": "b783b5a5eb72a8684d8f6172ead3610dcc75954fda0d4ff84c7f85596da28596"
+        }
+      ]
+    },
+    {
+      "source_id": "swot_l4_sos_paper_snapshot",
+      "outcome": "definitively_unavailable",
+      "reason": "PO.DAAC currently exposes Version 3, while the Version 1 paper-time object generation and its immutable checksums are no longer present in public CMR metadata. Filename similarity is insufficient to infer the exact generation.",
+      "evidence_summary": {
+        "contains_gauge_priors": false
+      },
+      "evidence": [
+        {
+          "url": "https://api.datacite.org/dois/10.5067/SWOT-SOS-V1",
+          "retrieved_at": "2026-07-30T10:23:48Z",
+          "sha256": "b2693e01f6327a31e8ef4496bff12fd10e2626c16c57948387f95f57126b8e6b"
+        },
+        {
+          "url": "https://cmr.earthdata.nasa.gov/search/collections.umm_json?short_name=SWOT_L4_DAWG_SOS_DISCHARGE&version=1&all_revisions=true",
+          "retrieved_at": "2026-07-30T10:22:20Z",
+          "sha256": "02a75a79494be3cee47058a434cc6853ddebb94e323afa35692590dbc05bed5f"
+        }
+      ]
+    },
+    {
+      "source_id": "confluence_code",
+      "outcome": "definitively_unavailable",
+      "reason": "The paper names six algorithms but does not identify the complete Confluence repository set or the commits used for the production run; the public organization contains 59 repositories, so a latest-before-cutoff inference would not prove exactness.",
+      "evidence": [
+        {
+          "url": "https://api.github.com/orgs/SWOT-Confluence/repos?per_page=100&type=public",
+          "retrieved_at": "2026-07-30T10:26:38Z",
+          "sha256": "d71620071f37f50a73f885387e13cfb778cc92d98318b4d96450bead8c4532ab"
+        },
+        {
+          "url": "https://ntrs.nasa.gov/api/citations/20250004883/downloads/Andreadis_etal_2025_GRL_Supplementary.pdf",
+          "retrieved_at": "2026-07-30T10:22:57Z",
+          "sha256": "952136dd72181aae84d73030c4b551e06748d0eee409768e4e054061ad9540eb"
+        }
+      ]
+    },
+    {
+      "source_id": "grdc_gauge_fallback",
+      "outcome": "operator_input_required",
+      "reason": "Exact GRDC evidence is conditionally required until an exact L4 priors artifact proves that the paper generation embeds the necessary gauge priors.",
+      "evidence": [
+        {
+          "url": "https://portal.grdc.bafg.de/",
+          "retrieved_at": "2026-07-30T10:50:32Z",
+          "sha256": "38213b1f224beb1c4767ebad6494aad9839dbfd3d6f82c7b8764517f39c1a758"
+        }
+      ]
+    }
+  ]
+}

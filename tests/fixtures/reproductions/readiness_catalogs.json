@@ -1,0 +1,124 @@
+{
+  "cmr": {
+    "items": [
+      {
+        "meta": {
+          "concept-id": "G1000000000-EXAMPLE",
+          "revision-id": 2,
+          "revision-date": "2024-01-02T00:00:00Z"
+        },
+        "umm": {
+          "GranuleUR": "TEMPO_NO2_L2_V03.synthetic.nc",
+          "CollectionReference": {
+            "Version": "03"
+          },
+          "TemporalExtent": {
+            "RangeDateTime": {
+              "BeginningDateTime": "2024-01-01T12:00:00Z",
+              "EndingDateTime": "2024-01-01T13:00:00Z"
+            }
+          },
+          "RelatedUrls": [
+            {
+              "Type": "GET DATA",
+              "URL": "https://example.test/cmr/TEMPO_NO2_L2_V03.synthetic.nc"
+            }
+          ],
+          "DataGranule": {
+            "SizeInBytes": 1024,
+            "Checksum": {
+              "Algorithm": "SHA-256",
+              "Value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "zenodo": {
+    "revision": 1,
+    "updated": "2024-01-01T00:00:00Z",
+    "files": [
+      {
+        "id": "synthetic-static-1",
+        "key": "archive.synthetic.zip",
+        "size": 2048,
+        "checksum": "md5:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "links": {
+          "self": "https://example.test/zenodo/archive.synthetic.zip"
+        }
+      }
+    ]
+  },
+  "epa": {
+    "objects": [
+      {
+        "object_id": "camd-hourly-2023.synthetic.zip",
+        "provider_object_id": "camd-2023",
+        "provider_revision_id": "etag-synthetic-1",
+        "url": "https://example.test/epa/camd-hourly-2023.synthetic.zip",
+        "size_bytes": 4096,
+        "etag": "etag-synthetic-1",
+        "year": 2023
+      },
+      {
+        "object_id": "camd-hourly-2024.synthetic.zip",
+        "provider_object_id": "camd-2024",
+        "provider_revision_id": "etag-synthetic-2",
+        "url": "https://example.test/epa/camd-hourly-2024.synthetic.zip",
+        "size_bytes": 4096,
+        "etag": "etag-synthetic-2",
+        "year": 2024
+      }
+    ]
+  },
+  "geos_cf": {
+    "objects": [
+      {
+        "object_id": "geos-cf-v1-2024.synthetic.nc",
+        "provider_object_id": "geos-cf-v1-analysis",
+        "provider_revision_id": "paper-time-synthetic",
+        "dataset_family": "GEOS-CF v1",
+        "url": "https://example.test/geos-cf/geos-cf-v1-2024.synthetic.nc",
+        "size_bytes": null,
+        "size_upper_bound_bytes": 8192,
+        "schema_fingerprint": "geos-cf-v1-synthetic-schema"
+      }
+    ]
+  },
+  "cds_import": {
+    "source_id": "era5_single_levels",
+    "canonical_requests": [],
+    "objects": [
+      {
+        "object_id": "era5.synthetic.grib",
+        "provider_object_id": "cds-request-synthetic",
+        "provider_revision_id": "result-synthetic",
+        "url": "https://example.test/cds/era5.synthetic.grib",
+        "size_bytes": 16384
+      }
+    ]
+  },
+  "l4": {
+    "source_id": "swot_l4_sos_paper_snapshot",
+    "canonical_requests": [],
+    "objects": [
+      {
+        "object_id": "SWOT_L4_SOS_V1.paper-time.synthetic.nc",
+        "provider_object_id": "sos-v1-synthetic",
+        "provider_revision_id": "generation-synthetic",
+        "url": "https://example.test/podaac/SWOT_L4_SOS_V1.paper-time.synthetic.nc",
+        "size_bytes": 32768,
+        "source_revision": "2024-10-24T00:00:00Z"
+      }
+    ]
+  },
+  "git": {
+    "sha": "cccccccccccccccccccccccccccccccccccccccc",
+    "commit": {
+      "committer": {
+        "date": "2024-10-23T00:00:00Z"
+      }
+    }
+  }
+}

@@ -16,5 +16,12 @@ retain their applicable source terms. Cite the specific NASA collection and
 SWORD version used, preserve transformation notices, and do not imply NASA,
 PO.DAAC, SWORD, or geography-provider endorsement.
 
+The tracked Sun et al. 14-facility cohort is a normalized factual extraction
+from the CC BY 4.0 paper supplement crosswalked to public EPA CAMD facility
+metadata. Preserve the paper citation, supplement locator, normalization
+notice, and EPA attribution. High-cardinality provider catalogs, CDS exports,
+GRDC observations, credentials, signed links, and scientific payloads remain
+operator-owned and untracked.
+
 TitanSkies is research and engineering software, not health, exposure,
 flood-warning, navigation, water-allocation, or emergency-response advice.

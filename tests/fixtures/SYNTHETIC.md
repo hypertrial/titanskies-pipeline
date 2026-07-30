@@ -22,6 +22,8 @@ not downloaded NASA observations or boundary data.
   `reproductions/andreadis2025_preflight.json` are hand-authored
   metadata-only source inventories with invented object IDs, sizes, and
   `example.test` URLs. They do not establish production-source availability.
+- `reproductions/readiness_catalogs.json` contains invented CMR, Zenodo, EPA,
+  GEOS-CF, CDS-import, SWOT L4, and Git metadata responses for resolver replay.
 - `scripts/build_riverpulse_network.py --synthetic` creates invented
   Sacramento/Rhine/Murray mini-corridors without downloading SWORD.
 

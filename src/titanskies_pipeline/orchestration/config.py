@@ -185,6 +185,14 @@ class ReproductionPreflightConfig(Config):
     fail_on_blocked: bool = True
 
 
+class ReproductionDiscoveryConfig(Config):
+    manifest_path: str | None = None
+    evidence_path: str | None = None
+    import_directory: str | None = None
+    output_inventory_path: str | None = None
+    timeout_seconds: float = Field(default=30.0, gt=0)
+
+
 class DbtBuildConfig(GuardrailConfig):
     progress_log_interval_events: int = Field(default=20, ge=1)
     dbt_select: str | None = None
@@ -216,6 +224,23 @@ def reproduction_preflight_run_config(profile_id: str) -> dict:
     return _op_config(
         AssetKey([profile_id, "repro", "ops", "source_preflight"]),
         ReproductionPreflightConfig(),
+    )
+
+
+def reproduction_readiness_run_config(profile_id: str) -> dict:
+    inventory_path = f".cache/reproduction_readiness/{profile_id}/inventory.json"
+    return _merge_op_configs(
+        _op_config(
+            AssetKey([profile_id, "repro", "ops", "source_inventory"]),
+            ReproductionDiscoveryConfig(output_inventory_path=inventory_path),
+        ),
+        _op_config(
+            AssetKey([profile_id, "repro", "ops", "source_preflight"]),
+            ReproductionPreflightConfig(
+                inventory_path=inventory_path,
+                exact_mode=True,
+            ),
+        ),
     )
 
 
@@ -395,6 +420,7 @@ __all__ = [
     "PlumeGraphReleaseConfig",
     "PlumeGraphValidationConfig",
     "RegionRegistryConfig",
+    "ReproductionDiscoveryConfig",
     "ReproductionPreflightConfig",
     "RiverPulseDiscoveryConfig",
     "RiverPulseIngestConfig",
@@ -415,6 +441,7 @@ __all__ = [
     "plumegraph_events_validation_run_config",
     "region_registry_run_config",
     "reproduction_preflight_run_config",
+    "reproduction_readiness_run_config",
     "riverpulse_events_dbt_run_config",
     "riverpulse_events_discovery_run_config",
     "riverpulse_events_full_pipeline_run_config",

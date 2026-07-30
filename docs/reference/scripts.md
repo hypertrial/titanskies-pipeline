@@ -24,6 +24,7 @@ inventory.
 | `run_riverpulse_live_smoke.py` | Opt-in one-reach, at-most-90-day Hydrocron run against a production network and disposable warehouse | RiverPulse release/operator readiness (`make riverpulse-live-smoke`) | CI/GitHub Actions; broad backfills |
 | `run_plumegraph_live_smoke.py` | Run one reviewed facility/day through Harmony, HRRR, CAMD, analysis, and dbt | PlumeGraph readiness (`make plumegraph-live-smoke`) | CI, broad backfills, or release publication |
 | `run_reproduction_preflight.py` | Validate and ledger a paper-profile provider-discovery inventory without payload downloads | Before source acquisition; offline contract checks | Claiming that either paper has been reproduced |
+| `resolve_reproduction_sources.py` | Resolve exact provider metadata, atomically write a deterministic production inventory, and run preflight | Establishing exact availability and bounded acquisition cost | Payload acquisition, fallback substitution, or paper analysis |
 
 ## Related Make targets
 
@@ -37,6 +38,8 @@ inventory.
 | `make plumegraph-release` | `build_plumegraph_release.py` with `PLUMEGRAPH_RELEASE_VERSION` |
 | `make sun2025-preflight` | `run_reproduction_preflight.py sun2025` with `SUN2025_PREFLIGHT_INVENTORY` |
 | `make andreadis2025-preflight` | `run_reproduction_preflight.py andreadis2025` with `ANDREADIS2025_PREFLIGHT_INVENTORY` |
+| `make sun2025-readiness` | Exact-only metadata resolution with explicit `SUN2025_READINESS_EVIDENCE` and `SUN2025_READINESS_IMPORT_DIR` |
+| `make andreadis2025-readiness` | Exact-only metadata resolution with explicit `ANDREADIS2025_READINESS_EVIDENCE` and `ANDREADIS2025_READINESS_IMPORT_DIR` |
 | `make docs-recipe-smoke` | `check_docs_recipe_sql.py` |
 | `make live-smoke` | `run_live_smoke.py --mode live-smoke` |
 | `make gx-data-quality` | `run_gx_data_quality.py` |

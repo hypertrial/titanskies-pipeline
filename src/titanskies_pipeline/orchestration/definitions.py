@@ -17,7 +17,9 @@ from titanskies_pipeline.orchestration.assets_plumegraph_events import (
     plumegraph_events_validation,
 )
 from titanskies_pipeline.orchestration.assets_reproductions import (
+    andreadis2025_repro_source_inventory_asset,
     andreadis2025_repro_source_preflight_asset,
+    sun2025_repro_source_inventory_asset,
     sun2025_repro_source_preflight_asset,
 )
 from titanskies_pipeline.orchestration.assets_riverpulse_events import (
@@ -36,6 +38,7 @@ from titanskies_pipeline.orchestration.assets_tempo_no2 import (
 )
 from titanskies_pipeline.orchestration.jobs import (
     andreadis2025_repro_source_preflight,
+    andreadis2025_repro_source_readiness,
     plumegraph_events_analysis,
     plumegraph_events_dbt_build,
     plumegraph_events_full_pipeline,
@@ -47,6 +50,7 @@ from titanskies_pipeline.orchestration.jobs import (
     riverpulse_events_observation_ingest,
     riverpulse_events_source_discovery,
     sun2025_repro_source_preflight,
+    sun2025_repro_source_readiness,
     tempo_no2_dbt_build,
     tempo_no2_full_pipeline,
     tempo_no2_granule_discovery,
@@ -86,7 +90,9 @@ defs = Definitions(
         plumegraph_events_analysis_results,
         plumegraph_events_validation,
         plumegraph_events_release,
+        sun2025_repro_source_inventory_asset,
         sun2025_repro_source_preflight_asset,
+        andreadis2025_repro_source_inventory_asset,
         andreadis2025_repro_source_preflight_asset,
     ],
     jobs=[
@@ -109,7 +115,9 @@ defs = Definitions(
         plumegraph_events_validation_job,
         plumegraph_events_release_build,
         plumegraph_events_full_pipeline,
+        sun2025_repro_source_readiness,
         sun2025_repro_source_preflight,
+        andreadis2025_repro_source_readiness,
         andreadis2025_repro_source_preflight,
     ],
     schedules=[

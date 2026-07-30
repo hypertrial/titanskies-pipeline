@@ -13,9 +13,11 @@ materialized, but they never share raw epochs or incremental contract
 versions.
 The explicit `riverpulse:events` and `plumegraph:events` lanes share only the
 DuckDB path and v0.7 schema stamp; neither uses the TEMPO `ScopeSpec` factory.
-The two reproduction preflight profiles are likewise explicit, unscheduled
-assets and share only validation/persistence code for their common metadata
-invariants.
+The two reproduction profiles are likewise explicit and unscheduled. Their
+source-inventory assets use provider-specific metadata functions (CMR, static
+archive, EPA, GEOS-CF catalog, CDS/manual import, or Git revision) followed by
+the existing preflight/persistence boundary. There is deliberately no generic
+connector framework and no payload acquisition in this lane.
 
 ```mermaid
 flowchart TB
@@ -66,6 +68,14 @@ flowchart TB
     plumeDisc --> plumeLedger --> plumeAnalysis --> plumeDbt --> plumeRelease
   end
 
+  subgraph repro["exact paper-source readiness"]
+    evidence["Tracked technical evidence + operator imports"]
+    resolve["Provider-specific metadata resolution"]
+    inventory["Canonical bounded source inventory"]
+    preflight["Exact preflight + ops ledger"]
+    evidence --> resolve --> inventory --> preflight
+  end
+
   geo --> nrtIngest
   geo --> stdIngest
   sword --> riverDisc
@@ -78,6 +88,7 @@ flowchart TB
   riverMarts --> duck
   plumeLedger --> duck
   plumeRelease --> duck
+  preflight --> duck
   stamp --> duck
 ```
 

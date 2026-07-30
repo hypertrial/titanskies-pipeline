@@ -77,11 +77,14 @@ validation run, normalized artifacts, and sanitized source request/result
 lineage. EPA API keys, signed URLs, and Earthdata credentials are never
 stored.
 
-Reproduction preflight stores metadata only. Canonical source URLs are
-sanitized before persistence; signed URLs and secret-bearing fields are
-rejected. Unknown object sizes remain explicit and are not treated as zero in
-the unknown-size count. v0.7 creates no reproduction raw/staging/mart schemas
-and downloads no paper source payloads.
+Reproduction readiness and preflight store metadata only in the existing ops
+tables. Canonical source URLs are sanitized before persistence; signed URLs
+and secret-bearing fields are rejected. Exact `total_bytes`, conservative
+`planned_max_bytes`, `unknown_size_count`, and `unbounded_size_count` remain
+distinct in the canonical report JSON. Provider evidence and resolution
+outcomes remain in existing object/report JSON columns, so no migration or
+warehouse-version change is required. v0.7 creates no reproduction
+raw/staging/mart schemas and downloads no paper source payloads.
 
 DuckDB, WAL files, raw downloads, generated geography, dbt targets, and the
 built documentation site are local artifacts and must not be committed.

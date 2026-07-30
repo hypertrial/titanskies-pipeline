@@ -49,6 +49,17 @@ settings once at process import, so env changes require a reload.
 | `PLUMEGRAPH_EPA_API_KEY` | unset | CAM API `x-api-key` header; never persisted or logged |
 | `PLUMEGRAPH_EVENTS_PIPELINE_SCHEDULE_ENABLED` | `false` | Opt-in daily 06:00 UTC pipeline schedule; bootstrap and release excluded |
 
+Reproduction readiness uses explicit CLI, Make, or Dagster run config rather
+than persistent environment settings. The production Make targets require
+`SUN2025_READINESS_EVIDENCE`/`SUN2025_READINESS_IMPORT_DIR` or their
+`ANDREADIS2025_*` counterparts. Output inventories and disposable DuckDB files
+default below `.cache/reproduction_readiness/<profile>/`. Object and byte
+budgets default to `REPRO_READINESS_OBJECT_BUDGET=1000000` and
+`REPRO_READINESS_BYTE_BUDGET=10995116277760` for the Make wrapper and should be
+tightened after provider enumeration. Paths, timeouts, and budgets are
+operational only; source identity and scientific requirements remain tracked
+in the profile manifests and contract CSVs.
+
 ## Scope notes
 
 `make demo` remains NRT-only: it seeds both contract CSVs but runs dbt with

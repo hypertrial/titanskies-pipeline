@@ -44,7 +44,9 @@ PlumeGraph jobs run discovery, three-source ingest, analysis, dbt, validation,
 and optional release publication through the documented
 `plumegraph_events_*` job family.
 Paper-source preflight jobs are `sun2025_repro_source_preflight` and
-`andreadis2025_repro_source_preflight`; neither has a schedule.
+`andreadis2025_repro_source_preflight`. Exact metadata resolution uses
+`sun2025_repro_source_readiness` and
+`andreadis2025_repro_source_readiness`; none has a schedule.
 
 Version 0.7 requires a new warehouse for populated v0.6 DuckDB files. See the
 [v0.7 upgrade guide](upgrade-v07.md) before enabling

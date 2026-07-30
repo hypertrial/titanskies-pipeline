@@ -16,6 +16,7 @@ from titanskies_pipeline.orchestration.config import (
     PlumeGraphReleaseConfig,
     PlumeGraphValidationConfig,
     RegionRegistryConfig,
+    ReproductionDiscoveryConfig,
     ReproductionPreflightConfig,
     RiverPulseDiscoveryConfig,
     RiverPulseIngestConfig,
@@ -28,6 +29,7 @@ from titanskies_pipeline.orchestration.config import (
     plumegraph_events_release_run_config,
     plumegraph_events_validation_run_config,
     reproduction_preflight_run_config,
+    reproduction_readiness_run_config,
     riverpulse_events_dbt_run_config,
     riverpulse_events_discovery_run_config,
     riverpulse_events_full_pipeline_run_config,
@@ -313,3 +315,11 @@ def test_reproduction_preflight_config_and_run_config():
         ReproductionPreflightConfig(max_objects=0)
     with pytest.raises(Exception):
         ReproductionPreflightConfig(max_bytes=0)
+
+    discovery = ReproductionDiscoveryConfig(timeout_seconds=10)
+    assert discovery.timeout_seconds == 10
+    readiness = reproduction_readiness_run_config("sun2025")["ops"]
+    assert "sun2025__repro__ops__source_inventory" in readiness
+    assert readiness["sun2025__repro__ops__source_preflight"]["config"]["exact_mode"]
+    with pytest.raises(Exception):
+        ReproductionDiscoveryConfig(timeout_seconds=0)

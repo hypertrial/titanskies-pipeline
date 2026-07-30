@@ -1,6 +1,9 @@
 {
   "profile_id": "andreadis2025",
-  "profile_version": "1.0.0",
+  "profile_version": "1.1.0",
+  "inventory_format": "reproduction-source-inventory-v2",
+  "resolution_format": "reproduction-resolution-v1",
+  "resolution_evidence": "andreadis2025_resolution.json",
   "paper_doi": "10.1029/2024GL114185",
   "temporal_window": {
     "start": "2023-03-30T00:00:00Z",
@@ -60,7 +63,9 @@
       "attribution": "SWOT River Database v16",
       "license": "Creative Commons Attribution 4.0 International",
       "request": {
-        "format": "GeoPackage"
+        "format": "GeoPackage",
+        "archive_filename": "SWORD_v16_gpkg.zip",
+        "zenodo_record_id": "10013982"
       }
     },
     {

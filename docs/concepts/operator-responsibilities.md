@@ -19,6 +19,10 @@ data, geography sources, or derived outputs an operator obtains or generates.
   applicable source terms.
 - Run live readiness checks only on an operator-owned machine; GitHub Actions
   never downloads live NetCDF or production geography.
+- Keep high-cardinality reproduction inventories, CDS/provider exports, GRDC
+  inputs, credentials, and signed URLs untracked. A definitive source blocker
+  may be replaced only by new immutable evidence, never by relabeling a
+  fallback.
 
 ## Not Advice
 

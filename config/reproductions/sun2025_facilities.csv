@@ -1,0 +1,15 @@
+camd_facility_id,facility_name,original_label,state,primary_fuel,nox_mass_lb,reported_rank,latitude,longitude,analysis_half_width_km,source_locator,crosswalk_source
+2167,New Madrid Power Plant,New Madrid Power Plant,MO,Coal,41000000,1,36.5147,-89.5617,15,"Supporting Information S1, Table S1",https://campd.epa.gov/tools/facility-map/
+6146,Martin Lake,Martin Lake,TX,Coal,33800000,2,32.2597,-94.5703,15,"Supporting Information S1, Table S1",https://campd.epa.gov/tools/facility-map/
+6076,Colstrip,Colstrip,MT,Coal,32900000,3,45.8831,-106.6140,15,"Supporting Information S1, Table S1",https://campd.epa.gov/tools/facility-map/
+8042,Belews Creek,Belews Creek,NC,Coal,30800000,4,36.2811,-80.0603,15,"Supporting Information S1, Table S1",https://campd.epa.gov/tools/facility-map/
+2103,Labadie,Labadie,MO,Coal,27900000,5,38.5583,-90.8361,15,"Supporting Information S1, Table S1",https://campd.epa.gov/tools/facility-map/
+2168,Thomas Hill Energy Center,Thomas Hill Energy Center,MO,Coal,27400000,7,39.5531,-92.6392,15,"Supporting Information S1, Table S1",https://campd.epa.gov/tools/facility-map/
+1356,Ghent,Ghent,KY,Coal,27300000,8,38.7497,-85.0350,15,"Supporting Information S1, Table S1",https://campd.epa.gov/tools/facility-map/
+6077,Gerald Gentleman Station,Gerald Gentleman Station,NE,Coal,26200000,9,41.0808,-101.1408,15,"Supporting Information S1, Table S1",https://campd.epa.gov/tools/facility-map/
+6257,Scherer,Scherer,GA,Coal,25800000,10,33.0583,-83.8072,15,"Supporting Information S1, Table S1",https://campd.epa.gov/tools/facility-map/
+1379,Shawnee,Shawnee,KY,Coal,25400000,11,37.1517,-88.7750,15,"Supporting Information S1, Table S1",https://campd.epa.gov/tools/facility-map/
+6705,Alcoa Allowance Management Inc,Alcoa Allowance Management Inc,IN,Coal,24600000,14,37.9150,-87.3328,15,"Supporting Information S1, Table S1",https://campd.epa.gov/tools/facility-map/
+3470,W A Parish,W A Parish,TX,Coal / Pipeline Natural Gas,24400000,16,29.4783,-95.6358,15,"Supporting Information S1, Table S1",https://campd.epa.gov/tools/facility-map/
+6204,Laramie River,Laramie River,WY,Coal,23400000,18,42.1103,-104.8828,15,"Supporting Information S1, Table S1",https://campd.epa.gov/tools/facility-map/
+1364,Mill Creek,Mill Creek,KY,Coal,22300000,21,38.0531,-85.9100,15,"Supporting Information S1, Table S1",https://campd.epa.gov/tools/facility-map/

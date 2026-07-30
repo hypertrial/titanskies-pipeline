@@ -121,9 +121,10 @@ The pipeline is intentionally local and inspectable:
   EPA CAMD apportioned hourly emissions. It publishes eight evidence marts,
   seven observability surfaces, and checksum-addressed local releases.
 - The two reproduction profiles pin paper-time collection, code, network,
-  meteorology, emissions, and supplementary-artifact requirements. Preflight
-  creates an auditable acquisition plan but does not download or reproduce the
-  papers.
+  meteorology, emissions, and supplementary-artifact requirements. Exact-only
+  readiness resolves provider metadata into deterministic bounded inventories;
+  preflight creates an auditable acquisition plan only when every source
+  passes. Neither workflow downloads or reproduces the papers.
 
 Query `tempo_no2_marts` first and use `tempo_no2_observability` to investigate
 freshness and quality. The main historical relation is

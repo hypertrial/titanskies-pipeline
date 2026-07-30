@@ -187,11 +187,13 @@ def test_public_models_and_registered_jobs_are_documented():
         "plumegraph_events_full_pipeline",
         "sun2025_repro_source_preflight",
         "andreadis2025_repro_source_preflight",
+        "sun2025_repro_source_readiness",
+        "andreadis2025_repro_source_readiness",
     }
 
     assert len(marts) == 25
     assert len(observability) == 13
-    assert len(jobs) == 21
+    assert len(jobs) == 23
     for name in marts | observability | jobs:
         assert name in combined, name
     for variable in SCHEDULE_ENV_VARS:

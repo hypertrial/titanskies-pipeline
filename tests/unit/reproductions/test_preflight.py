@@ -33,6 +33,34 @@ def _inventory(profile_id: str) -> dict:
     return json.loads((FIXTURES / f"{profile_id}_preflight.json").read_text())
 
 
+def _production_inventory(profile_id: str) -> dict:
+    inventory = _inventory(profile_id)
+    inventory.update(
+        {
+            "inventory_mode": "production",
+            "inventory_format": "reproduction-source-inventory-v2",
+            "resolution_format": "reproduction-resolution-v1",
+            "resolution_bundle_sha256": "d" * 64,
+        }
+    )
+    for source in inventory["sources"]:
+        if source["exactness_status"] == "unavailable":
+            source["resolution_outcome"] = "not_required"
+        else:
+            source["resolution_outcome"] = "resolved"
+        source["evidence"] = [
+            {
+                "url": "https://example.test/evidence",
+                "retrieved_at": "2025-01-01T00:00:00Z",
+                "sha256": "e" * 64,
+            }
+        ]
+        for item in source["objects"]:
+            if item["size_bytes"] is None:
+                item["size_upper_bound_bytes"] = 10_000
+    return inventory
+
+
 def _write_json(tmp_path: Path, name: str, payload: object) -> Path:
     path = tmp_path / name
     path.write_text(json.dumps(payload))
@@ -285,7 +313,7 @@ def test_inventory_must_match_a_pinned_static_checksum(conn, tmp_path):
         ),
         (
             lambda p: p["sources"][0]["objects"][0].update(size_bytes=-1),
-            "size_bytes must be non-negative",
+            "size_bytes must fit BIGINT",
         ),
         (
             lambda p: p["sources"][0]["objects"].__setitem__(0, "bad"),
@@ -312,6 +340,14 @@ def test_manifest_and_scientific_contract_validation(tmp_path):
         ([], "must contain a JSON object"),
         ({}, "profile_id"),
         ({**original, "profile_id": "other"}, "Manifest profile_id"),
+        (
+            {**original, "inventory_format": "legacy"},
+            "Manifest inventory_format",
+        ),
+        (
+            {**original, "resolution_format": "legacy"},
+            "Manifest resolution_format",
+        ),
         ({**original, "sources": {}}, "Manifest field 'sources' is required"),
         ({**original, "sources": {"bad": "value"}}, "sources must be a list"),
         ({**original, "sources": ["bad"]}, "source contract must be an object"),
@@ -367,6 +403,15 @@ def test_manifest_and_scientific_contract_validation(tmp_path):
     )
     with pytest.raises(ValueError, match="must be beside"):
         load_profile("sun2025", manifest_path=escaped)
+
+    resolution_escape_dir = tmp_path / "resolution-escape"
+    resolution_escape_dir.mkdir()
+    resolution_escaped = _write_manifest(
+        resolution_escape_dir,
+        {**original, "resolution_evidence": "../outside.json"},
+    )
+    with pytest.raises(ValueError, match="Resolution evidence must be beside"):
+        load_profile("sun2025", manifest_path=resolution_escaped)
 
     missing_contract_dir = tmp_path / "missing-contract"
     missing_contract_dir.mkdir()
@@ -435,8 +480,7 @@ def test_production_inventory_creates_planned_generation_and_keeps_contract_hist
         manifest,
         contract="contract_key,value\nversion,2\n",
     )
-    inventory = _inventory("sun2025")
-    inventory["inventory_mode"] = "production"
+    inventory = _production_inventory("sun2025")
     inventory_path = _write_json(tmp_path, "production.json", inventory)
 
     metrics = run_preflight(
@@ -466,6 +510,332 @@ def test_production_inventory_creates_planned_generation_and_keeps_contract_hist
             """
         ).fetchone()[0]
         == 14
+    )
+
+
+def test_production_inventory_requires_resolution_format_and_bounded_sizes(
+    conn, tmp_path
+):
+    legacy = _inventory("sun2025")
+    legacy["inventory_mode"] = "production"
+    with pytest.raises(ValueError, match="inventory_format"):
+        run_preflight(
+            "sun2025",
+            inventory_path=_write_json(tmp_path, "legacy.json", legacy),
+            conn=conn,
+        )
+
+    production = _production_inventory("sun2025")
+    geos = next(
+        source
+        for source in production["sources"]
+        if source["source_id"] == "geos_cf_2024"
+    )
+    geos["objects"][0].pop("size_upper_bound_bytes")
+    with pytest.raises(PreflightBlockedError, match="storage plan is unbounded"):
+        run_preflight(
+            "sun2025",
+            inventory_path=_write_json(tmp_path, "unbounded.json", production),
+            conn=conn,
+        )
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    [
+        (
+            lambda payload: payload.update(resolution_format="legacy"),
+            "resolution_format",
+        ),
+        (
+            lambda payload: payload.update(resolution_bundle_sha256="not-a-hash"),
+            "resolution-bundle SHA-256",
+        ),
+    ],
+)
+def test_production_inventory_requires_canonical_resolution_identity(
+    conn, tmp_path, mutation, message
+):
+    production = _production_inventory("sun2025")
+    mutation(production)
+    with pytest.raises(ValueError, match=message):
+        run_preflight(
+            "sun2025",
+            inventory_path=_write_json(tmp_path, "invalid-resolution.json", production),
+            conn=conn,
+        )
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    [
+        (
+            lambda source: source.update(resolution_outcome="maybe"),
+            "invalid resolution outcome",
+        ),
+        (
+            lambda source: source.update(evidence=[]),
+            "requires technical evidence",
+        ),
+        (
+            lambda source: source.update(evidence=["not-an-object"]),
+            "must be an object",
+        ),
+        (
+            lambda source: source["evidence"][0].update(url="not-a-url"),
+            "malformed evidence",
+        ),
+        (
+            lambda source: source["evidence"][0].update(retrieved_at="not-a-timestamp"),
+            "malformed evidence",
+        ),
+        (
+            lambda source: source["evidence"][0].update(
+                retrieved_at="2025-01-01T00:00:00"
+            ),
+            "malformed evidence",
+        ),
+        (
+            lambda source: source.update(resolution_outcome="transient_error"),
+            "cannot attach objects",
+        ),
+    ],
+)
+def test_production_source_resolution_evidence_is_validated(
+    conn, tmp_path, mutation, message
+):
+    production = _production_inventory("sun2025")
+    mutation(production["sources"][0])
+    with pytest.raises(ValueError, match=message):
+        run_preflight(
+            "sun2025",
+            inventory_path=_write_json(tmp_path, "invalid-evidence.json", production),
+            conn=conn,
+        )
+
+
+def test_production_inventory_requires_absolute_provider_urls(conn, tmp_path):
+    malformed_evidence = _production_inventory("sun2025")
+    malformed_evidence["sources"][0]["evidence"][0]["url"] = "https:evidence"
+    with pytest.raises(ValueError, match="malformed evidence"):
+        run_preflight(
+            "sun2025",
+            inventory_path=_write_json(
+                tmp_path, "malformed-evidence-url.json", malformed_evidence
+            ),
+            conn=conn,
+        )
+
+    local_object = _production_inventory("sun2025")
+    local_object["sources"][0]["objects"][0]["url"] = "file:///tmp/object"
+    with pytest.raises(ValueError, match="absolute"):
+        run_preflight(
+            "sun2025",
+            inventory_path=_write_json(tmp_path, "local-object-url.json", local_object),
+            conn=conn,
+        )
+
+
+@pytest.mark.parametrize(
+    ("upper_bound", "message"),
+    [
+        (-1, "size_upper_bound_bytes must fit BIGINT"),
+        (1, "upper bound is below exact size"),
+    ],
+)
+def test_production_object_upper_bounds_are_validated(
+    conn, tmp_path, upper_bound, message
+):
+    production = _production_inventory("sun2025")
+    item = production["sources"][0]["objects"][0]
+    item["size_upper_bound_bytes"] = upper_bound
+    with pytest.raises(ValueError, match=message):
+        run_preflight(
+            "sun2025",
+            inventory_path=_write_json(tmp_path, "invalid-bound.json", production),
+            conn=conn,
+        )
+
+
+def test_planned_max_bytes_uses_upper_bounds_for_budgeting(conn, tmp_path):
+    production = _production_inventory("sun2025")
+    path = _write_json(tmp_path, "production.json", production)
+    metrics = run_preflight("sun2025", inventory_path=path, conn=conn)
+    assert metrics.planned_max_bytes == metrics.total_bytes + 10_000
+    assert metrics.unknown_size_count == 1
+    assert metrics.unbounded_size_count == 0
+
+    with pytest.raises(PreflightBlockedError, match="planned maximum"):
+        run_preflight(
+            "sun2025",
+            inventory_path=path,
+            max_bytes=metrics.planned_max_bytes - 1,
+            conn=conn,
+        )
+
+
+def test_production_resolution_outcomes_and_conditional_grdc_block(conn, tmp_path):
+    production = _production_inventory("andreadis2025")
+    l4 = next(
+        source
+        for source in production["sources"]
+        if source["source_id"] == "swot_l4_sos_paper_snapshot"
+    )
+    l4["evidence_summary"] = {"contains_gauge_priors": True}
+    ready = run_preflight(
+        "andreadis2025",
+        inventory_path=_write_json(tmp_path, "ready.json", production),
+        conn=conn,
+    )
+    assert ready.status == "ready"
+
+    l4["evidence_summary"] = {"contains_gauge_priors": False}
+    with pytest.raises(PreflightBlockedError, match="grdc_gauge_fallback"):
+        run_preflight(
+            "andreadis2025",
+            inventory_path=_write_json(tmp_path, "grdc.json", production),
+            conn=conn,
+        )
+
+    l4["resolution_outcome"] = "definitively_unavailable"
+    l4["exactness_status"] = "unavailable"
+    l4["objects"] = []
+    l4["reason"] = "paper-time generation was retired"
+    with pytest.raises(
+        PreflightBlockedError, match="paper-time generation was retired"
+    ):
+        run_preflight(
+            "andreadis2025",
+            inventory_path=_write_json(tmp_path, "unavailable.json", production),
+            conn=conn,
+        )
+
+
+def test_production_required_outcomes_report_precise_blockers(conn, tmp_path):
+    not_required = _production_inventory("sun2025")
+    source = not_required["sources"][0]
+    source.update(
+        resolution_outcome="not_required",
+        exactness_status="unavailable",
+        objects=[],
+    )
+    with pytest.raises(PreflightBlockedError, match="cannot be classified"):
+        run_preflight(
+            "sun2025",
+            inventory_path=_write_json(tmp_path, "not-required.json", not_required),
+            conn=conn,
+        )
+
+    empty_resolved = _production_inventory("sun2025")
+    empty_resolved["sources"][0]["objects"] = []
+    with pytest.raises(PreflightBlockedError, match="no provider objects"):
+        run_preflight(
+            "sun2025",
+            inventory_path=_write_json(tmp_path, "empty-resolved.json", empty_resolved),
+            conn=conn,
+        )
+
+
+def test_resolved_grdc_satisfies_conditional_prior_requirement(conn, tmp_path):
+    production = _production_inventory("andreadis2025")
+    l4 = next(
+        source
+        for source in production["sources"]
+        if source["source_id"] == "swot_l4_sos_paper_snapshot"
+    )
+    l4["evidence_summary"] = {"contains_gauge_priors": False}
+    grdc = next(
+        source
+        for source in production["sources"]
+        if source["source_id"] == "grdc_gauge_fallback"
+    )
+    grdc.update(
+        {
+            "resolution_outcome": "resolved",
+            "exactness_status": "exact",
+            "objects": [
+                {
+                    "object_id": "grdc-priors",
+                    "url": "https://example.test/grdc-priors.csv",
+                    "size_bytes": 100,
+                }
+            ],
+        }
+    )
+
+    metrics = run_preflight(
+        "andreadis2025",
+        inventory_path=_write_json(tmp_path, "grdc-resolved.json", production),
+        conn=conn,
+    )
+    assert metrics.status == "ready"
+
+
+def test_planned_inventory_total_must_fit_warehouse_bigint(conn, tmp_path):
+    production = _production_inventory("sun2025")
+    production["sources"][0]["objects"][0]["size_bytes"] = preflight.MAX_SIGNED_BIGINT
+    production["sources"][1]["objects"][0]["size_bytes"] = 1
+    with pytest.raises(ValueError, match="Planned inventory bytes exceed"):
+        run_preflight(
+            "sun2025",
+            inventory_path=_write_json(tmp_path, "overflow.json", production),
+            conn=conn,
+        )
+
+
+def test_changed_provider_revision_appends_one_object_revision(conn, tmp_path):
+    production = _production_inventory("sun2025")
+    first_path = _write_json(tmp_path, "first.json", production)
+    run_preflight("sun2025", inventory_path=first_path, conn=conn)
+    initial_count = conn.execute(
+        f"select count(*) from {reproduction_ops_tbl('sun2025', 'source_objects')}"
+    ).fetchone()[0]
+
+    production["sources"][0]["objects"][0]["provider_revision_id"] = "revision-2"
+    second_path = _write_json(tmp_path, "second.json", production)
+    run_preflight("sun2025", inventory_path=second_path, conn=conn)
+
+    assert (
+        conn.execute(
+            f"select count(*) from {reproduction_ops_tbl('sun2025', 'source_objects')}"
+        ).fetchone()[0]
+        == initial_count + 1
+    )
+
+
+def test_partial_source_success_is_retained_without_generation(conn, tmp_path):
+    production = _production_inventory("sun2025")
+    blocker = production["sources"][0]
+    blocker.update(
+        {
+            "resolution_outcome": "transient_error",
+            "exactness_status": "unavailable",
+            "objects": [],
+            "reason": "CMR pagination failed after successful sibling resolution",
+        }
+    )
+    path = _write_json(tmp_path, "partial.json", production)
+
+    metrics = run_preflight(
+        "sun2025", inventory_path=path, fail_on_blocked=False, conn=conn
+    )
+
+    assert metrics.status == "blocked"
+    assert (
+        conn.execute(
+            f"select count(*) from {reproduction_ops_tbl('sun2025', 'source_objects')}"
+        ).fetchone()[0]
+        == metrics.object_count
+        > 0
+    )
+    assert (
+        conn.execute(
+            f"""
+            select count(*)
+            from {reproduction_ops_tbl("sun2025", "acquisition_generations")}
+            """
+        ).fetchone()[0]
+        == 0
     )
 
 

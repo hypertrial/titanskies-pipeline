@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Added
+
+- Added exact-only, metadata-only source-readiness assets, Dagster jobs, Make
+  targets, and `resolve_reproduction_sources.py` for the Sun and Andreadis
+  reproduction profiles. `reproduction-resolution-v1` evidence now resolves
+  each input to an immutable exact identity or a precise operator, transient,
+  or definitive blocker without downloading scientific payloads.
+- Added the normalized 14-facility Sun cohort, deterministic monthly ERA5
+  requests, explicit provider metadata resolvers, synthetic replay catalogs,
+  bounded storage accounting, and atomic canonical production inventories.
+
+### Changed
+
+- Production reproduction preflight now requires enriched resolution evidence,
+  exact or upper-bound sizes for every object, and uses `planned_max_bytes` for
+  storage budgets. Synthetic preflight and declared standalone fallback
+  demonstrations retain their existing behavior.
+
 ## [0.7.0] - 2026-07-30
 
 ### Added

@@ -6,11 +6,13 @@ import csv
 import hashlib
 import json
 from dataclasses import asdict, dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qsl, urlsplit
 
 import duckdb
+import pyarrow as pa
 
 from titanskies_pipeline.config.settings import BASE_DIR
 from titanskies_pipeline.naming import SOURCE_ANDREADIS2025, SOURCE_SUN2025
@@ -51,6 +53,18 @@ _SENSITIVE_KEY_PARTS = (
     "token",
 )
 INVENTORY_MODES = frozenset({"production", "synthetic"})
+MAX_SIGNED_BIGINT = 9_223_372_036_854_775_807
+PRODUCTION_INVENTORY_FORMAT = "reproduction-source-inventory-v2"
+RESOLUTION_FORMAT = "reproduction-resolution-v1"
+RESOLUTION_OUTCOMES = frozenset(
+    {
+        "resolved",
+        "operator_input_required",
+        "transient_error",
+        "definitively_unavailable",
+        "not_required",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -64,7 +78,9 @@ class PreflightMetrics:
     required_source_count: int
     object_count: int
     total_bytes: int
+    planned_max_bytes: int
     unknown_size_count: int
+    unbounded_size_count: int
     blocking_sources: tuple[str, ...]
     manifest_sha256: str
     scientific_contract_sha256: str
@@ -182,9 +198,28 @@ def load_profile(
             f"Manifest profile_id must be {profile_id!r}, got "
             f"{manifest.get('profile_id')!r}"
         )
-    for field in ("profile_version", "paper_doi", "scientific_contract", "sources"):
+    for field in (
+        "profile_version",
+        "paper_doi",
+        "inventory_format",
+        "resolution_format",
+        "resolution_evidence",
+        "scientific_contract",
+        "sources",
+    ):
         if not manifest.get(field):
             raise ValueError(f"Manifest field {field!r} is required")
+    if manifest["inventory_format"] != PRODUCTION_INVENTORY_FORMAT:
+        raise ValueError(
+            f"Manifest inventory_format must be {PRODUCTION_INVENTORY_FORMAT!r}"
+        )
+    if manifest["resolution_format"] != RESOLUTION_FORMAT:
+        raise ValueError(f"Manifest resolution_format must be {RESOLUTION_FORMAT!r}")
+    resolution_path = (
+        manifest_file.parent / str(manifest["resolution_evidence"])
+    ).resolve()
+    if resolution_path.parent != manifest_file.parent:
+        raise ValueError("Resolution evidence must be beside its source manifest")
     if not isinstance(manifest["sources"], list):
         raise ValueError("Manifest sources must be a list")
     source_ids: set[str] = set()
@@ -255,6 +290,22 @@ def _load_inventory(
     if inventory.get("inventory_mode") not in INVENTORY_MODES:
         expected = ", ".join(sorted(INVENTORY_MODES))
         raise ValueError(f"Inventory mode must be one of: {expected}")
+    if inventory["inventory_mode"] == "production":
+        if inventory.get("inventory_format") != PRODUCTION_INVENTORY_FORMAT:
+            raise ValueError(
+                f"Production inventory_format must be {PRODUCTION_INVENTORY_FORMAT!r}"
+            )
+        if inventory.get("resolution_format") != RESOLUTION_FORMAT:
+            raise ValueError(
+                f"Production resolution_format must be {RESOLUTION_FORMAT!r}"
+            )
+        resolution_hash = str(inventory.get("resolution_bundle_sha256", ""))
+        if len(resolution_hash) != 64 or any(
+            character not in "0123456789abcdef" for character in resolution_hash
+        ):
+            raise ValueError(
+                "Production inventory requires a resolution-bundle SHA-256"
+            )
     return inventory, inventory_sha256
 
 
@@ -287,9 +338,61 @@ def _validate_inventory(
         source_objects = source.get("objects", [])
         if not isinstance(source_objects, list):
             raise ValueError(f"Inventory objects for {source_id!r} must be a list")
+        if inventory["inventory_mode"] == "production":
+            outcome = source.get("resolution_outcome")
+            if outcome not in RESOLUTION_OUTCOMES:
+                raise ValueError(
+                    f"Production source {source_id!r} has invalid resolution outcome"
+                )
+            evidence = source.get("evidence")
+            if not isinstance(evidence, list) or not evidence:
+                raise ValueError(
+                    f"Production source {source_id!r} requires technical evidence"
+                )
+            for record in evidence:
+                if not isinstance(record, dict):
+                    raise ValueError(
+                        f"Evidence for production source {source_id!r} "
+                        "must be an object"
+                    )
+                evidence_url = str(record.get("url", ""))
+                evidence_hash = str(record.get("sha256", ""))
+                retrieved_at = str(record.get("retrieved_at", ""))
+                parsed_evidence_url = urlsplit(evidence_url)
+                if (
+                    parsed_evidence_url.scheme not in {"http", "https"}
+                    or not parsed_evidence_url.netloc
+                    or len(evidence_hash) != 64
+                    or any(
+                        character not in "0123456789abcdef"
+                        for character in evidence_hash
+                    )
+                ):
+                    raise ValueError(
+                        f"Production source {source_id!r} has malformed evidence"
+                    )
+                try:
+                    timestamp = datetime.fromisoformat(
+                        retrieved_at.replace("Z", "+00:00")
+                    )
+                except ValueError as exc:
+                    raise ValueError(
+                        f"Production source {source_id!r} has malformed evidence"
+                    ) from exc
+                if timestamp.tzinfo is None:
+                    raise ValueError(
+                        f"Production source {source_id!r} has malformed evidence"
+                    )
+            if outcome != "resolved" and source_objects:
+                raise ValueError(
+                    f"Production source {source_id!r} cannot attach objects to "
+                    f"outcome {outcome!r}"
+                )
         seen_object_ids: set[str] = set()
         source_total_bytes = 0
+        source_planned_max_bytes = 0
         unknown_size_count = 0
+        unbounded_size_count = 0
         normalized_objects: list[dict[str, Any]] = []
         for item in source_objects:
             if not isinstance(item, dict):
@@ -302,22 +405,57 @@ def _validate_inventory(
                 raise ValueError(
                     f"Inventory objects for {source_id!r} require object_id and url"
                 )
+            if inventory["inventory_mode"] == "production":
+                parsed_object_url = urlsplit(canonical_url)
+                if (
+                    parsed_object_url.scheme not in {"http", "https"}
+                    or not parsed_object_url.netloc
+                ):
+                    raise ValueError(
+                        f"Production object {object_id!r} requires an absolute "
+                        "HTTP(S) URL"
+                    )
             if object_id in seen_object_ids:
                 raise ValueError(
                     f"Inventory source {source_id!r} repeats object {object_id!r}"
                 )
             seen_object_ids.add(object_id)
             size_bytes = item.get("size_bytes")
+            size_upper_bound_bytes = item.get("size_upper_bound_bytes")
             if size_bytes is not None and (
-                not isinstance(size_bytes, int) or size_bytes < 0
+                not isinstance(size_bytes, int)
+                or isinstance(size_bytes, bool)
+                or not 0 <= size_bytes <= MAX_SIGNED_BIGINT
             ):
                 raise ValueError(
-                    f"Inventory object {object_id!r} size_bytes must be non-negative"
+                    f"Inventory object {object_id!r} size_bytes must fit BIGINT"
+                )
+            if size_upper_bound_bytes is not None and (
+                not isinstance(size_upper_bound_bytes, int)
+                or isinstance(size_upper_bound_bytes, bool)
+                or not 0 <= size_upper_bound_bytes <= MAX_SIGNED_BIGINT
+            ):
+                raise ValueError(
+                    f"Inventory object {object_id!r} size_upper_bound_bytes "
+                    "must fit BIGINT"
+                )
+            if (
+                size_bytes is not None
+                and size_upper_bound_bytes is not None
+                and size_upper_bound_bytes < size_bytes
+            ):
+                raise ValueError(
+                    f"Inventory object {object_id!r} upper bound is below exact size"
                 )
             if size_bytes is None:
                 unknown_size_count += 1
+                if size_upper_bound_bytes is None:
+                    unbounded_size_count += 1
+                else:
+                    source_planned_max_bytes += size_upper_bound_bytes
             else:
                 source_total_bytes += size_bytes
+                source_planned_max_bytes += size_bytes
             normalized = {
                 **item,
                 "object_id": object_id,
@@ -344,24 +482,39 @@ def _validate_inventory(
             "source_id": source_id,
             "object_count": len(normalized_objects),
             "total_bytes": source_total_bytes,
+            "planned_max_bytes": source_planned_max_bytes,
             "unknown_size_count": unknown_size_count,
+            "unbounded_size_count": unbounded_size_count,
         }
 
     completeness: list[dict[str, Any]] = []
     for source_id, contract in contracts.items():
         found = inventory_sources.get(source_id)
         status = found["exactness_status"] if found else "unavailable"
+        outcome = found.get("resolution_outcome") if found else None
         object_count = found["object_count"] if found else 0
         allowed = {contract["required_exactness"]}
         if not exact_mode:
             allowed.update(contract.get("allowed_fallbacks", []))
         reason: str | None = None
-        if contract["required"] and object_count == 0:
+        if inventory["inventory_mode"] == "production":
+            if outcome not in RESOLUTION_OUTCOMES:
+                reason = "production source lacks validated resolution evidence"
+            elif outcome == "not_required" and contract["required"]:
+                reason = "required source cannot be classified as not_required"
+            elif outcome != "resolved" and contract["required"]:
+                reason = str(
+                    (found or {}).get("reason")
+                    or f"source resolution outcome is {outcome}"
+                )
+            elif outcome == "resolved" and object_count == 0:
+                reason = "resolved source has no provider objects"
+        if reason is None and contract["required"] and object_count == 0:
             reason = str(
                 (found or {}).get("reason")
                 or "required source has no discovered objects"
             )
-        elif contract["required"] and status not in allowed:
+        elif reason is None and contract["required"] and status not in allowed:
             reason = (
                 f"status {status!r} does not satisfy "
                 f"{'exact' if exact_mode else 'allowed'} mode"
@@ -374,26 +527,53 @@ def _validate_inventory(
                 "exactness_status": status,
                 "object_count": object_count,
                 "total_bytes": found["total_bytes"] if found else 0,
+                "planned_max_bytes": found["planned_max_bytes"] if found else 0,
                 "unknown_size_count": found["unknown_size_count"] if found else 0,
+                "unbounded_size_count": (found["unbounded_size_count"] if found else 0),
+                "resolution_outcome": outcome,
                 "blocking_reason": reason,
             }
         )
 
-    total_bytes = sum(item["total_bytes"] for item in completeness)
+    if inventory["inventory_mode"] == "production":
+        l4 = inventory_sources.get("swot_l4_sos_paper_snapshot")
+        grdc = inventory_sources.get("grdc_gauge_fallback")
+        l4_embeds_priors = bool(
+            (l4 or {}).get("evidence_summary", {}).get("contains_gauge_priors")
+        )
+        if l4 is not None and not l4_embeds_priors:
+            if (
+                not grdc
+                or grdc.get("resolution_outcome") != "resolved"
+                or grdc.get("object_count") == 0
+            ):
+                blockers.append(
+                    "grdc_gauge_fallback: exact gauge evidence is required when "
+                    "the pinned L4 objects do not prove embedded gauge priors"
+                )
+    planned_max_bytes = sum(item["planned_max_bytes"] for item in completeness)
+    if planned_max_bytes > MAX_SIGNED_BIGINT:
+        raise ValueError("Planned inventory bytes exceed the warehouse BIGINT limit")
     if max_objects is not None and len(objects) > max_objects:
         blockers.append(
             f"object budget exceeded: discovered {len(objects)}, limit {max_objects}"
         )
-    if max_bytes is not None and total_bytes > max_bytes:
+    if max_bytes is not None and planned_max_bytes > max_bytes:
         blockers.append(
-            f"storage budget exceeded: discovered {total_bytes} bytes, "
+            f"storage budget exceeded: planned maximum {planned_max_bytes} bytes, "
             f"limit {max_bytes}"
         )
-    total_unknown_sizes = sum(item["unknown_size_count"] for item in completeness)
-    if max_bytes is not None and total_unknown_sizes:
+    total_unbounded_sizes = sum(item["unbounded_size_count"] for item in completeness)
+    if inventory["inventory_mode"] == "production" and total_unbounded_sizes:
+        blockers.append(
+            "storage plan is unbounded: "
+            f"{total_unbounded_sizes} objects have neither an exact size nor an "
+            "upper bound"
+        )
+    elif max_bytes is not None and total_unbounded_sizes:
         blockers.append(
             "storage budget cannot be verified: "
-            f"{total_unknown_sizes} object sizes are unknown"
+            f"{total_unbounded_sizes} object sizes are unknown"
         )
     return completeness, objects, tuple(blockers)
 
@@ -419,6 +599,42 @@ def _persist(
     generations_table = reproduction_ops_tbl(profile_id, "acquisition_generations")
     report = asdict(metrics)
     report["blocking_sources"] = list(metrics.blocking_sources)
+    object_rows: list[dict[str, Any]] = []
+    link_rows: list[dict[str, Any]] = []
+    for item in objects:
+        object_json = _canonical_json(item)
+        revision_id = _sha256(
+            f"{profile_id}|{item['source_id']}|{item['object_id']}|{object_json}"
+        )
+        object_rows.append(
+            {
+                "source_object_revision_id": revision_id,
+                "source_id": item["source_id"],
+                "object_id": item["object_id"],
+                "exactness_status": item["exactness_status"],
+                "canonical_url": item["url"],
+                "source_revision": item.get("source_revision"),
+                "checksum_algorithm": item.get("checksum_algorithm"),
+                "checksum": item.get("checksum"),
+                "object_etag": item.get("etag"),
+                "size_bytes": item.get("size_bytes"),
+                "schema_fingerprint": item.get("schema_fingerprint"),
+                "object_json": object_json,
+            }
+        )
+        link_rows.append(
+            {
+                "preflight_run_id": metrics.preflight_run_id,
+                "source_object_revision_id": revision_id,
+                "source_id": item["source_id"],
+                "inventory_sha256": inventory_sha256,
+            }
+        )
+    object_relation = "_reproduction_source_objects_batch"
+    link_relation = "_reproduction_source_object_links_batch"
+    if object_rows:
+        conn.register(object_relation, pa.Table.from_pylist(object_rows))
+        conn.register(link_relation, pa.Table.from_pylist(link_rows))
     conn.execute("BEGIN TRANSACTION")
     try:
         for source in manifest["sources"]:
@@ -514,48 +730,40 @@ def _persist(
                     item["blocking_reason"],
                 ],
             )
-        for item in objects:
-            object_json = _canonical_json(item)
-            revision_id = _sha256(
-                f"{profile_id}|{item['source_id']}|{item['object_id']}|{object_json}"
-            )
+        if object_rows:
             conn.execute(
                 f"""
-                INSERT INTO {objects_table} VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                    timezone('UTC', current_timestamp)
-                )
-                ON CONFLICT DO NOTHING
-                """,
-                [
-                    revision_id,
-                    item["source_id"],
-                    item["object_id"],
-                    item["exactness_status"],
-                    item["url"],
-                    item.get("source_revision"),
-                    item.get("checksum_algorithm"),
-                    item.get("checksum"),
-                    item.get("etag"),
-                    item.get("size_bytes"),
-                    item.get("schema_fingerprint"),
+                INSERT INTO {objects_table}
+                SELECT
+                    source_object_revision_id,
+                    source_id,
+                    object_id,
+                    exactness_status,
+                    canonical_url,
+                    source_revision,
+                    checksum_algorithm,
+                    checksum,
+                    object_etag,
+                    size_bytes,
+                    schema_fingerprint,
                     object_json,
-                ],
+                    timezone('UTC', current_timestamp)
+                FROM {object_relation}
+                ON CONFLICT DO NOTHING
+                """
             )
             conn.execute(
                 f"""
                 INSERT INTO {links_table}
-                VALUES (
-                    ?, ?, ?, ?, timezone('UTC', current_timestamp)
-                )
-                ON CONFLICT DO NOTHING
-                """,
-                [
-                    metrics.preflight_run_id,
-                    revision_id,
-                    item["source_id"],
+                SELECT
+                    preflight_run_id,
+                    source_object_revision_id,
+                    source_id,
                     inventory_sha256,
-                ],
+                    timezone('UTC', current_timestamp)
+                FROM {link_relation}
+                ON CONFLICT DO NOTHING
+                """
             )
         if metrics.status == "ready":
             generation_id = _sha256(f"{metrics.preflight_run_id}|acquisition")
@@ -590,6 +798,10 @@ def _persist(
     except Exception:
         conn.execute("ROLLBACK")
         raise
+    finally:
+        if object_rows:
+            conn.unregister(object_relation)
+            conn.unregister(link_relation)
 
 
 def run_preflight(
@@ -647,7 +859,19 @@ def run_preflight(
             for item in objects
             if item["size_bytes"] is not None
         ),
+        planned_max_bytes=sum(
+            int(
+                item["size_bytes"]
+                if item["size_bytes"] is not None
+                else item.get("size_upper_bound_bytes") or 0
+            )
+            for item in objects
+        ),
         unknown_size_count=sum(item["size_bytes"] is None for item in objects),
+        unbounded_size_count=sum(
+            item["size_bytes"] is None and item.get("size_upper_bound_bytes") is None
+            for item in objects
+        ),
         blocking_sources=blockers,
         manifest_sha256=manifest_sha256,
         scientific_contract_sha256=scientific_contract_sha256,
@@ -672,6 +896,7 @@ def run_preflight(
 
 __all__ = [
     "EXACTNESS_STATUSES",
+    "PRODUCTION_INVENTORY_FORMAT",
     "PROFILE_MANIFESTS",
     "PreflightBlockedError",
     "PreflightMetrics",

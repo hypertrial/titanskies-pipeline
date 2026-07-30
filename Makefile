@@ -1,4 +1,4 @@
-.PHONY: demo riverpulse-demo riverpulse-live-smoke plumegraph-demo plumegraph-live-smoke plumegraph-release sun2025-preflight andreadis2025-preflight dagster-dev dagster-jobs-smoke dagster-jobs-smoke-cov dagster-refresh-cov duckdb-ui dbt-build dbt-build-ci dbt-parse dbt-test dbt-unit dbt-source-freshness-ci golden-dbt gx-data-quality data-quality contract-http costguard costguard-scan docs-serve docs-build docs-structure docs-render docs-test docs-recipe-smoke docs-check live-smoke clean-local-artifacts format lint test test-cov coverage coverage-erase coverage-report unit-core unit-ingest unit-orchestration integration-dbt integration-dbt-cov integration-dagster integration-dagster-cov check-secrets compact-warehouse
+.PHONY: demo riverpulse-demo riverpulse-live-smoke plumegraph-demo plumegraph-live-smoke plumegraph-release sun2025-preflight andreadis2025-preflight sun2025-readiness andreadis2025-readiness dagster-dev dagster-jobs-smoke dagster-jobs-smoke-cov dagster-refresh-cov duckdb-ui dbt-build dbt-build-ci dbt-parse dbt-test dbt-unit dbt-source-freshness-ci golden-dbt gx-data-quality data-quality contract-http costguard costguard-scan docs-serve docs-build docs-structure docs-render docs-test docs-recipe-smoke docs-check live-smoke clean-local-artifacts format lint test test-cov coverage coverage-erase coverage-report unit-core unit-ingest unit-orchestration integration-dbt integration-dbt-cov integration-dagster integration-dagster-cov check-secrets compact-warehouse
 
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 override PYTHON := $(shell if test -x "$(REPO_ROOT)/.venv/bin/python"; then printf '%s' "$(REPO_ROOT)/.venv/bin/python"; else printf 'python3'; fi)
@@ -16,6 +16,12 @@ DBT_FRESHNESS_ENV := DUCKDB_NAME="$(DBT_FRESHNESS_DUCKDB_PATH)" DUCKDB_PATH="$(D
 REPRO_PREFLIGHT_DUCKDB_PATH ?= $(REPO_ROOT)/.cache/reproduction_preflight.duckdb
 SUN2025_PREFLIGHT_INVENTORY ?= $(REPO_ROOT)/tests/fixtures/reproductions/sun2025_preflight.json
 ANDREADIS2025_PREFLIGHT_INVENTORY ?= $(REPO_ROOT)/tests/fixtures/reproductions/andreadis2025_preflight.json
+REPRO_READINESS_OBJECT_BUDGET ?= 1000000
+REPRO_READINESS_BYTE_BUDGET ?= 10995116277760
+SUN2025_READINESS_EVIDENCE ?=
+SUN2025_READINESS_IMPORT_DIR ?=
+ANDREADIS2025_READINESS_EVIDENCE ?=
+ANDREADIS2025_READINESS_IMPORT_DIR ?=
 PYTEST_FAST_MARKERS := not integration and not performance and not slow and not repo_check and not contract
 PYTEST_COVERAGE_MARKERS := not performance and not slow and not repo_check and not contract
 COV_APPEND_ARGS := --cov=titanskies_pipeline --cov-branch --cov-append
@@ -51,6 +57,16 @@ sun2025-preflight:
 andreadis2025-preflight:
 	$(RUN_IN_REPO) mkdir -p "$(REPO_ROOT)/.cache"
 	$(RUN_IN_REPO) "$(PYTHON)" scripts/run_reproduction_preflight.py andreadis2025 --inventory "$(ANDREADIS2025_PREFLIGHT_INVENTORY)" --duckdb-path "$(REPRO_PREFLIGHT_DUCKDB_PATH)"
+
+sun2025-readiness:
+	@test -n "$(SUN2025_READINESS_EVIDENCE)" || (echo "Set SUN2025_READINESS_EVIDENCE to a reproduction-resolution-v1 bundle" && exit 2)
+	@test -n "$(SUN2025_READINESS_IMPORT_DIR)" || (echo "Set SUN2025_READINESS_IMPORT_DIR to the operator import directory" && exit 2)
+	$(RUN_IN_REPO) "$(PYTHON)" scripts/resolve_reproduction_sources.py sun2025 --evidence-bundle "$(SUN2025_READINESS_EVIDENCE)" --import-directory "$(SUN2025_READINESS_IMPORT_DIR)" --output-inventory "$(REPO_ROOT)/.cache/reproduction_readiness/sun2025/inventory.json" --duckdb-path "$(REPO_ROOT)/.cache/reproduction_readiness/sun2025/readiness.duckdb" --object-budget "$(REPRO_READINESS_OBJECT_BUDGET)" --byte-budget "$(REPRO_READINESS_BYTE_BUDGET)"
+
+andreadis2025-readiness:
+	@test -n "$(ANDREADIS2025_READINESS_EVIDENCE)" || (echo "Set ANDREADIS2025_READINESS_EVIDENCE to a reproduction-resolution-v1 bundle" && exit 2)
+	@test -n "$(ANDREADIS2025_READINESS_IMPORT_DIR)" || (echo "Set ANDREADIS2025_READINESS_IMPORT_DIR to the operator import directory" && exit 2)
+	$(RUN_IN_REPO) "$(PYTHON)" scripts/resolve_reproduction_sources.py andreadis2025 --evidence-bundle "$(ANDREADIS2025_READINESS_EVIDENCE)" --import-directory "$(ANDREADIS2025_READINESS_IMPORT_DIR)" --output-inventory "$(REPO_ROOT)/.cache/reproduction_readiness/andreadis2025/inventory.json" --duckdb-path "$(REPO_ROOT)/.cache/reproduction_readiness/andreadis2025/readiness.duckdb" --object-budget "$(REPRO_READINESS_OBJECT_BUDGET)" --byte-budget "$(REPRO_READINESS_BYTE_BUDGET)"
 
 dagster-dev:
 	mkdir -p "$(REPO_ROOT)/.dagster_home"

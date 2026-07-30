@@ -19,9 +19,10 @@ PlumeGraph is also explicit, review-gates its cohort and benchmark, and uses
 `plumegraph_events_contract.csv` as its only scientific-policy source.
 
 `sun2025:repro` and `andreadis2025:repro` are metadata-only acquisition
-preflights. They use `sun2025_repro_ops` and `andreadis2025_repro_ops`,
-respectively, publish no marts, and run only when an operator supplies a
-provider-discovery inventory. See
+readiness/preflight profiles. They use `sun2025_repro_ops` and
+`andreadis2025_repro_ops`, respectively, publish no marts, and run only when an
+operator explicitly supplies evidence/import configuration or an existing
+inventory. See
 [Paper reproduction preflight](../concepts/paper-reproduction-preflight.md).
 
 See [TEMPO product notes](../concepts/tempo-product-notes.md),

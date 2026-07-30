@@ -1,6 +1,6 @@
 # Naming
 
-Sources: `tempo`, `riverpulse`
+Sources: `tempo`, `riverpulse`, `plumegraph`, `sun2025`, `andreadis2025`
 
 Scopes: `no2` (NRT) and `no2_std` (standard V04)
 
@@ -34,3 +34,8 @@ Its explicit ingestion keys are
 `riverpulse/events/raw/source_inventory`, and
 `riverpulse/events/raw/observations`. Shared warehouse metadata lives in
 `titanskies_ops.warehouse_metadata`.
+
+Paper profiles use scope `repro` and retain metadata only in
+`sun2025_repro_ops` or `andreadis2025_repro_ops`. Their explicit asset keys
+are `<profile>/repro/ops/source_inventory` and
+`<profile>/repro/ops/source_preflight`.

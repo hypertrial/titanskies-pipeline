@@ -212,8 +212,11 @@ def test_tracked_data_files_are_inventory_scoped_and_synthetic():
         "config/riverpulse_pilots.json",
         "config/riverpulse_sources.json",
         "config/reproductions/andreadis2025_contract.csv",
+        "config/reproductions/andreadis2025_resolution.json",
         "config/reproductions/andreadis2025_sources.json",
         "config/reproductions/sun2025_contract.csv",
+        "config/reproductions/sun2025_facilities.csv",
+        "config/reproductions/sun2025_resolution.json",
         "config/reproductions/sun2025_sources.json",
         "dbt/seeds/riverpulse_events_contract.csv",
         "dbt/seeds/plumegraph_events_contract.csv",
@@ -228,6 +231,7 @@ def test_tracked_data_files_are_inventory_scoped_and_synthetic():
         "tests/fixtures/geo/tempo_region_registry.parquet",
         "tests/fixtures/netcdf/tempo_no2_sample.nc",
         "tests/fixtures/reproductions/andreadis2025_preflight.json",
+        "tests/fixtures/reproductions/readiness_catalogs.json",
         "tests/fixtures/reproductions/sun2025_preflight.json",
     }
     actual = {
