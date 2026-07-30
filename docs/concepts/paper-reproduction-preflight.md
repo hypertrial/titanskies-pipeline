@@ -36,6 +36,14 @@ persisted metadata field. Identical input creates the same run and generation
 identities. Production inventory ordering is canonical, and local run time is
 not part of its identity.
 
+CMR resolution verifies the provider-reported hit count on every page and
+classifies timed-out or prematurely ended pagination as `transient_error`.
+EPA CAMD resolution consumes the official
+[bulk-file `items` contract](https://api.epa.gov/easey/camd-services/swagger/)
+and requires one hourly national-quarter file for each quarter of 2023 and
+2024; the catalog `s3Path`, byte count, and `lastUpdated` value become the
+canonical object identity, size, and provider revision.
+
 Each source resolution has one technical outcome:
 
 | Outcome | Meaning |

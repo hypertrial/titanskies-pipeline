@@ -415,6 +415,13 @@ def _validate_inventory(
                         f"Production object {object_id!r} requires an absolute "
                         "HTTP(S) URL"
                     )
+                if not str(item.get("provider_object_id", "")) or not str(
+                    item.get("provider_revision_id", "")
+                ):
+                    raise ValueError(
+                        f"Production object {object_id!r} requires provider object "
+                        "and revision identities"
+                    )
             if object_id in seen_object_ids:
                 raise ValueError(
                     f"Inventory source {source_id!r} repeats object {object_id!r}"
@@ -586,6 +593,7 @@ def _persist(
     manifest_sha256: str,
     scientific_contract_sha256: str,
     inventory_sha256: str,
+    inventory: dict[str, Any],
     metrics: PreflightMetrics,
     completeness: list[dict[str, Any]],
     objects: list[dict[str, Any]],
@@ -599,6 +607,25 @@ def _persist(
     generations_table = reproduction_ops_tbl(profile_id, "acquisition_generations")
     report = asdict(metrics)
     report["blocking_sources"] = list(metrics.blocking_sources)
+    if (
+        metrics.inventory_mode == "production"
+        and inventory.get("resolution_format") == RESOLUTION_FORMAT
+    ):
+        report["resolution_format"] = inventory["resolution_format"]
+        report["resolution_bundle_sha256"] = inventory["resolution_bundle_sha256"]
+        report["source_resolutions"] = sorted(
+            [
+                {
+                    "source_id": source["source_id"],
+                    "resolution_outcome": source["resolution_outcome"],
+                    "reason": source.get("reason"),
+                    "evidence_summary": source.get("evidence_summary", {}),
+                    "evidence": source["evidence"],
+                }
+                for source in inventory["sources"]
+            ],
+            key=lambda source: source["source_id"],
+        )
     object_rows: list[dict[str, Any]] = []
     link_rows: list[dict[str, Any]] = []
     for item in objects:
@@ -885,6 +912,7 @@ def run_preflight(
             manifest_sha256=manifest_sha256,
             scientific_contract_sha256=scientific_contract_sha256,
             inventory_sha256=inventory_sha256,
+            inventory=inventory,
             metrics=metrics,
             completeness=completeness,
             objects=objects,

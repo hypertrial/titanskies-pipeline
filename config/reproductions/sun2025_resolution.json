@@ -66,6 +66,11 @@
           "url": "https://www.epa.gov/power-sector/power-sector-data",
           "retrieved_at": "2026-07-30T10:50:29Z",
           "sha256": "283bfc116ab858f46324c30dd6e8dfcc020ed10295c75b255e322043a08dac8a"
+        },
+        {
+          "url": "https://api.epa.gov/easey/camd-services/swagger/swagger-ui-init.js",
+          "retrieved_at": "2026-07-30T11:59:51Z",
+          "sha256": "12d0f5a97efdbc0cdba6152c3c1116725ab9dc3613afbbb0281e6e649480875a"
         }
       ]
     },

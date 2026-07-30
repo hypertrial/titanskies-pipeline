@@ -54,6 +54,28 @@ def _response(status: int, payload: dict, **headers: str) -> requests.Response:
     return response
 
 
+def _epa_catalog(*, years: tuple[int, ...] = (2023, 2024)) -> dict:
+    return {
+        "items": [
+            {
+                "filename": f"Emissions-Hourly-{year}-Q{quarter}.csv",
+                "s3Path": (
+                    f"emissions/hourly/quarter/Emissions-Hourly-{year}-Q{quarter}.csv"
+                ),
+                "bytes": 10,
+                "lastUpdated": f"{year}-12-31T00:00:0{quarter}Z",
+                "metadata": {
+                    "dataType": "Emissions",
+                    "dataSubType": "Hourly",
+                    "grouping": "Quarterly",
+                },
+            }
+            for year in years
+            for quarter in range(1, 5)
+        ]
+    }
+
+
 class FakeSession:
     def __init__(self, responses: list[requests.Response]):
         self.responses = responses
@@ -132,11 +154,12 @@ def test_readiness_cli_exit_contract(
             "--output-inventory",
             str(tmp_path / "inventory.json"),
             "--duckdb-path",
-            str(tmp_path / "readiness.duckdb"),
+            str(tmp_path / "nested" / "readiness.duckdb"),
         ],
     )
 
     assert readiness_cli.main() == expected_exit
+    assert (tmp_path / "nested").is_dir()
 
 
 def test_resolver_orders_provider_objects_and_is_byte_deterministic(tmp_path):
@@ -265,6 +288,145 @@ def test_cmr_pagination_deduplicates_revisions_and_preserves_metadata(tmp_path):
     assert tempo["objects"][0]["provider_revision_id"] == "2"
     assert tempo["objects"][0]["size_upper_bound_bytes"] == 1536
     assert [call[2]["params"]["page_num"] for call in session.calls] == [1, 2]
+
+
+def test_cmr_provider_completeness_headers_block_partial_resolution():
+    manifest, *_ = load_profile("sun2025")
+    source = next(
+        item for item in manifest["sources"] if item["id"] == "tempo_no2_l2_v03"
+    )
+    item = {
+        "meta": {
+            "concept-id": "G1-TEST",
+            "revision-id": 1,
+            "revision-date": "2024-01-01T00:00:00Z",
+        },
+        "umm": {
+            "GranuleUR": "granule",
+            "RelatedUrls": [
+                {"Type": "GET DATA", "URL": "https://example.test/granule.nc"}
+            ],
+            "DataGranule": {"SizeInBytes": 1},
+        },
+    }
+
+    partial = _response(200, {"items": [item]}, **{"CMR-Hits": "2"})
+    with pytest.raises(readiness._ProviderResolutionError, match="ended after 1 of 2"):
+        readiness._cmr_objects(
+            source,
+            {"catalog_url": "https://example.test/cmr"},
+            FakeSession([partial]),
+            timeout=1,
+            sleep=lambda _delay: None,
+        )
+
+    timed_out = _response(200, {"items": [item]}, **{"CMR-Time-Out": "true"})
+    with pytest.raises(readiness._ProviderResolutionError, match="timed-out partial"):
+        readiness._cmr_objects(
+            source,
+            {"catalog_url": "https://example.test/cmr"},
+            FakeSession([timed_out]),
+            timeout=1,
+            sleep=lambda _delay: None,
+        )
+
+    malformed = _response(200, {"items": [item]}, **{"CMR-Hits": "invalid"})
+    with pytest.raises(ValueError, match="malformed CMR-Hits"):
+        readiness._cmr_objects(
+            source,
+            {"catalog_url": "https://example.test/cmr"},
+            FakeSession([malformed]),
+            timeout=1,
+            sleep=lambda _delay: None,
+        )
+
+    changed = FakeSession(
+        [
+            _response(200, {"items": [item] * 2000}, **{"CMR-Hits": "2"}),
+            _response(200, {"items": [item]}, **{"CMR-Hits": "3"}),
+        ]
+    )
+    with pytest.raises(readiness._ProviderResolutionError, match="hit count changed"):
+        readiness._cmr_objects(
+            source,
+            {"catalog_url": "https://example.test/cmr"},
+            changed,
+            timeout=1,
+            sleep=lambda _delay: None,
+        )
+
+    transient = readiness._resolve_source(
+        source,
+        {
+            "outcome": "resolved",
+            "catalog_url": "https://example.test/cmr",
+            "evidence": [_record()],
+        },
+        Path("."),
+        FakeSession([_response(200, {"items": [item]}, **{"CMR-Hits": "2"})]),
+        timeout=1,
+        sleep=lambda _delay: None,
+    )
+    assert transient["resolution_outcome"] == "transient_error"
+    assert "1 of 2" in transient["reason"]
+
+    negative = _response(200, {"items": []}, **{"CMR-Hits": "-1"})
+    with pytest.raises(ValueError, match="malformed CMR-Hits"):
+        readiness._cmr_objects(
+            source,
+            {"catalog_url": "https://example.test/cmr"},
+            FakeSession([negative]),
+            timeout=1,
+            sleep=lambda _delay: None,
+        )
+
+    exceeded = _response(200, {"items": [item]}, **{"CMR-Hits": "0"})
+    with pytest.raises(ValueError, match="exceeded its reported hit count"):
+        readiness._cmr_objects(
+            source,
+            {"catalog_url": "https://example.test/cmr"},
+            FakeSession([exceeded]),
+            timeout=1,
+            sleep=lambda _delay: None,
+        )
+
+    exact = _response(200, {"items": [item]}, **{"CMR-Hits": "1"})
+    assert (
+        len(
+            readiness._cmr_objects(
+                source,
+                {"catalog_url": "https://example.test/cmr"},
+                FakeSession([exact]),
+                timeout=1,
+                sleep=lambda _delay: None,
+            )
+        )
+        == 1
+    )
+
+    second_item = {
+        **item,
+        "meta": {**item["meta"], "concept-id": "G2-TEST"},
+        "umm": {**item["umm"], "GranuleUR": "granule-2"},
+    }
+    complete_pages = FakeSession(
+        [
+            _response(200, {"items": [item] * 2000}, **{"CMR-Hits": "2"}),
+            _response(200, {"items": [second_item]}, **{"CMR-Hits": "2"}),
+        ]
+    )
+    assert (
+        len(
+            readiness._cmr_objects(
+                source,
+                {"catalog_url": "https://example.test/cmr"},
+                complete_pages,
+                timeout=1,
+                sleep=lambda _delay: None,
+            )
+        )
+        == 2
+    )
 
 
 def test_provider_retry_after_and_exhaustion_are_sanitized(tmp_path, monkeypatch):
@@ -469,15 +631,19 @@ def test_geos_v1_and_epa_year_coverage_are_exact_contracts(tmp_path):
         "evidence": [_record()],
         "objects": [
             {
-                "object_id": "camd-2024.zip",
-                "url": "https://example.test/camd-2024.zip",
+                "object_id": f"Emissions-Hourly-2024-Q{quarter}.csv",
+                "provider_object_id": f"epa-2024-q{quarter}",
+                "provider_revision_id": f"revision-{quarter}",
+                "url": f"https://example.test/camd-2024-q{quarter}.csv",
                 "size_bytes": 100,
                 "year": 2024,
+                "quarter": quarter,
             }
+            for quarter in range(1, 5)
         ],
     }
     evidence = _write_bundle(tmp_path, "sun2025", [epa_source])
-    with pytest.raises(ValueError, match="year coverage"):
+    with pytest.raises(ValueError, match="requested quarters"):
         resolve_reproduction_sources(
             "sun2025",
             evidence_path=evidence,
@@ -1037,64 +1203,44 @@ def test_static_epa_opendap_and_git_provider_contracts(tmp_path):
     assert objects[0]["etag"] == "etag"
 
     epa = next(item for item in sun["sources"] if item["id"] == "epa_camd_hourly")
-    epa_payload = {
-        "objects": [
-            {
-                "object_id": f"camd-{year}",
-                "url": f"https://example.test/{year}",
-                "size_bytes": 10,
-                "year": year,
-                "etag": f"etag-{year}",
-            }
-            for year in (2023, 2024)
-        ]
-    }
+    epa_payload = _epa_catalog()
     monkeypatch = pytest.MonkeyPatch()
     monkeypatch.setenv("PLUMEGRAPH_EPA_API_KEY", "secret")
     try:
-        assert (
-            len(
-                readiness._epa_objects(
-                    epa,
-                    {"catalog_url": "https://example.test/epa"},
-                    FakeSession([_response(200, epa_payload)]),
-                    timeout=1,
-                    sleep=lambda _delay: None,
-                )
-            )
-            == 2
+        epa_objects = readiness._epa_objects(
+            epa,
+            {"catalog_url": "https://example.test/epa"},
+            FakeSession([_response(200, epa_payload)]),
+            timeout=1,
+            sleep=lambda _delay: None,
+        )
+        assert len(epa_objects) == 8
+        assert epa_objects[0]["provider_object_id"].startswith(
+            "emissions/hourly/quarter/"
+        )
+        assert epa_objects[0]["provider_revision_id"].startswith("2023-")
+        assert epa_objects[0]["url"].startswith(
+            "https://api.epa.gov/easey/bulk-files/emissions/hourly/quarter/"
         )
     finally:
         monkeypatch.undo()
     for payload, message in [
-        ({"objects": {}}, "Malformed provider"),
+        ({"items": {}}, "Malformed provider"),
         (
-            {
-                "objects": [
-                    {
-                        "object_id": "camd-2024",
-                        "url": "https://example.test/2024",
-                        "size_bytes": 1,
-                        "year": 2024,
-                        "etag": "etag",
-                    }
-                ]
-            },
-            "missing requested years",
+            _epa_catalog(years=(2024,)),
+            "missing requested quarters",
         ),
         (
             {
-                "objects": [
+                "items": [
                     {
-                        "object_id": f"camd-{year}",
-                        "url": f"https://example.test/{year}",
-                        "size_bytes": 1,
-                        "year": year,
+                        **item,
+                        "lastUpdated": "",
                     }
-                    for year in (2023, 2024)
+                    for item in _epa_catalog()["items"]
                 ]
             },
-            "revision or ETag",
+            "missing identity or revision",
         ),
     ]:
         with pytest.raises(ValueError, match=message):
@@ -1105,6 +1251,70 @@ def test_static_epa_opendap_and_git_provider_contracts(tmp_path):
                 timeout=1,
                 sleep=lambda _delay: None,
             )
+
+    with pytest.raises(ValueError, match="Malformed provider"):
+        readiness._epa_objects(
+            epa,
+            {"catalog_url": "https://example.test/epa"},
+            FakeSession([_response(200, {"items": ["not-an-object"]})]),
+            timeout=1,
+            sleep=lambda _delay: None,
+        )
+
+    duplicate_quarter = _epa_catalog()
+    duplicate_quarter["items"].append(dict(duplicate_quarter["items"][0]))
+    with pytest.raises(ValueError, match="repeats or includes unexpected"):
+        readiness._epa_objects(
+            epa,
+            {"catalog_url": "https://example.test/epa"},
+            FakeSession([_response(200, duplicate_quarter)]),
+            timeout=1,
+            sleep=lambda _delay: None,
+        )
+
+    inconsistent = _epa_catalog()
+    inconsistent["items"][0]["metadata"]["grouping"] = "State"
+    with pytest.raises(ValueError, match="inconsistent grouping"):
+        readiness._epa_objects(
+            epa,
+            {"catalog_url": "https://example.test/epa"},
+            FakeSession([_response(200, inconsistent)]),
+            timeout=1,
+            sleep=lambda _delay: None,
+        )
+
+    with_irrelevant = _epa_catalog()
+    with_irrelevant["items"][:0] = [
+        {
+            "filename": "Facility-Attributes.csv",
+            "s3Path": "facility/Facility-Attributes.csv",
+            "bytes": 1,
+            "lastUpdated": "2025-01-01T00:00:00Z",
+            "metadata": {},
+        },
+        {
+            "filename": "Emissions-Hourly-2022-Q1.csv",
+            "s3Path": "emissions/hourly/quarter/Emissions-Hourly-2022-Q1.csv",
+            "bytes": 1,
+            "lastUpdated": "2025-01-01T00:00:00Z",
+            "metadata": {},
+        },
+    ]
+    assert (
+        len(
+            readiness._epa_objects(
+                epa,
+                {
+                    "catalog_url": "https://example.test/epa",
+                    "download_base_url": "https://example.test/bulk/",
+                },
+                FakeSession([_response(200, with_irrelevant)]),
+                timeout=1,
+                sleep=lambda _delay: None,
+            )
+        )
+        == 8
+    )
 
     geos = next(item for item in sun["sources"] if item["id"] == "geos_cf_2024")
     geos_payload = {
@@ -1339,17 +1549,7 @@ def test_catalog_and_dispatch_branches(tmp_path, monkeypatch):
             sleep=lambda _delay: None,
         )
 
-    inferred_years = {
-        "objects": [
-            {
-                "object_id": f"camd-{year}",
-                "url": f"https://example.test/{year}",
-                "size_bytes": 1,
-                "etag": f"etag-{year}",
-            }
-            for year in (2023, 2024)
-        ]
-    }
+    inferred_years = _epa_catalog()
     monkeypatch.setenv("PLUMEGRAPH_EPA_API_KEY", "secret")
     assert (
         len(
@@ -1361,17 +1561,21 @@ def test_catalog_and_dispatch_branches(tmp_path, monkeypatch):
                 sleep=lambda _delay: None,
             )
         )
-        == 2
+        == 8
     )
 
     direct_epa = [
         {
-            "object_id": f"camd-{year}",
-            "url": f"https://example.test/{year}",
+            "object_id": f"Emissions-Hourly-{year}-Q{quarter}.csv",
+            "provider_object_id": f"epa-{year}-q{quarter}",
+            "provider_revision_id": f"revision-{year}-{quarter}",
+            "url": f"https://example.test/{year}/{quarter}",
             "size_bytes": 1,
             "year": year,
+            "quarter": quarter,
         }
         for year in (2023, 2024)
+        for quarter in range(1, 5)
     ]
     assert (
         len(
@@ -1384,7 +1588,7 @@ def test_catalog_and_dispatch_branches(tmp_path, monkeypatch):
                 sleep=lambda _delay: None,
             )
         )
-        == 2
+        == 8
     )
     with pytest.raises(ValueError, match="must be a list"):
         readiness._resolve_objects(
@@ -1562,15 +1766,25 @@ def test_resolve_source_transient_conflict_and_cutoff_branches(tmp_path):
     )
     assert result["reason"] == "provider returned no exact objects"
 
-    with pytest.raises(requests.HTTPError):
-        readiness._resolve_source(
-            tempo,
-            {**base_evidence, "catalog_url": "https://example.test/cmr"},
-            tmp_path,
-            FakeSession([_response(400, {})]),
-            timeout=1,
-            sleep=lambda _delay: None,
-        )
+    nonretryable = readiness._resolve_source(
+        tempo,
+        {**base_evidence, "catalog_url": "https://example.test/cmr"},
+        tmp_path,
+        FakeSession([_response(400, {})]),
+        timeout=1,
+        sleep=lambda _delay: None,
+    )
+    assert nonretryable["resolution_outcome"] == "transient_error"
+    assert nonretryable["reason"].endswith("HTTP 400")
+    unauthorized = readiness._resolve_source(
+        tempo,
+        {**base_evidence, "catalog_url": "https://example.test/cmr"},
+        tmp_path,
+        FakeSession([_response(403, {})]),
+        timeout=1,
+        sleep=lambda _delay: None,
+    )
+    assert unauthorized["resolution_outcome"] == "operator_input_required"
     invalid_json = requests.Response()
     invalid_json.status_code = 200
     invalid_json._content = b"{"
@@ -1601,6 +1815,7 @@ def test_resolve_source_transient_conflict_and_cutoff_branches(tmp_path):
 
     duplicate = {
         "object_id": "same",
+        "provider_revision_id": "revision",
         "url": "https://example.test/object",
         "size_bytes": 1,
     }
@@ -1628,6 +1843,25 @@ def test_resolve_source_transient_conflict_and_cutoff_branches(tmp_path):
         readiness._resolve_source(
             facility,
             {**base_evidence, "objects": conflicting_provider_revision},
+            tmp_path,
+            FakeSession([]),
+            timeout=1,
+            sleep=lambda _delay: None,
+        )
+
+    with pytest.raises(ValueError, match="immutable revision identities"):
+        readiness._resolve_source(
+            facility,
+            {
+                **base_evidence,
+                "objects": [
+                    {
+                        "object_id": "cohort",
+                        "url": "https://example.test/cohort",
+                        "size_bytes": 1,
+                    }
+                ],
+            },
             tmp_path,
             FakeSession([]),
             timeout=1,
@@ -1712,6 +1946,7 @@ def test_resolver_top_level_validation_and_complete_status(tmp_path):
         "objects": [
             {
                 "object_id": "cohort",
+                "provider_revision_id": "revision-1",
                 "url": "https://example.test/cohort",
                 "size_bytes": 1,
             }

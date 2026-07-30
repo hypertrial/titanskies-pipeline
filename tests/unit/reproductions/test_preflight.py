@@ -56,6 +56,13 @@ def _production_inventory(profile_id: str) -> dict:
             }
         ]
         for item in source["objects"]:
+            item["provider_object_id"] = item["object_id"]
+            item["provider_revision_id"] = (
+                item.get("provider_revision_id")
+                or item.get("checksum")
+                or item.get("etag")
+                or "synthetic-revision-1"
+            )
             if item["size_bytes"] is None:
                 item["size_upper_bound_bytes"] = 10_000
     return inventory
@@ -511,6 +518,22 @@ def test_production_inventory_creates_planned_generation_and_keeps_contract_hist
         ).fetchone()[0]
         == 14
     )
+    report = json.loads(
+        conn.execute(
+            f"""
+            select report_json
+            from {reproduction_ops_tbl("sun2025", "preflight_runs")}
+            where preflight_run_id = ?
+            """,
+            [metrics.preflight_run_id],
+        ).fetchone()[0]
+    )
+    assert report["resolution_format"] == "reproduction-resolution-v1"
+    assert report["resolution_bundle_sha256"] == "d" * 64
+    assert len(report["source_resolutions"]) == len(inventory["sources"])
+    assert report["source_resolutions"][0]["evidence"][0]["url"].startswith(
+        "https://example.test/"
+    )
 
 
 def test_production_inventory_requires_resolution_format_and_bounded_sizes(
@@ -636,6 +659,20 @@ def test_production_inventory_requires_absolute_provider_urls(conn, tmp_path):
         )
 
 
+def test_production_inventory_requires_provider_revision_identities(conn, tmp_path):
+    production = _production_inventory("sun2025")
+    item = production["sources"][0]["objects"][0]
+    item.pop("provider_revision_id")
+    with pytest.raises(ValueError, match="provider object and revision identities"):
+        run_preflight(
+            "sun2025",
+            inventory_path=_write_json(
+                tmp_path, "missing-provider-id.json", production
+            ),
+            conn=conn,
+        )
+
+
 @pytest.mark.parametrize(
     ("upper_bound", "message"),
     [
@@ -756,6 +793,8 @@ def test_resolved_grdc_satisfies_conditional_prior_requirement(conn, tmp_path):
             "objects": [
                 {
                     "object_id": "grdc-priors",
+                    "provider_object_id": "grdc-priors",
+                    "provider_revision_id": "paper-time-revision",
                     "url": "https://example.test/grdc-priors.csv",
                     "size_bytes": 100,
                 }

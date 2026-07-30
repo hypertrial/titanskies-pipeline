@@ -58,6 +58,7 @@ crosswalk source and contains no emissions payload.
 
 - Version: `2023-2024 reported revisions`
 - URL: `https://api.epa.gov/easey/camd-services/bulk-files`
+- API contract: `https://api.epa.gov/easey/camd-services/swagger/`
 - Attribution: `EPA Clean Air Markets Division`
 - Licence field: `United States government data`
 

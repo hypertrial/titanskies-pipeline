@@ -37,7 +37,9 @@ def _parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = _parser().parse_args()
-    os.environ["DUCKDB_PATH"] = str(args.duckdb_path.resolve())
+    duckdb_path = args.duckdb_path.resolve()
+    duckdb_path.parent.mkdir(parents=True, exist_ok=True)
+    os.environ["DUCKDB_PATH"] = str(duckdb_path)
     reset_duckdb_connection_state()
     resolution = resolve_reproduction_sources(
         args.profile,

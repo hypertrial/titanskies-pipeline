@@ -7,6 +7,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -14,7 +15,7 @@ from email.utils import parsedate_to_datetime
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any, Callable
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 
 import requests
 
@@ -48,6 +49,14 @@ _SIGNED_QUERY_KEYS = frozenset(
         "x-amz-signature",
     }
 )
+_EPA_HOURLY_QUARTER_PATTERN = re.compile(
+    r"^Emissions-Hourly-(?P<year>\d{4})-Q(?P<quarter>[1-4])\.csv$",
+    re.IGNORECASE,
+)
+
+
+class _ProviderResolutionError(RuntimeError):
+    """Provider metadata was incomplete without violating a local contract."""
 
 
 @dataclass(frozen=True)
@@ -337,9 +346,19 @@ def _normalize_object(source_id: str, value: dict[str, Any]) -> dict[str, Any]:
         )
     if size is not None and upper is not None and upper < size:
         raise ValueError(f"Resolved object {object_id!r} has an invalid upper bound")
+    provider_object_id = str(value.get("provider_object_id") or object_id)
+    provider_revision_id = str(
+        value.get("provider_revision_id")
+        or value.get("source_revision")
+        or value.get("etag")
+        or value.get("checksum")
+        or ""
+    )
     return {
         **value,
         "object_id": object_id,
+        "provider_object_id": provider_object_id,
+        "provider_revision_id": provider_revision_id,
         "url": _unsigned_url(url),
         "size_bytes": size,
         "size_upper_bound_bytes": upper,
@@ -365,6 +384,8 @@ def _objects_from_import(
             _validate_sun_cohort(raw)
         object_value = {
             "object_id": path.name,
+            "provider_object_id": f"operator-import:{path.name}",
+            "provider_revision_id": evidence.get("source_revision") or actual_sha256,
             "url": str(evidence["canonical_url"]),
             "size_bytes": len(raw),
             "checksum_algorithm": "sha256",
@@ -399,6 +420,7 @@ def _cmr_objects(
     )
     request_contract = source["request"]
     page = 1
+    expected_hits: int | None = None
     seen: set[tuple[str, str]] = set()
     resolved: list[dict[str, Any]] = []
     requested_start = _parse_utc(
@@ -425,6 +447,28 @@ def _cmr_objects(
             },
             headers={"Accept": "application/json"},
         )
+        if response.headers.get("CMR-Time-Out", "").lower() == "true":
+            raise _ProviderResolutionError(
+                f"CMR catalog for {source['id']!r} returned a timed-out partial page"
+            )
+        hits_header = response.headers.get("CMR-Hits")
+        if hits_header is not None:
+            try:
+                page_hits = int(hits_header)
+            except ValueError as exc:
+                raise ValueError(
+                    f"CMR catalog for {source['id']!r} has malformed CMR-Hits"
+                ) from exc
+            if page_hits < 0:
+                raise ValueError(
+                    f"CMR catalog for {source['id']!r} has malformed CMR-Hits"
+                )
+            if expected_hits is None:
+                expected_hits = page_hits
+            elif page_hits != expected_hits:
+                raise _ProviderResolutionError(
+                    f"CMR hit count changed during pagination for {source['id']!r}"
+                )
         payload = response.json()
         items = payload.get("items")
         if not isinstance(items, list):
@@ -542,7 +586,19 @@ def _cmr_objects(
                     },
                 )
             )
-        if len(items) < 2000:
+        if expected_hits is not None:
+            if len(seen) > expected_hits:
+                raise ValueError(
+                    f"CMR catalog for {source['id']!r} exceeded its reported hit count"
+                )
+            if len(seen) == expected_hits:
+                break
+            if len(items) < 2000:
+                raise _ProviderResolutionError(
+                    f"CMR pagination ended after {len(seen)} of {expected_hits} "
+                    f"reported objects for {source['id']!r}"
+                )
+        elif len(items) < 2000:
             break
         page += 1
     return resolved
@@ -657,6 +713,35 @@ def _catalog_payload(
     return payload
 
 
+def _epa_period(item: dict[str, Any]) -> tuple[int, int] | None:
+    year = item.get("year")
+    quarter = item.get("quarter")
+    if year is not None and quarter is not None:
+        return int(year), int(quarter)
+    match = _EPA_HOURLY_QUARTER_PATTERN.fullmatch(
+        str(item.get("filename") or item.get("object_id") or "")
+    )
+    if match is None:
+        return None
+    return int(match.group("year")), int(match.group("quarter"))
+
+
+def _validate_epa_coverage(
+    source: dict[str, Any], objects: list[dict[str, Any]]
+) -> None:
+    requested_years = {int(year) for year in source["request"]["years"]}
+    expected_periods = {
+        (year, quarter) for year in requested_years for quarter in range(1, 5)
+    }
+    periods = [_epa_period(item) for item in objects]
+    actual_periods = {period for period in periods if period in expected_periods}
+    if len(actual_periods) != len([period for period in periods if period is not None]):
+        raise ValueError("EPA catalog repeats or includes unexpected hourly quarters")
+    if actual_periods != expected_periods:
+        missing = sorted(expected_periods - actual_periods)
+        raise ValueError(f"EPA catalog is missing requested quarters: {missing}")
+
+
 def _epa_objects(
     source: dict[str, Any],
     evidence: dict[str, Any],
@@ -666,25 +751,72 @@ def _epa_objects(
     sleep: Callable[[float], None],
 ) -> list[dict[str, Any]]:
     payload = _catalog_payload(source, evidence, session, timeout=timeout, sleep=sleep)
-    items = payload.get("objects")
+    items = payload.get("items")
     if not isinstance(items, list):
         raise ValueError(f"Malformed provider catalog for {source['id']!r}")
     requested_years = {int(year) for year in source["request"]["years"]}
-    present_years: set[int] = set()
+    download_base_url = _unsigned_url(
+        str(evidence.get("download_base_url", "https://api.epa.gov/easey/bulk-files"))
+    ).rstrip("/")
+    resolved: list[dict[str, Any]] = []
     for item in items:
-        if item.get("year") is not None:
-            present_years.add(int(item["year"]))
-        else:
-            object_id = str(item.get("object_id", ""))
-            present_years.update(
-                year for year in requested_years if str(year) in object_id
+        if not isinstance(item, dict):
+            raise ValueError(f"Malformed provider catalog for {source['id']!r}")
+        period = _epa_period(item)
+        if period is None or period[0] not in requested_years:
+            continue
+        filename = str(item.get("filename", ""))
+        s3_path = str(item.get("s3Path", ""))
+        revision = str(item.get("lastUpdated", ""))
+        metadata = item.get("metadata")
+        if (
+            not filename
+            or not s3_path
+            or not revision
+            or not isinstance(metadata, dict)
+        ):
+            raise ValueError("EPA bulk-file metadata is missing identity or revision")
+        _parse_utc(revision, label="EPA bulk-file revision")
+        expected_metadata = {
+            "datatype": "emissions",
+            "datasubtype": "hourly",
+            "grouping": "quarterly",
+        }
+        normalized_metadata = {
+            str(key).replace("_", "").lower(): str(value).lower()
+            for key, value in metadata.items()
+        }
+        for key, expected in expected_metadata.items():
+            if key in normalized_metadata and normalized_metadata[key] != expected:
+                raise ValueError(
+                    f"EPA bulk-file {filename!r} has inconsistent {key} metadata"
+                )
+        resolved.append(
+            _normalize_object(
+                str(source["id"]),
+                {
+                    "object_id": filename,
+                    "provider_object_id": s3_path,
+                    "provider_revision_id": revision,
+                    "url": f"{download_base_url}/{quote(s3_path.lstrip('/'), safe='/')}",
+                    "size_bytes": item.get("bytes"),
+                    "source_revision": revision,
+                    "etag": item.get("etag") or metadata.get("etag"),
+                    "schema_fingerprint": _sha256(
+                        _canonical_json(
+                            {
+                                "catalog_fields": sorted(item),
+                                "metadata_fields": sorted(metadata),
+                            }
+                        )
+                    ),
+                    "year": period[0],
+                    "quarter": period[1],
+                },
             )
-        if not item.get("provider_revision_id") and not item.get("etag"):
-            raise ValueError("EPA catalog objects require a revision or ETag")
-    if not requested_years.issubset(present_years):
-        missing = sorted(requested_years - present_years)
-        raise ValueError(f"EPA catalog is missing requested years: {missing}")
-    return [_normalize_object(str(source["id"]), item) for item in items]
+        )
+    _validate_epa_coverage(source, resolved)
+    return resolved
 
 
 def _opendap_objects(
@@ -812,12 +944,7 @@ def _resolve_objects(
             _normalize_object(str(source["id"]), item) for item in evidence["objects"]
         ]
         if method == "epa_api":
-            requested_years = {int(year) for year in source["request"]["years"]}
-            present_years = {
-                int(item["year"]) for item in objects if item.get("year") is not None
-            }
-            if not requested_years.issubset(present_years):
-                raise ValueError("EPA evidence objects lack requested year coverage")
+            _validate_epa_coverage(source, objects)
         if method == "opendap":
             expected_family = source["request"]["dataset_family"]
             if any(
@@ -920,12 +1047,22 @@ def _resolve_source(
         }
     except requests.HTTPError as exc:
         status = exc.response.status_code if exc.response is not None else None
-        if status not in _RETRYABLE_STATUSES:
-            raise
+        return {
+            **base,
+            "resolution_outcome": (
+                "operator_input_required" if status in {401, 403} else "transient_error"
+            ),
+            "reason": (
+                "provider metadata authorization failed"
+                if status in {401, 403}
+                else f"provider metadata request failed: HTTP {status}"
+            ),
+        }
+    except _ProviderResolutionError as exc:
         return {
             **base,
             "resolution_outcome": "transient_error",
-            "reason": f"provider metadata request failed after retries: HTTP {status}",
+            "reason": str(exc),
         }
     except requests.exceptions.InvalidJSONError:
         raise
@@ -969,6 +1106,16 @@ def _resolve_source(
                 raise ValueError(
                     f"Resolved object {item['object_id']!r} violates the paper cutoff"
                 )
+    missing_provider_identity = [
+        item["object_id"]
+        for item in objects
+        if not item.get("provider_object_id") or not item.get("provider_revision_id")
+    ]
+    if missing_provider_identity:
+        raise ValueError(
+            "Resolved provider objects require immutable revision identities: "
+            + ", ".join(sorted(missing_provider_identity))
+        )
     return {
         **base,
         "objects": sorted(
@@ -1012,33 +1159,38 @@ def resolve_reproduction_sources(
         raise ValueError(
             f"Evidence contains unknown sources: {', '.join(unknown_sources)}"
         )
+    owns_session = session is None
     http = session or requests.Session()
-    resolved_sources: list[dict[str, Any]] = []
-    for source_id in sorted(contracts):
-        source_evidence = evidence.get(source_id)
-        if source_evidence is None:
-            source_evidence = {
-                "source_id": source_id,
-                "outcome": "operator_input_required",
-                "reason": "technical evidence is missing",
-                "evidence": [
-                    {
-                        "url": contracts[source_id]["url"],
-                        "retrieved_at": "1970-01-01T00:00:00Z",
-                        "sha256": "0" * 64,
-                    }
-                ],
-            }
-        resolved_sources.append(
-            _resolve_source(
-                contracts[source_id],
-                source_evidence,
-                import_dir,
-                http,
-                timeout=timeout_seconds,
-                sleep=sleep,
+    try:
+        resolved_sources: list[dict[str, Any]] = []
+        for source_id in sorted(contracts):
+            source_evidence = evidence.get(source_id)
+            if source_evidence is None:
+                source_evidence = {
+                    "source_id": source_id,
+                    "outcome": "operator_input_required",
+                    "reason": "technical evidence is missing",
+                    "evidence": [
+                        {
+                            "url": contracts[source_id]["url"],
+                            "retrieved_at": "1970-01-01T00:00:00Z",
+                            "sha256": "0" * 64,
+                        }
+                    ],
+                }
+            resolved_sources.append(
+                _resolve_source(
+                    contracts[source_id],
+                    source_evidence,
+                    import_dir,
+                    http,
+                    timeout=timeout_seconds,
+                    sleep=sleep,
+                )
             )
-        )
+    finally:
+        if owns_session:
+            http.close()
     inventory = {
         "inventory_format": INVENTORY_FORMAT,
         "inventory_mode": "production",

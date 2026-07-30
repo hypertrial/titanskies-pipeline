@@ -51,24 +51,94 @@
     ]
   },
   "epa": {
-    "objects": [
+    "items": [
       {
-        "object_id": "camd-hourly-2023.synthetic.zip",
-        "provider_object_id": "camd-2023",
-        "provider_revision_id": "etag-synthetic-1",
-        "url": "https://example.test/epa/camd-hourly-2023.synthetic.zip",
-        "size_bytes": 4096,
-        "etag": "etag-synthetic-1",
-        "year": 2023
+        "filename": "Emissions-Hourly-2023-Q1.csv",
+        "s3Path": "emissions/hourly/quarter/Emissions-Hourly-2023-Q1.csv",
+        "bytes": 4096,
+        "lastUpdated": "2024-01-01T00:00:00Z",
+        "metadata": {
+          "dataType": "Emissions",
+          "dataSubType": "Hourly",
+          "grouping": "Quarterly"
+        }
       },
       {
-        "object_id": "camd-hourly-2024.synthetic.zip",
-        "provider_object_id": "camd-2024",
-        "provider_revision_id": "etag-synthetic-2",
-        "url": "https://example.test/epa/camd-hourly-2024.synthetic.zip",
-        "size_bytes": 4096,
-        "etag": "etag-synthetic-2",
-        "year": 2024
+        "filename": "Emissions-Hourly-2023-Q2.csv",
+        "s3Path": "emissions/hourly/quarter/Emissions-Hourly-2023-Q2.csv",
+        "bytes": 4096,
+        "lastUpdated": "2024-01-01T00:00:00Z",
+        "metadata": {
+          "dataType": "Emissions",
+          "dataSubType": "Hourly",
+          "grouping": "Quarterly"
+        }
+      },
+      {
+        "filename": "Emissions-Hourly-2023-Q3.csv",
+        "s3Path": "emissions/hourly/quarter/Emissions-Hourly-2023-Q3.csv",
+        "bytes": 4096,
+        "lastUpdated": "2024-01-01T00:00:00Z",
+        "metadata": {
+          "dataType": "Emissions",
+          "dataSubType": "Hourly",
+          "grouping": "Quarterly"
+        }
+      },
+      {
+        "filename": "Emissions-Hourly-2023-Q4.csv",
+        "s3Path": "emissions/hourly/quarter/Emissions-Hourly-2023-Q4.csv",
+        "bytes": 4096,
+        "lastUpdated": "2024-01-01T00:00:00Z",
+        "metadata": {
+          "dataType": "Emissions",
+          "dataSubType": "Hourly",
+          "grouping": "Quarterly"
+        }
+      },
+      {
+        "filename": "Emissions-Hourly-2024-Q1.csv",
+        "s3Path": "emissions/hourly/quarter/Emissions-Hourly-2024-Q1.csv",
+        "bytes": 4096,
+        "lastUpdated": "2025-01-01T00:00:00Z",
+        "metadata": {
+          "dataType": "Emissions",
+          "dataSubType": "Hourly",
+          "grouping": "Quarterly"
+        }
+      },
+      {
+        "filename": "Emissions-Hourly-2024-Q2.csv",
+        "s3Path": "emissions/hourly/quarter/Emissions-Hourly-2024-Q2.csv",
+        "bytes": 4096,
+        "lastUpdated": "2025-01-01T00:00:00Z",
+        "metadata": {
+          "dataType": "Emissions",
+          "dataSubType": "Hourly",
+          "grouping": "Quarterly"
+        }
+      },
+      {
+        "filename": "Emissions-Hourly-2024-Q3.csv",
+        "s3Path": "emissions/hourly/quarter/Emissions-Hourly-2024-Q3.csv",
+        "bytes": 4096,
+        "lastUpdated": "2025-01-01T00:00:00Z",
+        "metadata": {
+          "dataType": "Emissions",
+          "dataSubType": "Hourly",
+          "grouping": "Quarterly"
+        }
+      },
+      {
+        "filename": "Emissions-Hourly-2024-Q4.csv",
+        "s3Path": "emissions/hourly/quarter/Emissions-Hourly-2024-Q4.csv",
+        "bytes": 4096,
+        "lastUpdated": "2025-01-01T00:00:00Z",
+        "metadata": {
+          "dataType": "Emissions",
+          "dataSubType": "Hourly",
+          "grouping": "Quarterly"
+        }
       }
     ]
   },

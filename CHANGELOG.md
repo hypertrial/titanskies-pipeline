@@ -24,6 +24,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
   storage budgets. Synthetic preflight and declared standalone fallback
   demonstrations retain their existing behavior.
 
+### Fixed
+
+- Corrected EPA CAMD readiness to consume the provider's official bulk-file
+  `items` response, retain quarterly object revisions, and isolate incomplete
+  provider/CMR pagination without discarding successful sibling resolution.
+
 ## [0.7.0] - 2026-07-30
 
 ### Added
