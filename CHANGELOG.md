@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-07-30
+
 ### Added
 
 - Added explicit, unscheduled `sun2025:repro` and `andreadis2025:repro`
@@ -127,6 +129,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Fixed
 
+- PlumeGraph analysis-region identities now use canonical facility and geometry
+  ordering, and region enumeration uses semantic facility membership instead
+  of platform-dependent identity-hash order.
 - Granule discovery now requeues previously processed granules when CMR
   `revision-date` advances, clears checksum/local path, and deletes any stale
   NetCDF under the scope raw directory so the next ingest re-downloads and

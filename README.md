@@ -32,8 +32,6 @@ the geography providers do not endorse TitanSkies or Hypertrial.
 | Integrators | [Integrators hub](docs/audiences/integrators.md) and [Integration](docs/concepts/integration.md). |
 | Maintainers | Review the [Architecture](docs/concepts/architecture.md), [Orchestration reference](docs/reference/orchestration.md), [Security policy](SECURITY.md), and [Changelog](CHANGELOG.md). |
 
-Serve docs locally with `uv run make docs-serve` at `http://127.0.0.1:8000`.
-
 Review the canonical [third-party and source notices](THIRD_PARTY_NOTICES.md)
 and [privacy notice](PRIVACY.md) before use or redistribution.
 

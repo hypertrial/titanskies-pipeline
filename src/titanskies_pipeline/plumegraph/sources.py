@@ -239,7 +239,10 @@ def build_analysis_regions(
 ) -> list[dict[str, object]]:
     if aoi_radius_km <= 0:
         raise ValueError("PlumeGraph AOI radius must be positive")
-    cohort = [facility for facility in facilities if facility.is_cohort]
+    cohort = sorted(
+        (facility for facility in facilities if facility.is_cohort),
+        key=lambda facility: facility.facility_id,
+    )
     if not cohort:
         raise ValueError("PlumeGraph analysis regions require cohort facilities")
     Transformer, Point, mapping, transform, unary_union, dumps = _geometry_modules()
@@ -282,7 +285,7 @@ def build_analysis_regions(
         geometry = transform(
             to_wgs84,
             unary_union([projected[index][1] for index in group]),
-        )
+        ).normalize()
         canonical_geometry = canonical_json(mapping(geometry))
         region_id = sha256_identity(
             canonical_json(facility_ids),
@@ -298,7 +301,7 @@ def build_analysis_regions(
                 "geometry_geojson": json.loads(canonical_geometry),
             }
         )
-    return sorted(regions, key=lambda item: str(item["analysis_region_id"]))
+    return sorted(regions, key=lambda item: tuple(item["facility_ids"]))
 
 
 def persist_cohort(
