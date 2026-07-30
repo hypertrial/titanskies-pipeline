@@ -130,8 +130,8 @@ def test_regions_merge_overlaps_and_keep_separate_groups():
     )
     assert [region["facility_ids"] for region in regions] == [["a", "b"], ["c"]]
     assert [region["analysis_region_id"] for region in regions] == [
-        "1603c3b8ef66cd913898341a1ff386f9e1294e53d392e1dbd05902ea989b0bf5",
-        "135982299c899092f5f86cbf96cec6e3159364639f419daae31ee238f47223a9",
+        "741667aa03c41c1bdf40a78c65a9a553e378808a92c1dbc00d51ff36bcf5142a",
+        "dd0319b746a9749c24f65c3631e5c1790a121d990c843be85b9ce85890e0a9a6",
     ]
     assert regions == reordered
     assert all(region["geometry_wkb"] for region in regions)
