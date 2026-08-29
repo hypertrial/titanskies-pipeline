@@ -13,7 +13,6 @@ REQUIRED = [
     "pyproject.toml",
     ".github/workflows/ci.yml",
     ".github/workflows/docs.yml",
-    ".github/dependabot.yml",
     ".github/CODEOWNERS",
     ".github/PULL_REQUEST_TEMPLATE.md",
     ".github/ISSUE_TEMPLATE/bug_report.yml",
@@ -29,27 +28,6 @@ REQUIRED = [
 def test_required_repo_files_exist():
     for relative in REQUIRED:
         assert (ROOT / relative).is_file(), relative
-
-
-def test_dependabot_policy_is_constrained():
-    config = yaml.safe_load((ROOT / ".github/dependabot.yml").read_text())
-    updates = {item["package-ecosystem"]: item for item in config["updates"]}
-
-    assert config["version"] == 2
-    assert set(updates) == {"uv", "github-actions"}
-    for update in updates.values():
-        assert update["directory"] == "/"
-        assert update["schedule"]["interval"] == "weekly"
-        assert update["open-pull-requests-limit"] == 3
-        assert len(update["groups"]) == 1
-        group = next(iter(update["groups"].values()))
-        assert set(group["update-types"]) == {"minor", "patch"}
-
-    assert updates["uv"]["ignore"] == [
-        {"dependency-name": "dbt-core", "versions": [">=1.12"]},
-        {"dependency-name": "netcdf4", "versions": ["1.7.4"]},
-    ]
-    assert "ignore" not in updates["github-actions"]
 
 
 def test_github_actions_are_pinned_to_full_commits():

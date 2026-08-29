@@ -73,12 +73,11 @@ curl -fsSL https://raw.githubusercontent.com/hypertrial/costguard/main/scripts/i
   manual `workflow_dispatch` trigger it.
 - Confirm `https://hypertrial.github.io/titanskies-pipeline/` returns HTTP
   200 and renders the homepage.
-- Review open Dependabot pull requests and merge compatible updates before
-  the next release cycle.
+- Review dependency updates manually before the next release cycle.
 
 ## Dependency pin watchlist
 
 - Keep `dbt-core` constrained below `1.12` until a stable `dagster-dbt`
-  release supports that boundary, then remove the pin and Dependabot ignore.
+  release supports that boundary, then remove the pin.
 - Retain the `netCDF4` 1.7.3 / 1.7.4 split while uv needs 1.7.3 for Python
   3.10 on Windows ARM64; do not treat 1.7.4 as universal.
